@@ -1,3 +1,4 @@
+`
 # bashsrc
 sources (builtin/coreutils)
 
@@ -287,3 +288,4 @@ COMUNIDADE
        Facebook (grupo): fb.com/groups/1849108781988115
 
 bashsrc manual                      24 de novembro de 2017                              man(7)
+`
