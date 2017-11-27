@@ -1,8 +1,8 @@
-`
+
 # bashsrc
 sources (builtin/coreutils)
 
-man(7)                         Miscellaneous Information Manual                         man(7)
+```man(7)                         Miscellaneous Information Manual                         man(7)
 
 NOME
        bashsrc - utilitário para consulta de documentações sources.
@@ -287,5 +287,4 @@ COMUNIDADE
        Facebook (fanpage) : fb.com/shellscriptx
        Facebook (grupo): fb.com/groups/1849108781988115
 
-bashsrc manual                      24 de novembro de 2017                              man(7)
-`
+bashsrc manual                      24 de novembro de 2017                              man(7)```
