@@ -1,4 +1,4 @@
-# bashsrc
+# bashsrc 0.1.0-alpha
 sources (builtin/coreutils)
 
 man(7)                         Miscellaneous Information Manual                         man(7)
