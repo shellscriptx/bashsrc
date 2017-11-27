@@ -59,10 +59,10 @@ function view_doc()
 
 	if [[ ${#srcname[@]} -eq 0 ]]; then
 		echo "$BASENAME: nome do source requerido" 1>&2
-		exit 1
+		return 1
 	elif [[ ! -e "$srcdir/$srcfile" ]]; then
 		echo "$BASENAME: $srcname: source não encontrado" 1>&2
-		exit 1
+		return 1
 	fi
 	
 	shopt -s extglob
