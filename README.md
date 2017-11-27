@@ -1,6 +1,6 @@
 
-# bashsrc
-sources 0.1.0-alpha (builtin/coreutils)
+# bashsrc 0.1.0-alpha
+sources (builtin/coreutils)
 
 ```
 NOME
