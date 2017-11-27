@@ -950,41 +950,6 @@ function mod()
 	return 0
 }
 
-function builtin.__init()
-{
-	BASENAME=builtin.sh
-
-	if [[ ${BASH_VERSINFO[0]} -lt 4 ]]; then
-    	exec 1>&2
-	    echo "$BASENAME: erro: versão do 'bash' incompatível."
-    	echo "atual: $BASH_VERSION" 
-	    echo "requerida: 4.0 ou superior"
-    	exit 1
-	elif [[ ! $BASHSRC_PATH ]]; then
-    	exec 1>&2
-	    echo "$BASENAME: erro: variável de ambiente não está definida"
-    	echo 
-		echo "Para utilizar as bibliotecas é necessário configurar previamente"
-		echo "as variáveis de ambiente inserindo-as no final do arquivo"
-		echo "~/.bashsrc ou ~/.profile:"
-	    echo
-    	echo "Exemplo:"
-	    echo
-	    echo "export BASHSRC_PATH=\$HOME/bashsrc"
-    	echo "export PATH=\$PATH:\$BASHSRC_PATH/src"
-	    echo "export PATH=\$PATH:\$BASHSRC_PATH/bin"
-
-    	exit 1
-	elif [[ ! -d "$BASHSRC_PATH" ]]; then
-    	echo "$BASENAME: erro: '$BASHSRC_PATH' diretório não encontrado" 1>&2
-	    exit 1
-	fi
-
-	return 0
-}
-
-builtin.__init
-
 readonly -f has \
 			sum \
 			map \
