@@ -134,7 +134,7 @@ function str.expandtabs()
 	return 0
 }
 
-# func str.find <[str]exp> <[str]sub> => [uint]
+# func str.find <[str]exp> <[str]sub> => [int]
 #
 # Retorna o índice mais baixo em 'exp' onde 'sub' é encontrado. Caso contrário
 # índice será igual a '-1'.
@@ -156,7 +156,7 @@ function str.find()
 	return 0
 }
 
-# func str.rfind <[str]exp> <[str]sub> => [uint]
+# func str.rfind <[str]exp> <[str]sub> => [int]
 #
 # Retorna o índice mais alto em 'exp' onde 'sub' é encontrado. Caso contrário
 # índice será igual a '-1'.

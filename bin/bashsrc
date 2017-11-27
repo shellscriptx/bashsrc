@@ -125,7 +125,7 @@ case $1 in
 	-l|--list) list_sources;;
 	-e|--env) printf "BASHSRC_PATH=%s\nPATH=%s\n" $BASHSRC_PATH $PATH;;
 	-h|--help) usage;;
-	-v|--version) echo "bashsrc $BASHSRC_VERSION";;
+	-v|--version) echo "$BASENAME $BASHSRC_VERSION";;
 	man) man $BASHSRC_PATH/bin/intro.gz;;
 	*) 	echo "$BASENAME: '$1' opção inválida" 1>&2
 		echo "Tente '$BASENAME --help' para mais informações." 1>&2;;

@@ -92,9 +92,8 @@ function getopt.parse()
 
 		case $ctype in
 			# tipo
-           	uint) [[ $value =~ ^(0|[1-9][0-9]*)$ ]];;  ### XXX arrumar padrão XXX
+           	uint) [[ $value =~ ^(0|[1-9][0-9]*)$ ]];;
 			int|zone) [[ $value =~ ^(0|-?[1-9][0-9]*)$ ]];;
-			#int|zone) [[ $value =~ ^-?([0-9]{1,4}|[0-2][0-9]{4}|3([0-1][0-9]{3}|2([0-6][0-9]{2}|7([0-5][0-9]|6[0-7]))))$ ]];;
    	        char) [[ $value =~ ^.$ ]];;
 			str) [[ $value =~ ^.+$ ]];;
 			bool) [[ $value =~ ^(true|false)$ ]];;
