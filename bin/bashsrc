@@ -1,0 +1,150 @@
+#!/bin/bash
+
+readonly BASENAME=${0##*/}
+readonly BASHSRC_VERSION=0.1.0
+
+if [[ ${BASH_VERSINFO[0]} -lt 4 ]]; then
+	exec 1>&2
+	echo "$BASENAME: erro: versão do 'bash' incompatível."
+	echo "atual: $BASH_VERSION" 
+	echo "requerida: 4.0 ou superior"
+	exit 1
+elif [[ ! $BASHSRC_PATH ]]; then
+	man ./intro.gz
+	echo "$BASENAME: erro: variável de ambiente não está definida"
+	echo
+	echo "Para configurar o ambiente insira no final do arquivo"
+	echo "~/.bashrc ou ~/.profile as linhas abaixo:"
+	echo
+	echo "Exemplo:"
+	echo
+	echo "export BASHSRC_PATH=\$HOME/bashsrc"
+	echo "export PATH=\$PATH:\$BASHSRC_PATH/src"
+	echo "export PATH=\$PATH:\$BASHSRC_PATH/bin"
+
+	exit 1
+elif [[ ! -d "$BASHSRC_PATH" ]]; then
+	echo "$BASENAME: erro: '$BASHSRC_PATH' diretório não encontrado" 1>&2
+	exit 1
+fi
+
+if [[ ${#@} -eq 0 ]]; then
+	echo "Uso: $BASENAME [OPÇÕES]"
+	echo "Tente '$BASENAME --help' para mais informações."
+	exit 0
+fi
+
+function usage()
+{
+	echo "$BASENAME: ferramenta para consulta de documentação e ambiente."
+	echo "Uso: $BASENAME [OPÇÕES]"
+	echo
+	echo "Argumentos obrigatórios para opções longas também são para opções curtas."
+	echo
+	echo "-l, --list                    - Lista os sources disponíveis em '\$BASHSRC_PATH'"
+	echo "-e, --env                     - Exibe o ambiente configurado em '\$BASHSRC_PATH'."
+	echo "-d, --doc <src>[.funcname]    - Exibe a documentação do source ou função."
+	echo "                                'src' refere-se ao nome da biblioteca a ser"
+	echo "                                consultada, omitindo a extensão '.sh' do arquivo."
+ 	echo "                                Se '.funcname' for omitido é retornado o protótipo"
+	echo "                                de todas as funções disponíveis em 'src'."
+	echo "-h, --help                      Exibe ajuda e sai."
+	echo "-v, --version                   Exibe a versão e sai."
+	echo
+	echo "Para visualizar a documentação inicial, digite:"
+	echo "$ $BASENAME man"
+
+	exit 1
+}
+
+function view_doc()
+{
+	local srcname=(${1/./ })
+	local srcfile=${srcname[0]}.sh
+	local srcdir=$BASHSRC_PATH/src
+	local line var func match comm about
+
+	if [[ ${#srcname[@]} -eq 0 ]]; then
+		echo "$BASENAME: nome do source requerido" 1>&2
+		exit 1
+	elif [[ ! -e "$srcdir/$srcfile" ]]; then
+		echo "$BASENAME: $srcname: source não encontrado" 1>&2
+		exit 1
+	fi
+	
+	shopt -s extglob
+	set -f
+	
+	comm='^\s*#'
+
+	if [[ ${#srcname[@]} -eq 1 ]]; then
+		
+		var='^\s*(readonly|(typeset|declare)\s+-[a-zAF]*r[a-zAF]*)\s+[a-zA-Z]+[a-zA-Z_]*=.*'
+		func='^\s*#\s*func\s+[a-zA-Z0-9.-]+[a-zA-Z0-9._-]*.*'
+		about='^\s*#\s*\[about]'
+
+		while read line; do
+			if [[ ! $match ]]; then
+				[[ $line =~ $about ]] && match=1
+			elif [[ $line =~ $comm ]]; then
+				echo $line
+			else
+				unset match
+			fi
+			if [[ $line =~ ($var|$func) ]]; then
+				echo ${line#+(#)}
+			fi
+		done < "$srcdir/$srcfile"
+	else
+
+		func="^\s*#\s*func\s+${1#builtin.}\s+"
+
+		while read line; do
+			if [[ ! $match ]]; then
+				if [[ $line =~ $func ]]; then
+					echo "${line#+(#)}"
+					match=1
+				fi
+			elif [[ $line =~ $comm ]]; then
+				echo "${line#+(#)}"
+			else
+				break
+			fi
+		done < "$srcdir/$srcfile"
+		
+		[[ $match ]] || echo "$BASENAME: '$1' função/documentação não encontrada" 1>&2
+	fi
+	
+	return 0
+}
+
+function list_sources()
+{
+	local src c
+
+	echo -e "Diretório: $BASHSRC_PATH\n"
+	
+	for srcfile in "$BASHSRC_PATH/src/"*.sh; do
+		srcname=${srcfile##*/}
+		srcname=${srcname%.*}
+		echo "$srcname"
+		((c++))
+	done
+	
+	echo -e "\nTotal: $c"
+
+	return 0
+}
+
+case $1 in
+	-d|--doc) view_doc $2;;
+	-l|--list) list_sources;;
+	-e|--env) printf "BASHSRC_PATH=%s\nPATH=%s\n" $BASHSRC_PATH $PATH;;
+	-h|--help) usage;;
+	-v|--version) echo "bashsrc $BASHSRC_VERSION";;
+	man) man ./intro.gz;;
+	*) 	echo "$BASENAME: '$1' opção inválida" 1>&2
+		echo "Tente '$BASENAME --help' para mais informações." 1>&2;;
+esac
+
+exit 0
