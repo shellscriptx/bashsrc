@@ -77,16 +77,7 @@ function view_doc()
 		about='^\s*#\s*\[about]'
 
 		while read line; do
-			if [[ ! $match ]]; then
-				[[ $line =~ $about ]] && match=1
-			elif [[ $line =~ $comm ]]; then
-				echo $line
-			else
-				unset match
-			fi
-			if [[ $line =~ ($var|$func) ]]; then
-				echo ${line#+(#)}
-			fi
+			[[ $line =~ ($var|$func) ]] && echo ${line#+(#)}
 		done < "$srcdir/$srcfile"
 	else
 
