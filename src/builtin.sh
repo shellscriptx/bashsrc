@@ -202,7 +202,7 @@ function sum(){
 	local num res
 	
 	for num in $@; do
-		getopt.parse "num:int:+:$1"
+		getopt.parse "num:int:+:$num"
 		res=$((res+num))
 	done
 
