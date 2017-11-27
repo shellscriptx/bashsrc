@@ -1,0 +1,2 @@
+# bashsrc
+sources (builtin/coreutils)
