@@ -1,8 +1,8 @@
+
 # bashsrc
 sources 0.1.0-alpha (builtin/coreutils)
 
-man(7)                         Miscellaneous Information Manual                         man(7)
-
+```
 NOME
        bashsrc - utilitário para consulta de documentações sources.
 
@@ -285,5 +285,4 @@ COMUNIDADE
        Telegram (grupo): t.me/shellscript_x
        Facebook (fanpage) : fb.com/shellscriptx
        Facebook (grupo): fb.com/groups/1849108781988115
-
-bashsrc manual                      24 de novembro de 2017                              man(7)
+```
