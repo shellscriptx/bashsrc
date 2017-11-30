@@ -13,6 +13,7 @@ readonly __OS_SH=1
 
 source builtin.sh
 
+
 readonly __HOSTNAME_FILE=/etc/hostname
 
 # access
