@@ -7,9 +7,9 @@
 # E-mail:           shellscriptx@gmail.com
 #----------------------------------------------#
 
-[[ $__GETOPT_SRC ]] && return 0
+[[ $__GETOPT_SH ]] && return 0
 
-readonly __GETOPT_SRC=1
+readonly __GETOPT_SH=1
 
 source error.sh
 

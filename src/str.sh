@@ -8,9 +8,9 @@
 #----------------------------------------------#
 
 # source
-[[ $__STR_SRC ]] && return 0
+[[ $__STR_SH ]] && return 0
 
-readonly __STR_SRC=1
+readonly __STR_SH=1
 
 source builtin.sh
 

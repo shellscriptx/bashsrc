@@ -7,9 +7,9 @@
 # E-mail:			shellscriptx@gmail.com
 #----------------------------------------------#
 
-[[ $__BUILTIN_SRC ]] && return 0 
+[[ $__BUILTIN_SH ]] && return 0 
 
-readonly __BUILTIN_SRC=1
+readonly __BUILTIN_SH=1
 
 source getopt.sh
 source error.sh

@@ -7,9 +7,9 @@
 # E-mail:   		shellscriptx@gmail.com
 #----------------------------------------------#
 
-[[ $__REGEX_SRC ]] && return 0
+[[ $__REGEX_SH ]] && return 0
 
-readonly __REGEX_SRC=1
+readonly __REGEX_SH=1
 
 source builtin.sh
 source str.sh

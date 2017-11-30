@@ -7,9 +7,9 @@
 # E-mail:           shellscriptx@gmail.com
 #----------------------------------------------#
 
-[[ $__TIME_SRC ]] && return 0
+[[ $__TIME_SH ]] && return 0
 
-readonly __TIME_SRC=1
+readonly __TIME_SH=1
 
 source builtin.sh
 source map.sh

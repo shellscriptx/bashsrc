@@ -7,9 +7,9 @@
 # E-mail:           shellscriptx@gmail.com
 #----------------------------------------------#
 
-[[ $__ARRAY_SRC ]] && return 0
+[[ $__ARRAY_SH ]] && return 0
 
-readonly __ARRAY_SRC=1
+readonly __ARRAY_SH=1
 
 source builtin.sh
 
@@ -152,7 +152,7 @@ function array.pop()
 	getopt.parse "name:array:+:$1" "index:int:+:$2"
 	
 	declare -n __arr=$1
-
+		
 	if [[ $2 -gt -2 ]]; then	
 		echo "${__arr[$2]}"
 		unset __arr[$2]

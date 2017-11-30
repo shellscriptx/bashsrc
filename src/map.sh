@@ -7,9 +7,9 @@
 # E-mail:           shellscriptx@gmail.com
 #----------------------------------------------#
 
-[[ $__MAP_SRC ]] && return 0
+[[ $__MAP_SH ]] && return 0
 
-readonly __MAP_SRC=1
+readonly __MAP_SH=1
 
 source builtin.sh
 

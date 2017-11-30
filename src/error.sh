@@ -7,9 +7,9 @@
 # E-mail:           shellscriptx@gmail.com
 #----------------------------------------------#
 
-[[ $__ERROR_SRC ]] && return 0
+[[ $__ERROR_SH ]] && return 0
 
-readonly __ERROR_SRC=1
+readonly __ERROR_SH=1
 
 # errors
 readonly __ERROR_VAR_READONLY='possui atributo somente leitura'

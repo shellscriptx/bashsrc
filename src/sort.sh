@@ -7,9 +7,9 @@
 # E-mail:           shellscriptx@gmail.com
 #----------------------------------------------#
 
-[[ $__SORT_SRC ]] && return 0
+[[ $__SORT_SH ]] && return 0
 
-readonly __SORT_SRC=1
+readonly __SORT_SH=1
 
 # func sort.int <[array]name> => [int]
 #
