@@ -70,11 +70,15 @@ readonly __GETOPT_ERR_VARNAME='nome da variável inválida'
 #
 function getopt.parse()
 {
-	local name ctype flag value ref flags names attr
+	local name ctype flag value ref flags names attr IFSbkp
 
 	for param in "$@"
 	do
-		mapfile -d: args <<< $param
+		
+		IFSbkp=$IFS
+		IFS=':'
+		args=($param)
+		IFS=$IFSbkp
 		
 		name=${args[0]%:}
 		ctype=${args[1]%:}
