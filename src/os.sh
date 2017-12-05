@@ -13,22 +13,27 @@ readonly __OS_SH=1
 
 source builtin.sh
 
-os.gethostname(){ echo "$HOSTNAME"; return 0; }
+# errors
+readonly __OS_ERR_DIR_NOT_FOUND='diretório não encontrado'
+readonly __OS_ERR_DIR_ACCESS_DENIED='permissão negada'
 
-os.getfqdn()
+# func os.chdir <[str]dir>
+#
+# Altera o diretório atual para 'dirname'.
+#
+os.chdir()
 {
-	local ip hosts host name
+	getopt.parse "dir:str:+:$1"
+	
+	local dir=$1
 
-	if [[ -e /etc/hosts ]]; then
-		while read ip host; do
-			if [[ "$ip" == "127.0.1.1" ]]; then
-				hosts=($host)
-				for name in ${hosts[@]}; do
-					echo "$name"
-				done				
-			fi
-		done < /etc/hosts
+	if [ ! -d "$dir" ]; then
+		error.__exit "dir" "str" "$dir" "$__OS_ERR_DIR_NOT_FOUND"
+	elif [ ! -r "$dir" ]; then
+		error.__exit "dir" "str" "$dir" "$__OS_ERR_DIR_ACCESS_DENIED"
 	fi
+	
+	cd "$dir"
 
-	return $?
+	return 0
 }
