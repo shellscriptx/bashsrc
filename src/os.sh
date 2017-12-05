@@ -16,6 +16,7 @@ source builtin.sh
 # errors
 readonly __OS_ERR_DIR_NOT_FOUND='diretório não encontrado'
 readonly __OS_ERR_DIR_ACCESS_DENIED='permissão negada'
+readonly __OS_ERR_NOT_DIR='não é um diretório'
 
 # func os.chdir <[str]dir>
 #
@@ -26,11 +27,13 @@ os.chdir()
 	getopt.parse "dir:str:+:$1"
 	
 	local dir=$1
-
-	if [ ! -d "$dir" ]; then
-		error.__exit "dir" "str" "$dir" "$__OS_ERR_DIR_NOT_FOUND"
+	
+	if [ -f "$dir" ]; then
+		error.__exit 'dir' 'str' "$dir" "$__OS_ERR_NOT_DIR"
+	elif [ ! -d "$dir" ]; then
+		error.__exit 'dir' 'str' "$dir" "$__OS_ERR_DIR_NOT_FOUND"
 	elif [ ! -r "$dir" ]; then
-		error.__exit "dir" "str" "$dir" "$__OS_ERR_DIR_ACCESS_DENIED"
+		error.__exit 'dir' 'str' "$dir" "$__OS_ERR_DIR_ACCESS_DENIED"
 	fi
 	
 	cd "$dir"
