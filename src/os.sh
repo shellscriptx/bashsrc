@@ -52,7 +52,7 @@ function os.chdir()
 #
 function os.stackdir()
 {
-	getopt.parse "stack:var:+:$1" "dir:str:+:$1"
+	getopt.parse "stack:array:+:$1" "dir:str:+:$1"
 
 	declare -n __stack_dir=$1
 	local __dir=$2
@@ -73,4 +73,19 @@ function os.exists()
 	getopt.parse "filepath:str:+:$1"
 	[[ -e "$1" ]]
 	return $?
+}
+
+# func os.getenv => [str]
+#
+# Retorna uma lista iterável de variáveis de ambiente.
+#
+function os.getenv()
+{
+	getopt.parse "-:null:-:$*"
+
+	while read _ _ env; do
+		echo "${env%%=*}"
+	done < <(declare -xp)
+	
+	return 0
 }
