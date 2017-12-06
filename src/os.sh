@@ -89,3 +89,29 @@ function os.environ()
 	
 	return 0
 }
+
+# func os.getenv <[var]varname> => [str]
+#
+# Retorna uma string que representa o valor armazenado em 'varname'.
+#
+function os.getenv()
+{
+	getopt.parse "varname:var:+:$1"
+			
+	declare -n __env_var=$1
+	echo "$__env_var"
+	return 0
+}
+
+# func os.setenv <[var]varname> <[str]value>
+#
+# Define o valor da variável de ambiente com 'varname' e 'value'
+# especificado.
+#
+function os.setenv()
+{
+	getopt.parse "varname:var:+:$1" "value:str:-:$2"
+	
+	export $1="$2"		
+	return 0
+}
