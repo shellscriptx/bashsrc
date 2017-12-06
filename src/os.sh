@@ -75,11 +75,11 @@ function os.exists()
 	return $?
 }
 
-# func os.getenv => [str]
+# func os.environ => [str]
 #
 # Retorna uma lista iterável de variáveis de ambiente.
 #
-function os.getenv()
+function os.environ()
 {
 	getopt.parse "-:null:-:$*"
 
