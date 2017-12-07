@@ -154,8 +154,11 @@ function has(){
 	getopt.parse "exp:str:+:$1" "on:keyword:+:$2" "name:var:+:$3"
 	
 	declare -n __obj_ref=$3
-	
-	case ${__obj_ref@a} in
+	local __type
+
+	read _ __type _ < <(declare -p $1 2>/dev/null)
+
+	case $__type in
 		*a*) array.contains $3 "$1";;
 		*A*) map.contains $3 "$1";;
 		*) str.contains "$__obj_ref" "$1";;
@@ -228,9 +231,11 @@ function map(){
 	getopt.parse "funcname:func:+:$1" "name:var:+:$2"
 	
 	declare -n __obj_ref=$2
-	local __item __key __ch
+	local __item __key __ch __type
 	
-	case ${__obj_ref@a} in
+	read _ __type _ < <(declare -p $1 2>/dev/null)
+
+	case $__type in
 		*a*) for __item in "${__obj_ref[@]}"; do $1 "$__item"; done;;
 		*A*) for __key in "${!__obj_ref[@]}"; do $1 "$__key"; done;;
 		*) for ((__ch=0; __ch < ${#__obj_ref}; __ch++)); do $1 "${__obj_ref:$__ch:1}"; done;;
@@ -283,9 +288,11 @@ function filter()
 	getopt.parse "funcname:func:+:$1" "name:var:+:$2"
 	
 	declare -n __obj_ref=$2
-	local __item __key __ch
+	local __item __key __ch __type
+	
+	read _ __type _ < <(declare -p $1 2>/dev/null)
 
-	case ${__obj_ref@a} in
+	case $__type in
 		*a*) for __item in "${__obj_ref[@]}"; do $1 "$__item" && echo "$__item"; done;;
 		*A*) for __key in "${!__obj_ref[@]}"; do $1 "$__key" && echo "$__key"; done;;
 		*) for ((__ch=0; __ch < ${#__obj_ref}; __ch++)); do $1 "${__obj_ref:$__ch:1}" && 
@@ -422,8 +429,11 @@ function len()
 	getopt.parse "name:var:+:$1"
 	
 	declare -n __obj_ref=$1
+	local __type
 
-	case ${__obj_ref@a} in
+	read _ __type _ < <(declare -p $1 2>/dev/null)
+
+	case $__type in
 		*a*|*A*) echo ${#__obj_ref[@]};;
 		*) echo ${#__obj_ref};;
 	esac
@@ -584,20 +594,22 @@ function isobj()
 #
 function sorted()
 {
-	local __item
+	local __item __type
 	
 	for __item in $@; do
 		getopt.parse "name:var:+:$__item"
 		declare -n __obj_ref=$__item
 
-		case ${__obj_ref@a} in
+		read _ __type _ < <(declare -p $1 2>/dev/null)
+
+		case $__type in
 			*a*) printf '%s\n' "${__obj_ref[@]}";;
 			*A*) printf '%s\n' "${!__obj_ref[@]}";;
 			*) echo -e "${__obj_ref// /\\n}";;
 		esac
 
 		declare +n __obj_ref
-		unset __obj_ref
+		unset __obj_ref __type
 	done | sort -db
 
 	return 0
@@ -752,20 +764,22 @@ function list()
 	getopt.parse "name:var:+:$1"
 	
 	declare -n __obj_dest=$1
-	local __item
+	local __item __type
 
 	for __item in ${@:2}; do
 		getopt.parse "name:var:+:$__item"
 		declare -n __obj_ref=$__item
 
-		case ${__obj_ref@a} in
+		read _ __type _ < <(declare -p $1 2>/dev/null)
+
+		case $__type in
 			*a*) __obj_dest+=("$(array.items $__item)");;
 			*A*) __obj_dest+=("$(map.items $__item)");;
 			*) __obj_dest+=("$__obj_ref");;
 		esac
 
 		declare +n __obj_ref
-		unset __obj_ref
+		unset __obj_ref __type
 	done	
 
 	return 0	
@@ -800,20 +814,22 @@ function list()
 #
 function unique()
 {
-	local __item
+	local __item __type
 
 	for __item in $@; do
 		getopt.parse "source:var:+:$__item"
 		declare -n __obj_ref=$__item
 
-		case ${__obj_ref@a} in
+		read _ __type _ < <(declare -p $1 2>/dev/null)
+
+		case $__type in
 			*a*) array.items $__item;;
 			*A*) map.items $__item;;
 			*) printf '%s\n' $__obj_ref;;
 		esac
 
 		declare +n __obj_ref
-		unset __obj_ref
+		unset __obj_ref __type
 	done | sort -u
 
 	return 0	
@@ -949,6 +965,7 @@ function mod()
 	echo "$(($1/$2))|$(($1%$2))"
 	return 0
 }
+
 
 readonly -f has \
 			sum \
