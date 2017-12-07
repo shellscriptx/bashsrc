@@ -156,7 +156,7 @@ function has(){
 	declare -n __obj_ref=$3
 	local __type
 
-	read _ __type _ < <(declare -p $1 2>/dev/null)
+	read _ __type _ < <(declare -p $3 2>/dev/null)
 
 	case $__type in
 		*a*) array.contains $3 "$1";;
@@ -233,7 +233,7 @@ function map(){
 	declare -n __obj_ref=$2
 	local __item __key __ch __type
 	
-	read _ __type _ < <(declare -p $1 2>/dev/null)
+	read _ __type _ < <(declare -p $2 2>/dev/null)
 
 	case $__type in
 		*a*) for __item in "${__obj_ref[@]}"; do $1 "$__item"; done;;
@@ -290,7 +290,7 @@ function filter()
 	declare -n __obj_ref=$2
 	local __item __key __ch __type
 	
-	read _ __type _ < <(declare -p $1 2>/dev/null)
+	read _ __type _ < <(declare -p $2 2>/dev/null)
 
 	case $__type in
 		*a*) for __item in "${__obj_ref[@]}"; do $1 "$__item" && echo "$__item"; done;;
@@ -600,7 +600,7 @@ function sorted()
 		getopt.parse "name:var:+:$__item"
 		declare -n __obj_ref=$__item
 
-		read _ __type _ < <(declare -p $1 2>/dev/null)
+		read _ __type _ < <(declare -p $__item 2>/dev/null)
 
 		case $__type in
 			*a*) printf '%s\n' "${__obj_ref[@]}";;
@@ -770,7 +770,7 @@ function list()
 		getopt.parse "name:var:+:$__item"
 		declare -n __obj_ref=$__item
 
-		read _ __type _ < <(declare -p $1 2>/dev/null)
+		read _ __type _ < <(declare -p $__item 2>/dev/null)
 
 		case $__type in
 			*a*) __obj_dest+=("$(array.items $__item)");;
@@ -820,7 +820,7 @@ function unique()
 		getopt.parse "source:var:+:$__item"
 		declare -n __obj_ref=$__item
 
-		read _ __type _ < <(declare -p $1 2>/dev/null)
+		read _ __type _ < <(declare -p $__item 2>/dev/null)
 
 		case $__type in
 			*a*) array.items $__item;;
