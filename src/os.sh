@@ -115,3 +115,39 @@ function os.setenv()
 	export $1="$2"		
 	return 0
 }
+
+# func os.geteuid => [uint]
+#
+# Retorna o id efetivo do usuário atual.
+#
+function os.geteuid()
+{
+	getopt.parse "-:null:-:$*"
+	echo "$EUID"
+	return 0
+}
+
+# func os.argv => [str]
+#
+# Retorna os argumentos de linha de comando iniciando com 
+# o nome do programa principal.
+#
+function os.argv()
+{
+	getopt.parse "-:null:-:$*"
+	echo "${0##*/} ${BASH_ARGV[@]}"
+	return 0
+}
+
+# func os.argc => [uint]
+#
+# Retorna o total de argumentos de linha de comando. O programa
+# principal é considerado como um argumento.
+#
+function os.argc()
+{
+	getopt.parse "-:null:-:$*"
+	echo $((${BASH_ARGC}+1))
+	return 0
+}
+
