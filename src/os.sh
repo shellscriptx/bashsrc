@@ -147,7 +147,28 @@ function os.argv()
 function os.argc()
 {
 	getopt.parse "-:null:-:$*"
-	echo $((${BASH_ARGC}+1))
+	echo $(($BASH_ARGC+1))
 	return 0
 }
 
+# func os.getgid => [uint]
+#
+# Retorna o id do grupo principal do usuário atual.
+#
+function os.getgid()
+{
+	getopt.parse "-:null:-:$*"
+	echo ${GROUPS[0]}
+	return 0
+}
+
+# func os.getgroups => [uint]
+#
+# Retorna os ids dos grupos do usuário atual.
+#
+function os.getgroups()
+{
+	getopt.parse "-:null:-:$*"
+	echo ${GROUPS[@]}
+	return 0
+}
