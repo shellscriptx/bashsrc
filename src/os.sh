@@ -221,14 +221,16 @@ function os.hostname()
 # func os.chatime <[path]pathname> <[map]time> => [bool]
 #
 # Altera o tempo de acesso do arquivo ou diretório especificado
-# em 'pathname' pelo tempo na estrutura 'time'.
+# em 'pathname' pelo tempo na estrutura 'time'. Se o valor de um membro
+# da estrutura for omitido, assume como padrão a data do sistema.
 #
 function os.chatime(){ os.__chtime -a "$1" "$2"; return $?; }
 
 # func os.chmtime <[path]pathname> <[map]time> => [bool]
 #
 # Altera o tempo de modificação do arquivo ou diretório especificado
-# em 'pathname' pelo tempo na estrutura 'time'.
+# em 'pathname' pelo tempo na estrutura 'time'. Se o valor de um membro
+# da estrutura for omitido, assume como padrão a data do sistema.
 #
 function os.chmtime(){ os.__chtime -m "$1" "$2"; return $?; }
 
@@ -237,8 +239,18 @@ function os.__chtime()
 	getopt.parse "pathname:path:+:$2" "time:map:+:$3"
 
 	declare -n __map_ref=$3
-	local flag=$1
+	local __flag=$1
+	local __tm=($(printf "%(%_w %_d %_m %Y %_H %_M %_S %_j)T"))
 
+	__map_ref[tm_wday]=${__map_ref[tm_wday]:-${__tm[0]}}
+	__map_ref[tm_mday]=${__map_ref[tm_mday]:-${__tm[1]}}
+	__map_ref[tm_mon]=${__map_ref[tm_mon]:-${__tm[2]}}
+	__map_ref[tm_year]=${__map_ref[tm_year]:-${__tm[3]}}
+	__map_ref[tm_hour]=${__map_ref[tm_hour]:-${__tm[4]}}
+	__map_ref[tm_min]=${__map_ref[tm_min]:-${__tm[5]}}
+	__map_ref[tm_sec]=${__map_ref[tm_sec]:-${__tm[6]}}
+	__map_ref[tm_yday]=${__map_ref[tm_yday]:-${__tm[7]}}
+	
 	if ! (time.__check_time ${__map_ref[tm_hour]} \
                             ${__map_ref[tm_min]} \
                             ${__map_ref[tm_sec]} &&
@@ -251,14 +263,14 @@ function os.__chtime()
         error.__exit 'time' 'map' "\n$(map.list $3)" "$__TIME_ERR_DATETIME"
     fi
 
-	touch $flag \
+	touch $__flag \
 			--no-create \
 			--date "${__weekdays[${__map_ref[tm_wday]}]}
 					${__map_ref[tm_mday]}
 					${__months[${__map_ref[tm_mon]}]}
 					${__map_ref[tm_year]}
-					${__map_ref[tm_hour]}:${__map_ref[tm_min]}:${__map_ref[tm_sec]}
-					${__map_ref[tm_isdst]}" "$2" &>/dev/null
+					${__map_ref[tm_hour]}:${__map_ref[tm_min]}:${__map_ref[tm_sec]}" \
+					"$2" &>/dev/null
 				
 	return $?
 }
