@@ -11,13 +11,12 @@
 
 readonly __BUILTIN_SH=1
 
-source getopt.sh
 source error.sh
+source getopt.sh
 source map.sh
 source array.sh
 source str.sh
-
-readonly __BASENAME=${0##*/}
+source os.sh
 
 # erros
 readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando interno'
