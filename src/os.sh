@@ -223,36 +223,35 @@ function os.hostname()
 # Altera o tempo de acesso do arquivo ou diretório especificado
 # em 'pathname' pelo tempo na estrutura 'time'.
 #
-function os.chatime()
-{
-	getopt.parse "pathname:path:+:$1" "time:map:+:$2"
-
-	declare -n __map_ref=$2
-
-	touch -a \
-			--no-create \
-			--date "${__weekdays[${__map_ref[tm_wday]}]}
-					${__map_ref[tm_mday]}
-					${__months[${__map_ref[tm_mon]}]}
-					${__map_ref[tm_year]}
-					${__map_ref[tm_hour]}:${__map_ref[tm_min]}:${__map_ref[tm_sec]}
-					${__map_ref[tm_isdst]}" "$1" &>/dev/null
-				
-	return $?
-}
+function os.chatime(){ os.__chtime -a "$1" "$2"; return $?; }
 
 # func os.chmtime <[path]pathname> <[map]time> => [bool]
 #
 # Altera o tempo de modificação do arquivo ou diretório especificado
 # em 'pathname' pelo tempo na estrutura 'time'.
 #
-function os.chmtime()
+function os.chmtime(){ os.__chtime -m "$1" "$2"; return $?; }
+
+function os.__chtime()
 {
-	getopt.parse "pathname:path:+:$1" "time:map:+:$2"
+	getopt.parse "pathname:path:+:$2" "time:map:+:$3"
 
-	declare -n __map_ref=$2
+	declare -n __map_ref=$3
+	local flag=$1
 
-	touch -m \
+	if ! (time.__check_time ${__map_ref[tm_hour]} \
+                            ${__map_ref[tm_min]} \
+                            ${__map_ref[tm_sec]} &&
+          time.__check_date ${__map_ref[tm_wday]} \
+                            ${__map_ref[tm_mday]} \
+                            ${__map_ref[tm_mon]} \
+                            ${__map_ref[tm_year]} \
+                            ${__map_ref[tm_yday]}); then
+        
+        error.__exit 'time' 'map' "\n$(map.list $3)" "$__TIME_ERR_DATETIME"
+    fi
+
+	touch $flag \
 			--no-create \
 			--date "${__weekdays[${__map_ref[tm_wday]}]}
 					${__map_ref[tm_mday]}
