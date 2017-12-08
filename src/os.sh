@@ -258,7 +258,7 @@ function os.__chtime()
 					${__months[${__map_ref[tm_mon]}]}
 					${__map_ref[tm_year]}
 					${__map_ref[tm_hour]}:${__map_ref[tm_min]}:${__map_ref[tm_sec]}
-					${__map_ref[tm_isdst]}" "$1" &>/dev/null
+					${__map_ref[tm_isdst]}" "$2" &>/dev/null
 				
 	return $?
 }
