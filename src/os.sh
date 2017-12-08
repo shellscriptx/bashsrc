@@ -234,6 +234,14 @@ function os.chatime(){ os.__chtime -a "$1" "$2"; return $?; }
 #
 function os.chmtime(){ os.__chtime -m "$1" "$2"; return $?; }
 
+# func os.chtime <[path]pathname> <[map]time> => [bool]
+#
+# Altera o tempo de modificação e acesso do arquivo ou diretório especificado
+# em 'pathname' pelo tempo na estrutura 'time'. Se o valor de um membro
+# da estrutura for omitido, assume como padrão a data do sistema.
+#
+function os.chtime(){ os.__chtime '' "$1" "$2"; return $?; }
+
 function os.__chtime()
 {
 	getopt.parse "pathname:path:+:$2" "time:map:+:$3"
