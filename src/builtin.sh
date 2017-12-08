@@ -16,7 +16,6 @@ source getopt.sh
 source map.sh
 source array.sh
 source str.sh
-source os.sh
 
 # erros
 readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando interno'
