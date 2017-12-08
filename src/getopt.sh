@@ -21,7 +21,8 @@ readonly __GETOPT_ERR_FLAG='flag não suportada'
 readonly __GETOPT_ERR_NAME_CONFLICT='conflito de nomes de parâmetros'
 readonly __GETOPT_ERR_NOT_ARG='função não requer argumentos'
 readonly __GETOPT_ERR_VARNAME='nome da variável inválida'
-readonly __GETOPT_ERR_PATH_NOT_FOUND='diretório não encontrado.'
+readonly __GETOPT_ERR_DIR_NOT_FOUND='diretório não encontrado.'
+readonly __GETOPT_ERR_PATH_NOT_FOUND='arquivo ou diretório não encontrado'
 
 # func getopt.parse <[str]name:type:flag:value> ... -> [bool]
 #
@@ -154,7 +155,8 @@ function getopt.parse()
 			slice) [[ ${value// /} =~ \[[^]][0-9]*:?(-[0-9]+|[0-9]*)\] ]];;
 			keyword) [[ $value == $name ]];;
 			null) error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_NOT_ARG";;
-			path) [[ -d $value ]] || error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_PATH_NOT_FOUND";;
+			dir) [[ -d $value ]] || error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_DIR_NOT_FOUND";;
+			path) [[ -e $value ]] || error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_PATH_NOT_FOUND";;
 			*) error.__exit "$name" "$ctype" '' "$__GETOPT_ERR_TYPE_PARAM '$ctype'";;
        	esac
 
