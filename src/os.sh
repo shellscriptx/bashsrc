@@ -187,13 +187,17 @@ function os.getpid()
 function os.__init()
 {
 	local depends=(id)
-	local dep
+	local dep deps
 
 	for dep in ${depends[@]}; do
-		if command -v $dep &>/dev/null; then
-			echo "${0##*/}: ${BASH_SOURCE##*/}: aviso: dependência requerida: comando '$dep' não encontrado" 1>&2
+		if ! command -v $dep &>/dev/null; then
+			deps+=($dep)
 		fi
 	done
+
+	[[ $deps ]] && error.__depends $FUNCNAME ${BASH_SOURCE##*/} "${deps[*]}"
+
+	return 0
 }
 
 os.__init
