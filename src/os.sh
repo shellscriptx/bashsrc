@@ -184,9 +184,44 @@ function os.getpid()
 	return 0
 }
 
+# func os.getppid => [uint]
+#
+# Retorna o pid do processo pai.
+#
+function os.getppid()
+{
+	getopt.parse "-:null:-:$*"
+	echo $PPID
+	return 0
+}
+
+# func os.getwd => [str]
+#
+# Retorna o nome do caminho que corresponde ao diretório atual.
+#
+function os.getwd()
+{
+	getopt.parse "-:null:-:$*"
+	pwd; return 0
+}
+
+# func os.hostname => [str]
+#
+# Retorna o nome da máquina.
+#
+function os.hostname()
+{
+	getopt.parse "-:null:-:$*"
+			
+	local hostname=/etc/hostname
+	[[ -e $hostname ]] && echo $(< $hostname)
+
+	return $?
+}
+
 function os.__init()
 {
-	local depends=(id)
+	local depends=(id pwd)
 	local dep deps
 
 	for dep in ${depends[@]}; do
