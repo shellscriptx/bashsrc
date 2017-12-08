@@ -14,36 +14,37 @@ readonly __OS_SH=1
 source builtin.sh
 
 # errors
-readonly __OS_ERR_DIR_NOT_FOUND='diretório não encontrado'
-readonly __OS_ERR_DIR_ACCESS_DENIED='permissão negada'
-readonly __OS_ERR_NOT_DIR='não é um diretório'
+readonly __OS_ERR_MODE_PERM='modo de permissão inválido'
 
 # constantes
 readonly stdin=/dev/stdin
 readonly stdout=/dev/stdout
 readonly stderr=/dev/stderr
 
-# func os.chdir <[str]dir>
+# func os.chdir <[str]dir> => [bool]
 #
-# Altera o diretório atual para 'dir'
+# Altera o diretório atual para 'dir'. Retorna 'true' para sucesso,
+# caso contrário 'false'.
 #
 function os.chdir()
 {
-	getopt.parse "dir:str:+:$1"
-	
-	local dir=$1
-	
-	if [ -f "$dir" ]; then
-		error.__exit 'dir' 'str' "$dir" "$__OS_ERR_NOT_DIR"
-	elif [ ! -d "$dir" ]; then
-		error.__exit 'dir' 'str' "$dir" "$__OS_ERR_DIR_NOT_FOUND"
-	elif [ ! -r "$dir" ]; then
-		error.__exit 'dir' 'str' "$dir" "$__OS_ERR_DIR_ACCESS_DENIED"
-	fi
-	
-	cd "$dir"
+	getopt.parse "dir:dir:+:$1"
+	cd "$dir" &>/dev/null
+	return $?
+}
 
-	return 0
+# func os.chmod <[path]pathname> <[uint]mode> => [bool]
+#
+# Define a permissão 'mode' para o arquivo ou diretório especificado
+# em 'pathname'.
+#
+function os.chmod()
+{
+	getopt.parse "path:path:+:$1" "mode:uint:+:$2"
+	
+	[[ $2 =~ ^[0-7]{3,4}$ ]] || error.__exit 'mode' 'uint' "$2" "$__OS_ERR_MODE_PERM"
+	chmod "$2" "$1" &>/dev/null
+	return $?
 }
 
 # func os.stackdir <[var]stack> <[str]dir>
@@ -212,11 +213,8 @@ function os.getwd()
 function os.hostname()
 {
 	getopt.parse "-:null:-:$*"
-			
-	local hostname=/etc/hostname
-	[[ -e $hostname ]] && echo $(< $hostname)
-
-	return $?
+	[[ -e /etc/hostname ]] && echo $(< /etc/hostname) || return 1
+	return 0
 }
 
 function os.__init()
