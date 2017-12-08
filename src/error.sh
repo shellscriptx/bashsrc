@@ -50,7 +50,7 @@ function error.__exit()
 
 function error.__depends()
 {
-	local fcall srcname dep
+	local fncall srcname dep
 	
 	fncall=$1
 	srcname=$2
