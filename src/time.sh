@@ -157,6 +157,32 @@ function time.gmtime()
 	return 0
 }
 
+# func time.mtime <[map]name>
+#
+# Converte a hora atual para um estrutura time e salva em 'name'.
+#
+function time.mtime()
+{
+	getopt.parse "name:map:+:$1"
+	
+	declare -n __map_ref=$1
+	local __info
+
+	__info=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T"))
+	
+	__map_ref[tm_mon]=${__info[0]}
+	__map_ref[tm_mday]=${__info[1]}
+	__map_ref[tm_hour]=${__info[2]}
+	__map_ref[tm_min]=${__info[3]}
+	__map_ref[tm_sec]=${__info[4]}
+	__map_ref[tm_year]=${__info[5]}
+	__map_ref[tm_yday]=${__info[6]}
+	__map_ref[tm_wday]=${__info[7]}
+	__map_ref[tm_isdst]=${__info[8]}
+
+	return 0
+}
+
 # func time.localtime <[uint]seconds> => [map]
 # 
 # Converte o tempo em segundos para uma estrutura datetime.
