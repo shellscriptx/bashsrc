@@ -17,8 +17,11 @@ source map.sh
 source array.sh
 source str.sh
 
+readonly __basename=${0##*/}
+
 # erros
 readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando interno'
+
 
 # func has <[str]exp> on <[var]name> => [bool]
 #
