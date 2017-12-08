@@ -48,6 +48,29 @@ function error.__exit()
     exit 1
 }
 
-readonly -f error.__exit
+function error.__depends()
+{
+	local fcall srcname dep
+	
+	fncall=$1
+	srcname=$2
+	dep=${3// /, }
+
+	exec 1>&2
+
+	echo "(Verificação de dependência)"	
+	echo "source: $srcname"
+	echo "Chamada: $fncall"
+	echo "Erro: pacote(s) requerido(s) não encontrado(s)"
+	echo "Dependência(s): ${dep%,}"
+	echo ------------------------
+	
+	exec 1<&-
+	
+	exit 1
+}
+
+readonly -f error.__exit \
+			error.__depends
 
 # /* __ERROR_SRC */
