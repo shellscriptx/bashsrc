@@ -123,7 +123,7 @@ function os.setenv()
 function os.geteuid()
 {
 	getopt.parse "-:null:-:$*"
-	echo "$EUID"
+	id --user
 	return 0
 }
 
@@ -158,7 +158,7 @@ function os.argc()
 function os.getgid()
 {
 	getopt.parse "-:null:-:$*"
-	echo ${GROUPS[0]}
+	id --group
 	return 0
 }
 
@@ -169,6 +169,31 @@ function os.getgid()
 function os.getgroups()
 {
 	getopt.parse "-:null:-:$*"
-	echo ${GROUPS[@]}
+	id --groups
 	return 0
 }
+
+# func os.getpid => [uint]
+#
+# Retorna o pid do processo principal
+#
+function os.getpid()
+{
+	getopt.parse "-:null:-:$*"
+	echo $BASHPID
+	return 0
+}
+
+function os.__init()
+{
+	local depends=(id)
+	local dep
+
+	for dep in ${depends[@]}; do
+		if command -v $dep &>/dev/null; then
+			echo "${0##*/}: ${BASH_SOURCE##*/}: aviso: dependência requerida: comando '$dep' não encontrado" 1>&2
+		fi
+	done
+}
+
+os.__init
