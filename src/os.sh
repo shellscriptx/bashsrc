@@ -283,9 +283,24 @@ function os.__chtime()
 	return $?
 }
 
+# func os.mkdir <[str]dirname> <[uint]mode> => [bool]
+#
+# Cria diretório 'dirname' com permissões especificadas em 'mode'. É possível
+# criar subdiretórios não existes informando o caminho completo.
+# Retorna 'true' em caso de sucesso, caso contrário 'false.'
+#
+function os.mkdir()
+{
+	getopt.parse "dir:str:+:$1" "mode:uint:+:$2"
+	
+	[[ $2 =~ ^[0-7]{3,4}$ ]] || error.__exit 'mode' 'uint' "$2" "$__OS_ERR_MODE_PERM"
+	mkdir --parents --mode=$2 "$1" &>/dev/null
+	return $?
+}
+
 function os.__init()
 {
-	local depends=(id pwd touch)
+	local depends=(id pwd touch mkdir)
 	local dep deps
 
 	for dep in ${depends[@]}; do
