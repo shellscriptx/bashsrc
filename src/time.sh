@@ -54,6 +54,18 @@ readonly SECOND=$((1000 * MILLISECOND))
 readonly MINUTE=$((60 * SECOND))
 readonly HOUR=$((60 * MINUTE))
 
+readonly TIME_MAP="
+[tm_mon]=
+[tm_mday]=
+[tm_hour]=
+[tm_min]=
+[tm_sec]=
+[tm_year]=
+[tm_yday]=
+[tm_wday]=
+[tm_isdst]=
+"
+
 readonly -a __months=(
 [1]='janeiro'
 'fevereiro'
@@ -201,14 +213,8 @@ function time.mtime()
 # # Convertendo os segundos para a estrutura [map]datetime.
 # seg=$(time.time)
 # echo 'Segundos:' $seg
-# echo -n 'Map: '
-# time.localtime $seg
+# time.localtime dt $seg
 #
-# # Atribuindo a estrutura a variável 'dt'.
-# # Obs: é necessário utilizar o comando 'eval' para realizar
-# # a expansão e atribuição da estrutura. Caso contrário um
-# # erro será retornado.
-# eval dt=($(time.localtime $seg))
 # echo 'Listando estrutura:'
 # map.list dt
 #
@@ -216,7 +222,6 @@ function time.mtime()
 #
 # $ ./datetime.sh
 # Segundos: 1511404409
-# Map: [tm_mon]=11 [tm_mday]=23 [tm_hour]=0 [tm_min]=33 [tm_sec]=29 [tm_year]=2017 [tm_yday]=327 [tm_wday]=4 [tm_isdst]=-0200
 # Listando estrutura:
 #
 # tm_wday|4
@@ -231,19 +236,20 @@ function time.mtime()
 #
 function time.localtime()
 {
-	getopt.parse "seconds:uint:+:$1"	
+	getopt.parse "name:map:+:$1" "seconds:uint:+:$2"	
 	
-	local info=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
+	declare -n __map_ref=$1
+	local __info=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
 	
-	printf '[tm_mon]=%d ' 		${info[0]}
-	printf '[tm_mday]=%d ' 		${info[1]}
-	printf '[tm_hour]=%d ' 		${info[2]}
-	printf '[tm_min]=%d '		${info[3]}
-	printf '[tm_sec]=%d '		${info[4]}
-	printf '[tm_year]=%d '		${info[5]}
-	printf '[tm_yday]=%d '		${info[6]}
-	printf '[tm_wday]=%d '		${info[7]}
-	printf '[tm_isdst]=%s\n'	${info[8]}
+	__map_ref[tm_mon]=${__info[0]}
+	__map_ref[tm_mday]=${__info[1]}
+	__map_ref[tm_hour]=${__info[2]}
+	__map_ref[tm_min]=${__info[3]}
+	__map_ref[tm_sec]=${__info[4]}
+	__map_ref[tm_year]=${__info[5]}
+	__map_ref[tm_yday]=${__info[6]}
+	__map_ref[tm_wday]=${__info[7]}
+	__map_ref[tm_isdst]=${__info[8]}
 			
 	return 0
 }
@@ -666,6 +672,7 @@ time.__init
 readonly -f time.today \
 			time.gmtime \
 			time.localtime \
+			time.mtime \
 			time.tznames \
 			time.tzinfo \
 			time.tzname \
