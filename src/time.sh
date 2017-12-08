@@ -24,36 +24,36 @@ readonly __TIME_ERR_TZFILE="não foi possível localizar o arquivo"
 readonly __TIME_ERR_DATETIME='data/hora inválida'
 
 # meses
-readonly time_january=1 
-readonly time_february=2 
-readonly time_march=3 
-readonly time_april=4 
-readonly time_may=5 
-readonly time_june=6
-readonly time_july=7
-readonly time_august=8
-readonly time_september=9
-readonly time_october=10
-readonly time_november=11
-readonly time_december=12
+readonly JANUARY=1 
+readonly FEBRUARY=2 
+readonly MARCH=3 
+readonly APRIL=4 
+readonly MAY=5 
+readonly JUNE=6
+readonly JULY=7
+readonly AUGUST=8
+readonly SEPTEMBER=9
+readonly OCTOBER=10
+readonly NOVEMBER=11
+readonly DECEMBER=12
 
-# dias das semana
-readonly time_sunday=0 
-readonly time_monday=1
-readonly time_tuesday=2
-readonly time_wednesday=3
-readonly time_thursday=4
-readonly time_friday=5
-readonly time_saturday=6
+# dias da semana
+readonly SUNDAY=0 
+readonly MONDAY=1
+readonly TUESDAY=2
+readonly WEDNESDAY=3
+readonly THURSDAY=4
+readonly FRIDAY=5
+readonly SATURDAY=6
 
 # tempo
-readonly time_nanosecond=1
-readonly time_microsecond=$((1000 * time_nanosecond))
-readonly time_millisecond=$((1000 * time_microsecond))
-readonly time_second=$((1000 * time_millisecond))
-readonly time_minute=$((60 * time_second))
-readonly time_hour=$((60 * time_minute))
-			
+readonly NANOSECOND=1
+readonly MICROSECOND=$((1000 * NANOSECOND))
+readonly MILLISECOND=$((1000 * MICROSECOND))
+readonly SECOND=$((1000 * MILLISECOND))
+readonly MINUTE=$((60 * SECOND))
+readonly HOUR=$((60 * MINUTE))
+
 readonly -a __months=(
 [1]='janeiro'
 'fevereiro'
