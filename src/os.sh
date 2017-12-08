@@ -12,14 +12,15 @@
 readonly __OS_SH=1
 
 source builtin.sh
+source time.sh
 
 # errors
 readonly __OS_ERR_MODE_PERM='modo de permissão inválido'
 
 # constantes
-readonly stdin=/dev/stdin
-readonly stdout=/dev/stdout
-readonly stderr=/dev/stderr
+readonly STDIN=/dev/stdin
+readonly STDOUT=/dev/stdout
+readonly STDERR=/dev/stderr
 
 # func os.chdir <[str]dir> => [bool]
 #
@@ -217,9 +218,55 @@ function os.hostname()
 	return 0
 }
 
+# func os.chatime <[path]pathname> <[map]time> => [bool]
+#
+# Altera o tempo de acesso do arquivo ou diretório especificado
+# em 'pathname' pelo tempo na estrutura 'time'.
+#
+function os.chatime()
+{
+	getopt.parse "pathname:path:+:$1" "time:map:+:$2"
+
+	declare -n __map_ref=$2
+
+	touch -a \
+			--no-create \
+			--date "${__weekdays[${__map_ref[tm_wday]}]}
+					${__map_ref[tm_mday]}
+					${__months[${__map_ref[tm_mon]}]}
+					${__map_ref[tm_year]}
+					${__map_ref[tm_hour]}:${__map_ref[tm_min]}:${__map_ref[tm_sec]}
+					${__map_ref[tm_isdst]}" "$1" &>/dev/null
+				
+	return $?
+}
+
+# func os.chmtime <[path]pathname> <[map]time> => [bool]
+#
+# Altera o tempo de modificação do arquivo ou diretório especificado
+# em 'pathname' pelo tempo na estrutura 'time'.
+#
+function os.chmtime()
+{
+	getopt.parse "pathname:path:+:$1" "time:map:+:$2"
+
+	declare -n __map_ref=$2
+
+	touch -m \
+			--no-create \
+			--date "${__weekdays[${__map_ref[tm_wday]}]}
+					${__map_ref[tm_mday]}
+					${__months[${__map_ref[tm_mon]}]}
+					${__map_ref[tm_year]}
+					${__map_ref[tm_hour]}:${__map_ref[tm_min]}:${__map_ref[tm_sec]}
+					${__map_ref[tm_isdst]}" "$1" &>/dev/null
+				
+	return $?
+}
+
 function os.__init()
 {
-	local depends=(id pwd)
+	local depends=(id pwd touch)
 	local dep deps
 
 	for dep in ${depends[@]}; do
@@ -232,5 +279,7 @@ function os.__init()
 
 	return 0
 }
+
+
 
 os.__init

@@ -54,18 +54,6 @@ readonly SECOND=$((1000 * MILLISECOND))
 readonly MINUTE=$((60 * SECOND))
 readonly HOUR=$((60 * MINUTE))
 
-readonly TIME_MAP="
-[tm_mon]=
-[tm_mday]=
-[tm_hour]=
-[tm_min]=
-[tm_sec]=
-[tm_year]=
-[tm_yday]=
-[tm_wday]=
-[tm_isdst]=
-"
-
 readonly -a __months=(
 [1]='janeiro'
 'fevereiro'
