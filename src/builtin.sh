@@ -1008,7 +1008,6 @@ function __init_obj_type()
 				echo "Método: $method"
 				echo "Erro: o método de herança é inválido"
 				exit 1
-					
 			fi
 			
 			if [[ $struct_func =~ $func_type ]]; then
@@ -1050,6 +1049,7 @@ readonly -f has \
 			unique \
 			reversed \
 			iter \
-			mod
+			mod \
+			__init_obj_type
 
 # /* BUILTIN_SRC */
