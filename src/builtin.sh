@@ -218,7 +218,7 @@ function sum(){
 	return 0
 }
 
-# func map <[func]funcname> <[var]name> => [object]
+# func fnmap <[func]funcname> <[var]name> => [object]
 #
 # Chama a função 'funcname' a cada iteração de 'name' passando 
 # automaticamente o objeto atual como argumento.
@@ -230,7 +230,7 @@ function sum(){
 # array - itera o elemento.
 # map - itera a chave.
 #
-function map(){
+function fnmap(){
 	
 	getopt.parse "funcname:func:+:$1" "name:var:+:$2"
 	
@@ -1022,12 +1022,13 @@ function __init_obj_type()
 		done
 		
 	done
-		
+
+	return 0		
 }
 
 readonly -f has \
 			sum \
-			map \
+			fnmap \
 			filter \
 			chr \
 			ord \
