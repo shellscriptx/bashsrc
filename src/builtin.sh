@@ -970,9 +970,28 @@ function mod()
 	return 0
 }
 
+# func del <[var]varname> ...
+#
+# Apaga da memória as variáveis inicializadas.
+#
+function del()
+{
+	local obj func init
+
+	for obj in $@; do
+		for func in ${__REG_LIST_VAR[$obj]}; do
+			unset -f $func
+			init=1
+		done
+		[[ $init ]] && unset $obj
+	done
+
+	return 0
+}
+
 function __init_obj_type()
 {
-	getopt.parse "vartype:var:+:$1" "varname:var:+:$2"
+	getopt.parse "vartype:var:+:$1"
 
 	local type obj_types method proto func_type struct_func var i
 
@@ -985,6 +1004,8 @@ function __init_obj_type()
 			
 	for var in ${@:2}; do
 		getopt.parse "varname:var:+:$var"
+
+		i=0
 
 		if [[ "$var" =~ ^(${obj_types// /|})$ ]]; then
 			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_TYPE_REG"
@@ -1007,6 +1028,7 @@ function __init_obj_type()
 				echo "Índice: $i"
 				echo "Método: $method"
 				echo "Erro: o método de herança é inválido"
+				echo "------------------------"
 				exit 1
 			fi
 			
@@ -1020,7 +1042,6 @@ function __init_obj_type()
 			__REG_LIST_VAR[$var]+="$var.$method "
 			((i++))
 		done
-		
 	done
 
 	return 0		
