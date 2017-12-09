@@ -299,7 +299,8 @@ function str.join()
 	getopt.parse "iterable:str:-:$1" "elem:str:-:$2"
 
 	local exp
-	mapfile -t exp <<< $1
+
+	mapfile -t exp <<< "$1"
 	exp=$(printf "%s$2" "${exp[@]}")
 	echo "${exp%$2}"
 
