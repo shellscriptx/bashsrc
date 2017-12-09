@@ -93,4 +93,19 @@ contains
 pop
 '
 
+__SRC_OBJ_METHOD[regex]='
+findall
+fullmatch 
+match 
+search 
+split 
+ismatch 
+groups 
+savegroups 
+replace 
+nreplace 
+fnreplace 
+fnnreplace
+'
+
 readonly __SRC_OBJ_METHOD
