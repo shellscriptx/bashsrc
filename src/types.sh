@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Source: types.sh
+# Data: 9 de dezembro de 2017
+# Desenvolvido por: Juliano Santos [SHAMAN]
+
 [[ $__TYPES_SH ]] && return 0
 
 readonly __TYPES_SH=1
@@ -102,10 +106,12 @@ split
 ismatch 
 groups 
 savegroups 
-replace 
+replace
 nreplace 
 fnreplace 
 fnnreplace
 '
 
 readonly __SRC_OBJ_METHOD
+
+# /* __TYPES_SH */
