@@ -661,6 +661,7 @@ readonly -f regex.findall \
 			regex.replace \
 			regex.nreplace \
 			regex.fnreplace \
-			regex.fnnreplace 
+			regex.fnnreplace \
+			regex
 
 # /* __REGEX_SRC */
