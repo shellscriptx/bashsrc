@@ -944,6 +944,7 @@ readonly -f str.len \
 			str.contains \
 			str.map \
 			str.slice \
-			str.filter
+			str.filter \
+			str
 
 # /* __STR_SRC */
