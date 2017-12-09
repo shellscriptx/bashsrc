@@ -75,8 +75,22 @@ item
 contains 
 reindex 
 slice 
-listindex 
+listindex
 list
+'
+
+__SRC_OBJ_METHOD[map]='
+clone
+copy
+fromkeys
+get
+keys
+items
+list
+remove
+add
+contains
+pop
 '
 
 readonly __SRC_OBJ_METHOD
