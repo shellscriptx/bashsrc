@@ -228,7 +228,7 @@ readonly -f map.clear \
 			map.remove \
 			map.add \
 			map.contains \
-			map.pop \
+			map.pop  \
 			map
 
 # /* __MAP_SRC */
