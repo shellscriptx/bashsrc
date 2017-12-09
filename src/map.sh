@@ -13,7 +13,7 @@ readonly __MAP_SH=1
 
 source builtin.sh
 
-# func map <[var]name>
+# func map <[var]name> ...
 #
 # Cria variável do tipo 'map'
 #

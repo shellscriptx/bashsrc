@@ -13,7 +13,7 @@ readonly __ARRAY_SH=1
 
 source builtin.sh
 
-# func array <[var]name>
+# func array <[var]name> ...
 #
 # Cria variável do tipo 'array'
 #
