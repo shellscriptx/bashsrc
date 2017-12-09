@@ -11,6 +11,7 @@
 
 readonly __BUILTIN_SH=1
 
+source types.sh
 source error.sh
 source getopt.sh
 source map.sh
@@ -19,7 +20,9 @@ source str.sh
 
 # erros
 readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando interno'
-
+readonly __BUILTIN_ERR_VAR_TYPE='tipo da variável inválida'
+readonly __BUILTIN_ERR_TYPE_REG='nomenclatura da variável é de um tipo reservado'
+readonly __BUILTIN_ERR_ALREADY_INIT='a variável já foi inicializada'
 
 # func has <[str]exp> on <[var]name> => [bool]
 #
@@ -967,6 +970,61 @@ function mod()
 	return 0
 }
 
+function __init_obj_type()
+{
+	getopt.parse "vartype:var:+:$1" "varname:var:+:$2"
+
+	local type obj_types method proto func_type struct_func var i
+
+	type=$1
+	obj_types=${!__SRC_OBJ_METHOD[@]}
+
+	if [[ ! "$type" =~ ^(${obj_types// /|})$ ]]; then
+		error.__exit 'varname' 'var' "$type" "$__BUILTIN_ERR_VAR_TYPE"
+	fi
+			
+	for var in ${@:2}; do
+		getopt.parse "varname:var:+:$var"
+
+		if [[ "$var" =~ ^(${obj_types// /|})$ ]]; then
+			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_TYPE_REG"
+		elif [[ ${__REG_LIST_VAR[$var]} ]]; then
+			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_ALREADY_INIT"
+		fi
+
+		for method in ${__SRC_OBJ_METHOD[$type]}; do
+			
+			func_type="$type\.$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array):[+-]:.+[\"']"
+
+			if ! struct_func=$(declare -fp $type.$method 2>/dev/null); then
+				echo "(Composição de método)"
+				echo
+				echo "Tipo: $type"
+				echo "Herança: $type.$method"
+				echo "Composição: $var.$method"
+				echo "Source: types.sh"
+				echo "Map: __SRC_OBJ_METHOD[$type]"
+				echo "Índice: $i"
+				echo "Método: $method"
+				echo "Erro: o método de herança é inválido"
+				exit 1
+					
+			fi
+			
+			if [[ $struct_func =~ $func_type ]]; then
+				proto="%s(){ %s %s \"\$@\"; }"
+			else
+				proto="%s(){ %s \"\$%s\" \"\$@\"; }"
+			fi
+		
+			eval "$(printf "$proto\n" $var.$method $type.$method $var)"
+			__REG_LIST_VAR[$var]+="$var.$method "
+			((i++))
+		done
+		
+	done
+		
+}
 
 readonly -f has \
 			sum \
