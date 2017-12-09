@@ -298,6 +298,55 @@ function os.mkdir()
 	return $?
 }
 
+# func os.remove <[path]pathname> => [bool]
+#
+# Remove arquivo ou diretório especificado em 'pathname'.
+# Retorna 'true' para sucesso, caso contrário 'false'.
+#
+function os.remove()
+{
+	getopt.parse "path:path:+:$1"
+	rm -rf "$1" &>/dev/null
+	return $?
+}
+
+# func os.rename <[path]pathname> <[str]newname> => [bool]
+#
+# Renomeia o arquivo ou diretório representado em 'pathname' por 'newname'.
+# Retorna 'true' para sucesso, caso contrário 'false'.
+#
+function os.rename()
+{
+	getopt.parse "path:path:+:$1" "newname:str:+:$2"
+	mv -f "$1" "$2" &>/dev/null
+	return $?
+}
+
+# func os.tempdir => [str]
+#
+# Retorna o diretório temporário padrão do sistema.
+#
+function os.tempdir()
+{
+	getopt.parse "-:null:-:$*"
+	local tmpdir=$(mktemp --dry-run)
+	echo "${tmpdir%/*}"
+	return 0
+}
+
+# func os.create <[str]filename> => [bool]
+#
+# Cria arquivo 'filename' com permissão 0664. Sobrescreve arquivo caso
+# ele já exista. Em caso de sucesso retorna 'true', caso contraŕio 'false'.
+#
+
+function os.create()
+{
+	getopt.parse "filename:str:+:$1"
+	> "$1"
+	return $?
+}
+
 function os.__init()
 {
 	local depends=(id pwd touch mkdir)
