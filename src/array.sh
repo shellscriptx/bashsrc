@@ -415,7 +415,8 @@ readonly -f array.append \
 			array.reindex \
 			array.slice \
 			array.listindex \
-			array.list
+			array.list \
+			array
 
 # /* __ARRAY_SRC */
 
