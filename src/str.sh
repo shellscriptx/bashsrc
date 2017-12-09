@@ -29,6 +29,13 @@ readonly str_punctuation='!"#$%&\()*+,-./:;<=>?@[\\]^_`{|}~'"'"
 readonly str_whitespace=' \t\n\r\x0b\x0c'
 readonly str_printable="${str_digits}${str_letters}${str_punctuation}${str_whitespace}"
 
+
+# func str <[var]name>
+#
+# Cria variável do tipo 'str'
+#
+function str(){ __init_obj_type "$FUNCNAME" "$@"; return $?; }
+
 # func str.len <[str]exp> => [uint]
 #
 # Retorna o comprimento de 'exp'.
