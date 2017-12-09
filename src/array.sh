@@ -13,6 +13,12 @@ readonly __ARRAY_SH=1
 
 source builtin.sh
 
+# func array <[var]name>
+#
+# Cria variável do tipo 'array'
+#
+function array(){ __init_obj_type "$FUNCNAME" "$@"; return $?; }
+
 # func array.append <[array]name> <[str]object>
 #
 # Anexa 'object' no final de 'name'.
