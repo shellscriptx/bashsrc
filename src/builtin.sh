@@ -1072,6 +1072,7 @@ readonly -f has \
 			reversed \
 			iter \
 			mod \
+			del \
 			__init_obj_type
 
 # /* BUILTIN_SRC */
