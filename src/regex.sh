@@ -22,6 +22,13 @@ readonly __REGEX_ERR_GROUP_REF='referência do grupo inválida'
 readonly regex_case=1         # [flag] - considera a diferença entre caracteres maiúsuculos e minúsculos.
 readonly regex_ignorecase=2   # [flag] - ignora a diferença entre caracteres maiúsculos e minúsculos.
 
+
+# func regex <[var]name>
+#
+# Cria variável do tipo 'regex'
+#
+function regex(){ __init_obj_type "$FUNCNAME" "$@"; return $?; }
+
 # func regex.findall <[str]pattern> <[str]exp> <[uint]flag> => [str]
 #
 # Retorna uma lista de todas as correspondências não sobrepostas na cadeia.
