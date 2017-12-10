@@ -14,13 +14,23 @@ readonly __OS_SH=1
 source builtin.sh
 source time.sh
 
+# Limite máximo de arquivos abertos
+readonly __FD_MAX=1024
+
 # errors
 readonly __OS_ERR_MODE_PERM='modo de permissão inválido'
+readonly __OS_ERR_FILE_NOT_FOUND='arquivo não encontrado'
+readonly __OS_ERR_FD_OPEN_MAX='limite máximo de arquivos abertos alcançado'
 
 # constantes
 readonly STDIN=/dev/stdin
 readonly STDOUT=/dev/stdout
 readonly STDERR=/dev/stderr
+
+# open [flags]
+readonly O_RDONLY=0		# Somente leitura
+readonly O_WRONLY=1		# Somente gravação
+readonly O_RDWR=2		# Leitura e gravação
 
 # func os.chdir <[str]dir> => [bool]
 #
@@ -347,9 +357,76 @@ function os.create()
 	return $?
 }
 
+# func os.stat <[path]path> => [str]
+#
+# Lê as informações de status do arquivo ou diretório.
+# As informações retornadas são separadas pelo delimitador '|' PIPE,
+# respeitando a ordem estabelecida abaixo:
+#
+# %A|%a|%G|%U|%g|%u|%s|%y|%Y|$?
+#
+# %A - Permissões de acesso (leitura humana)
+# %a - Permissões de acesso em octal
+# %G - Nome do grupo dono
+# %U - Nome do usuário dono
+# %g - ID do grupo dono
+# %u - ID do usuário dono
+# %s - Tamanho total em bytes
+# %y - Data da última modificação (leitura humana)
+# %Y - Data da última modificação em segundos
+# $? - Se é um diretório. (0=Sim ou 1=Não)
+#
+function os.stat()
+{
+	getopt.parse "path:path:+:$1"
+	
+	[[ -d "$1" ]]
+	stat --format="%A|%a|%G|%U|%g|%u|%s|%y|%Y|$?" "$1"
+	return $?	
+}
+
+# func os.open <[str]filename> => [os.file]
+function os.open()
+{
+	getopt.parse "file:str:+:$1" "flags:uint:+:$2"
+	
+	local file=$1
+	local mode=$2
+	local path=/dev/fd
+	local av=0
+	local fd
+
+	[[ -e $path ]] || return 1
+
+	for ((fd=3; fd <= __FD_MAX; fd++)); do
+		if [[ ! -e $path/$fd ]]; then av=1; break; fi
+	done
+
+	if [ $av -eq 0 ]; then
+		error.__exit 'file' 'fd' "$file" "$__OS_ERR_FD_OPEN_MAX"
+	fi
+	
+	case $mode in
+		0)
+			[[ -e "$file" ]] || error.__exit 'file' 'str' "$file" "$__OS_ERR_FILE_NOT_FOUND"
+			exec $fd < $file
+			;;
+	esac
+
+	# fd path filename seek flag stat
+	declare -x __OPEN_FD_ATTR
+	
+	# criar função stat
+	__OPEN_FD_ATTR[$fd]="$fd|${file%/*}|${file##*/}|0"
+	__OPEN_FD_STAT[$fd]=
+	
+}
+
+function file.name(){ echo "${1##*/}"; return 0; }
+
 function os.__init()
 {
-	local depends=(id pwd touch mkdir)
+	local depends=(id pwd touch mkdir stat)
 	local dep deps
 
 	for dep in ${depends[@]}; do
