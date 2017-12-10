@@ -916,15 +916,19 @@ function iter()
 {
 	getopt.parse "iterable:str:+:$1" "start:int:+:$2" "count:int:+:$3"
 
-	local arr count
-	mapfile -t arr <<< $1
+	local IFSbkp=$IFS
 
+	IFS=$'\n'
+	arr=($1)
+	
 	if [[ $3 -eq -1 ]]; then
 		count=${#arr[@]}
 	elif [[ $3 -gt 0 ]]; then
 		count=$3
 	fi
 	
+	IFS=$IFSbkp
+
 	printf '%s\n' "${arr[@]:$2:${count:-0}}"
 
 	return 0	
@@ -938,15 +942,19 @@ function iter()
 function niter()
 {
 	getopt.parse "iterable:str:+:$1" "pos:int:+:$2"
+
+	local IFSbkp=$IFS
 	
-	local item arr
-	mapfile -t arr <<< $1
+	IFS=$'\n'
+	arr=($1)	
 	
 	if [[ $2 -ge 0 ]]; then
 		item=${arr[$2]}
 	elif [[ $2 -eq -1 ]]; then
 		item=${arr[$((${#arr[@]}-1))]}
 	fi
+
+	IFS=$IFSbkp
 	
 	echo "$item"
 
