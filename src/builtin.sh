@@ -994,7 +994,7 @@ function __init_obj_type()
 {
 	getopt.parse "vartype:var:+:$1"
 
-	local type obj_types method proto func_type struct_func var i
+	local type obj_types method proto ptr_func struct_func var i 
 
 	type=$1
 	obj_types=${!__SRC_OBJ_METHOD[@]}
@@ -1016,7 +1016,7 @@ function __init_obj_type()
 
 		for method in ${__SRC_OBJ_METHOD[$type]}; do
 			
-			func_type="$type\.$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array):[+-]:.+[\"']"
+			ptr_func="$type\.$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:.+[\"']"
 
 			if ! struct_func=$(declare -fp $type.$method 2>/dev/null); then
 				echo "(Composição de método)"
@@ -1033,7 +1033,7 @@ function __init_obj_type()
 				exit 1
 			fi
 			
-			if [[ $struct_func =~ $func_type ]]; then
+			if [[ $struct_func =~ $ptr_func ]]; then
 				proto="%s(){ %s %s \"\$@\"; }"
 			else
 				proto="%s(){ %s \"\$%s\" \"\$@\"; }"
