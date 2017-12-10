@@ -662,7 +662,7 @@ function enum()
 {
 	local i arr
 
-	mapfile -t arr <<< $1
+	mapfile -t arr <<< "$1"
 	for i in ${!arr[@]}; do	echo "$((i+1))|${arr[$i]}"; done
 	return 0
 }
@@ -845,8 +845,10 @@ function unique()
 #
 function reversed()
 {
+	getopt.parse "iterable:str:-:$1"
+
 	local arr
-	mapfile -t arr <<< $1
+	mapfile -t arr <<< "$1"
 	
 	for ((i=${#arr[@]}-1; i >= 0; i--)); do
 		echo "${arr[$i]}"
@@ -914,20 +916,16 @@ function reversed()
 #
 function iter()
 {
-	getopt.parse "iterable:str:+:$1" "start:int:+:$2" "count:int:+:$3"
+	getopt.parse "start:int:+:$2" "count:int:+:$3"
 
-	local IFSbkp=$IFS
-
-	IFS=$'\n'
-	arr=($1)
+	local arr
+	mapfile -t arr <<< "$1"
 	
 	if [[ $3 -eq -1 ]]; then
 		count=${#arr[@]}
 	elif [[ $3 -gt 0 ]]; then
 		count=$3
 	fi
-	
-	IFS=$IFSbkp
 
 	printf '%s\n' "${arr[@]:$2:${count:-0}}"
 
@@ -936,29 +934,18 @@ function iter()
 
 # func niter <[str]iterable> <[int]pos> => [str]
 #
-# Retorna o item na posição 'pos' em 'iterable'.
-# Se 'pos' for igual à '-1' retorna o último elemento.
+# Retorna o item na posição 'pos' em 'iterable'. Utilize notação negativa 
+# para obter elementos na ordem reversa, considerando '-1' para o último 
+# elemento, '-2' penúltimo, '-3' antipenúltimo e assim por diante.
 #
 function niter()
 {
-	getopt.parse "iterable:str:+:$1" "pos:int:+:$2"
+	getopt.parse "pos:int:+:$2"
 
-	local IFSbkp=$IFS
-	
-	IFS=$'\n'
-	arr=($1)	
-	
-	if [[ $2 -ge 0 ]]; then
-		item=${arr[$2]}
-	elif [[ $2 -eq -1 ]]; then
-		item=${arr[$((${#arr[@]}-1))]}
-	fi
-
-	IFS=$IFSbkp
-	
-	echo "$item"
-
-	return 0
+	local arr
+	mapfile -t arr <<< "$1"
+	echo "${arr[$2]}"
+	return 0	
 }
 
 # func mod <[int]x> <[int]y> => [result|remainder]
@@ -975,6 +962,20 @@ function mod()
 {
 	getopt.parse "x:int:+:$1" "y:int:+:$2"
 	echo "$(($1/$2))|$(($1%$2))"
+	return 0
+}
+
+# func count <[str]iterable> => [uint]
+#
+# Retorna o total de elementos contidos em uma lista iterável.
+#
+function count()
+{
+	getopt.parse "iterable:str:-:$1"
+
+	local arr
+	mapfile -t arr <<< "$1"
+	echo ${#arr[@]}
 	return 0
 }
 
@@ -1000,7 +1001,7 @@ function del()
 
 function __init_obj_type()
 {
-	getopt.parse "vartype:var:+:$1"
+	getopt.parse "vartype:func:+:$1"
 
 	local type obj_types method proto ptr_func struct_func var i 
 
