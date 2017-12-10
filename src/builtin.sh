@@ -979,11 +979,12 @@ function del()
 	local obj func init
 
 	for obj in $@; do
+		getopt.parse "varname:var:+:$obj"
 		for func in ${__REG_LIST_VAR[$obj]}; do
 			unset -f $func
 			init=1
 		done
-		[[ $init ]] && unset $obj
+		[[ $init ]] && unset __REG_LIST_VAR[$obj] $obj init
 	done
 
 	return 0
