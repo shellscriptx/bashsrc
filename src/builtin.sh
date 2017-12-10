@@ -1083,6 +1083,7 @@ readonly -f has \
 			iter \
 			mod \
 			del \
+			count \
 			__init_obj_type
 
 # /* BUILTIN_SRC */
