@@ -57,6 +57,7 @@ map
 slice 
 filter
 len
+field
 '
 
 __SRC_OBJ_METHOD[array]='
