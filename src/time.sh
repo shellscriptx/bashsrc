@@ -55,28 +55,28 @@ readonly MINUTE=$((60 * SECOND))
 readonly HOUR=$((60 * MINUTE))
 
 readonly -a __months=(
-[1]='janeiro'
-'fevereiro'
-'março'
-'abril'
-'maio'
-'junho'
-'julho'
-'agosto'
-'setembro'
-'outubro'
-'novembro'
-'dezembro'
+[1]='January'
+'February'
+'March'
+'April'
+'May'
+'June'
+'July'
+'August'
+'September'
+'October'
+'November'
+'December'
 )
 
 readonly -a __weekdays=(
-'domingo'
-'segunda'
-'terça'
-'quarta'
-'quinta'
-'sexta'
-'sábado'
+'Sunday'
+'Monday'
+'Tuesday'
+'Wednesday'
+'Thursday'
+'Friday'
+'Saturday'
 )
 
 
