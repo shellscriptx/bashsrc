@@ -914,15 +914,15 @@ function str.filter()
 # texto='Debian,Slackware,CentOS,ArchLinux,Ubuntu,Fedora'
 #
 # # Somente o primeiro campo
-# $ field "$texto" ',' 0
+# $ str.field "$texto" ',' 0
 # Debian
 #
 # # Os três primeiros
-# $ field "$texto" ',' {0..2}
+# $ str.field "$texto" ',' {0..2}
 # Debian Slackware CentOS
 #
 # Todos os campos exceto 'CentOS'
-# $ field "$texto" ',' {0..1} {3..5}
+# $ str.field "$texto" ',' {0..1} {3..5}
 # Debian Slackware ArchLinux Ubuntu Fedora
 #
 function str.field()
