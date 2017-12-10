@@ -901,6 +901,58 @@ function str.filter()
 	return 0
 }
 
+# func str.field <[str]exp> <[str]sub> <[uint]num> ... => [str]
+#
+# Retorna 'num' campo(s) delimitado por 'sub' em 'exp', onde 
+# campo inicia a partir da posição '0' (zero). Pode ser 
+# especificado um ou mais campos.
+#
+# Exemplo:
+#
+# source builtin.sh
+#
+# texto='Debian,Slackware,CentOS,ArchLinux,Ubuntu,Fedora'
+#
+# # Somente o primeiro campo
+# $ field "$texto" ',' 0
+# Debian
+#
+# # Os três primeiros
+# $ field "$texto" ',' {0..2}
+# Debian Slackware CentOS
+#
+# Todos os campos exceto 'CentOS'
+# $ field "$texto" ',' {0..1} {3..5}
+# Debian Slackware ArchLinux Ubuntu Fedora
+#
+function str.field()
+{
+    getopt.parse "exp:str:-:$1" "sub:str:-:$2"
+
+    local field num str
+    local i=1 s=0 d=0
+
+    for num in ${@:3}; do
+        getopt.parse "num:uint:+:$num"
+        for ((i=s; i < ${#1}; i++)); do
+            str=${1:$i:${#2}}
+            if [ "$str" == "$2" ]; then
+                ((d++)); continue
+            elif [ $d -eq $num ]; then
+                field+=$str
+            elif [ $d -gt $num ]; then
+                break
+            fi
+        done
+        field+=' '
+        s=$i
+    done
+
+    echo "$field"
+
+    return 0
+}
+
 readonly -f str.len \
 			str.capitalize \
 			str.center \
@@ -946,6 +998,7 @@ readonly -f str.len \
 			str.map \
 			str.slice \
 			str.filter \
+			str.field \
 			str
 
 # /* __STR_SRC */
