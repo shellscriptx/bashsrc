@@ -953,6 +953,17 @@ function str.field()
     return 0
 }
 
+# func str.trimspace <[str]exp> => [str]
+#
+# Retorna uma cópia de 'exp' removendo os espaços excessivos.
+#
+function str.trimspace()
+{
+	getopt.parse "exp:str:-:$1"
+	echo $1
+	return 0
+}
+
 readonly -f str.len \
 			str.capitalize \
 			str.center \
@@ -999,6 +1010,7 @@ readonly -f str.len \
 			str.slice \
 			str.filter \
 			str.field \
+			str.trimspace \
 			str
 
 # /* __STR_SRC */
