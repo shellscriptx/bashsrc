@@ -126,6 +126,7 @@ close
 tell
 mode
 seek
+size
 '
 
 readonly __SRC_OBJ_METHOD
