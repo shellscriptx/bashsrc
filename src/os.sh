@@ -25,6 +25,7 @@ readonly __OS_ERR_FD_OPEN_MAX='limite máximo de arquivos abertos alcançado'
 readonly __OS_ERR_FD_READ='erro de leitura no descritor'
 readonly __OS_ERR_FD_WRITE='erro de escrita no descritor'
 readonly __OS_ERR_FD_CREATE='erro ao criar o descritor'
+readonly __OS_ERR_OPEN_FLAG='flag de acesso inválida'
 
 # constantes
 readonly STDIN=/dev/stdin
@@ -402,15 +403,15 @@ function os.open()
 	
 	local __file=$2
 	local __mode=$3
-	local __path=/dev/fd
 	local __av=0
-	local __fd
+	local __fd __parse
+
 	declare -n __fdref=$1
 
-	[[ -e $__path ]] || return 1
+	[ -e /dev/fd ] || return 1
 
 	for ((__fd=3; __fd <= __FD_MAX; __fd++)); do
-		if [[ ! -e $__path/$__fd ]]; then __av=1; break; fi
+		if [ ! -e /dev/fd/$__fd ]; then __av=1; break; fi
 	done
 
 	if [ $__av -eq 0 ]; then
@@ -418,20 +419,19 @@ function os.open()
 	fi
 	
 	case $__mode in
-		0)
-			[[ -e "$__file" ]] || error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_FOUND"
-			parse="$__fd<$__file"
-			;;
-		1) parse="$__fd>>$__file";;
-		2) parse="$__fd<>$__file";;
+		0) [[ -e "$__file" ]] || error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_FOUND"
+		   __parse="$__fd<$__file";;
+		1) __parse="$__fd>>$__file";;
+		2) __parse="$__fd<>$__file";;
+		*) error.__exit 'flag' 'uint' "$__mode" "$__OS_ERR_OPEN_FLAG";;
 	esac
 
-	eval exec "$parse" 2>/dev/null || \
+	eval exec "$__parse" 2>/dev/null || \
 	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_CREATE '$__fd'"
 
 	mkdir -p "$__OS_CACHE/fd"
 
-	echo "$__file|$__fd|0" > "$__OS_CACHE/fd/$__fd"
+	echo "$__file|$__mode|$__fd|0" > "$__OS_CACHE/fd/$__fd"
 
 	__fdref=$__fd
 
@@ -445,6 +445,13 @@ function os.file.name()
 	return $?
 }
 
+function os.file.mode()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	str.field "$(< "$__OS_CACHE/fd/$1")" '|' 1
+	return $?
+}
+
 function os.file.stat()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -455,7 +462,7 @@ function os.file.stat()
 function os.file.fd()
 {
 	getopt.parse "descriptor:fd:+:$1"
-	str.field "$(< "$__OS_CACHE/fd/$1")" '|' 1
+	str.field "$(< "$__OS_CACHE/fd/$1")" '|' 2
 	return 0
 }
 
