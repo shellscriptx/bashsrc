@@ -23,6 +23,7 @@ readonly __GETOPT_ERR_NOT_ARG='função não requer argumentos'
 readonly __GETOPT_ERR_VARNAME='nome da variável inválida'
 readonly __GETOPT_ERR_DIR_NOT_FOUND='diretório não encontrado.'
 readonly __GETOPT_ERR_PATH_NOT_FOUND='arquivo ou diretório não encontrado'
+readonly __GETOPT_ERR_FD_NOT_EXISTS='o descritor do arquivo não existe'
 
 # func getopt.parse <[str]name:type:flag:value> ... -> [bool]
 #
@@ -157,6 +158,9 @@ function getopt.parse()
 			null) error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_NOT_ARG";;
 			dir) [[ -d $value ]] || error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_DIR_NOT_FOUND";;
 			path) [[ -e $value ]] || error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_PATH_NOT_FOUND";;
+			fd) ([[ $value =~ ^(0|[1-9][0-9]*)$ ]]; [[ -e /dev/fd/$value ]]) || \
+				error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_FD_NOT_EXISTS";;
+
 			*) error.__exit "$name" "$ctype" '' "$__GETOPT_ERR_TYPE_PARAM '$ctype'";;
        	esac
 
