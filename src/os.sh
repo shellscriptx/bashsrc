@@ -475,12 +475,12 @@ function os.open()
 		*) error.__exit 'flag' 'uint' "$__mode" "$__OS_ERR_OPEN_FLAG";;
 	esac
 
-	mkdir -p "$__OS_CACHE/fd"
+	mkdir -p "$__RUNTIME/$$/fd"
 	
 	eval exec "$__parse" 2>/dev/null || \
 	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_CREATE '$__fd'"
 
-	echo "$__file|$__mode|$__fd|0" > "$__OS_CACHE/fd/$__fd"
+	echo "$__file|$__mode|$__fd|0" > "$__RUNTIME/$$/fd/$__fd"
 
 	__fdref=$__fd
 
@@ -518,14 +518,14 @@ function os.file.size()
 function os.file.name()
 {
 	getopt.parse "descriptor:fd:+:$1"
-	str.field "$(< "$__OS_CACHE/fd/$1")" '|' 0
+	str.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 0
 	return $?
 }
 
 function os.file.mode()
 {
 	getopt.parse "descriptor:fd:+:$1"
-	str.field "$(< "$__OS_CACHE/fd/$1")" '|' 1
+	str.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 1
 	return $?
 }
 
@@ -539,7 +539,7 @@ function os.file.stat()
 function os.file.fd()
 {
 	getopt.parse "descriptor:fd:+:$1"
-	str.field "$(< "$__OS_CACHE/fd/$1")" '|' 2
+	str.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 2
 	return 0
 }
 
@@ -556,11 +556,11 @@ function os.file.readlines()
 	done <&$1 2>/dev/null || \
 	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$1'"
 	
-	attr=$(< "$__OS_CACHE/fd/$1")
+	attr=$(< "$__RUNTIME/$$/fd/$1")
 	cur=${attr##*|}
 	seek=$((cur+bytes))
 
-	echo "${attr%|*}|$seek" > "$__OS_CACHE/fd/$1"
+	echo "${attr%|*}|$seek" > "$__RUNTIME/$$/fd/$1"
 	
 	return 0
 }
@@ -575,11 +575,11 @@ function os.file.readline()
 	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$1'"
 
 	len=${#line}
-	attr=$(< "$__OS_CACHE/fd/$1")
+	attr=$(< "$__RUNTIME/$$/fd/$1")
 	cur=${attr##*|}
 	seek=$((cur+len))
 
-	echo "${attr%|*}|$seek" > "$__OS_CACHE/fd/$1"
+	echo "${attr%|*}|$seek" > "$__RUNTIME/$$/fd/$1"
 	echo "$line"
 
 	return 0
@@ -601,15 +601,15 @@ function os.file.read()
 	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$1'"
 	echo
 	
-	attr=$(< "$__OS_CACHE/fd/$1")
+	attr=$(< "$__RUNTIME/$$/fd/$1")
 	cur=${attr##*|}
 	seek=$((cur+bytes))
 
-	echo "${attr%|*}|$seek" > "$__OS_CACHE/fd/$1"
+	echo "${attr%|*}|$seek" > "$__RUNTIME/$$/fd/$1"
 	return 0
 }
 
-function os.file.writestring()
+function os.file.writeline()
 {
 	getopt.parse "descriptor:fd:+:$1" "string:str:-:$2"
 	
@@ -638,7 +638,7 @@ function os.file.close()
 	local fd=$(os.file.fd $1)
 	
 	if eval exec "$fd>&-" && eval exec "$fd<&-"; then
-		> "$__OS_CACHE/fd/$1"
+		> "$__RUNTIME/$$/fd/$1"
 	else
 		return 1
 	fi
@@ -649,7 +649,7 @@ function os.file.close()
 function os.file.tell()
 {
 	getopt.parse "descriptor:fd:+:$1"
-	str.field "$(< "$__OS_CACHE/fd/$1")" '|' 3
+	str.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 3
 	return 0
 }
 
@@ -698,12 +698,6 @@ function os.__init()
 	done
 
 	[[ $deps ]] && error.__depends $FUNCNAME ${BASH_SOURCE##*/} "${deps[*]}"
-
-	readonly __OS_CACHE=$BASHSRC_PATH/.cache/os
-	
-	if ! mkdir -p "$__OS_CACHE"; then
-		error.__exit '' '__FILE_FD_ATTR' "$__OS_CACHE" 'erro durante a tentativa de criar o arquivo de cache.'
-	fi
 
 	return 0
 }
