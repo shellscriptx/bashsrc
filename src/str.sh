@@ -873,6 +873,7 @@ function str.slice()
 # punct   - todos os caracteres de pontuação
 # upper   - todas as letras maiúsculas
 # xdigit  - todos os dígitos hexadecimais
+# space   - todos os espaços e tabulações
 #  
 # Exemplo:
 #
@@ -891,7 +892,7 @@ function str.filter()
 
 	for flag in ${@:2}; do	
 		case $flag in
-			alnum|alpha|cntrl|digit|graph|lower|print|punct|upper|xdigit) flags+="[:$flag:]";;
+			alnum|alpha|cntrl|digit|graph|lower|print|punct|upper|xdigit|space) flags+="[:$flag:]";;
 			*) error.__exit "flag" "str" "$flag" "$__STR_ERR_FLAG_CHAR_INVALID";;
 		esac
 	done
@@ -930,7 +931,7 @@ function str.field()
     getopt.parse "exp:str:-:$1" "sub:str:-:$2"
 
     local field num str
-    local i=1 s=0 d=0
+    local i=0 s=0 d=0
 
     for num in ${@:3}; do
         getopt.parse "num:uint:+:$num"
@@ -948,7 +949,7 @@ function str.field()
         s=$i
     done
 
-    echo "$field"
+    echo "${field% }"
 
     return 0
 }
