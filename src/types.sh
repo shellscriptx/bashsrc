@@ -120,7 +120,7 @@ fd
 readlines
 readline
 read
-writestring
+writeline
 write
 close
 tell
