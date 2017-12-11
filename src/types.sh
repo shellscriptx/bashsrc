@@ -123,8 +123,9 @@ read
 writestring
 write
 close
-getpos
+tell
 mode
+seek
 '
 
 readonly __SRC_OBJ_METHOD
