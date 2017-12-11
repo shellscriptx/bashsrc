@@ -860,7 +860,7 @@ function reversed()
 # func iter <[str]iterable> <[int]start> <[uint]count> => [iterable]
 #
 # Retorna uma nova lista iterável contendo 'count' elementos de 'iterable'
-# a partir da posição 'start'. Se 'count' for igual à '-1' lê todos os
+# a partir da posição 'start'. Se 'count' for menor que '0' (zero), lê todos os
 # elementos depois de 'start'. 
 # Obs: A lista inicia na posição '0' (zero).
 #
@@ -920,15 +920,7 @@ function iter()
 
 	local arr
 	mapfile -t arr <<< "$1"
-	
-	if [[ $3 -eq -1 ]]; then
-		count=${#arr[@]}
-	elif [[ $3 -gt 0 ]]; then
-		count=$3
-	fi
-
-	printf '%s\n' "${arr[@]:$2:${count:-0}}"
-
+	printf '%s\n' "${arr[@]:$2:$(($3 < 0 ? ${#arr[@]} : $3))}"
 	return 0	
 }
 
@@ -1025,7 +1017,7 @@ function __init_obj_type()
 
 		for method in ${__SRC_OBJ_METHOD[$type]}; do
 			
-			ptr_func="$type\.$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:.+[\"']"
+			ptr_func="$type\.$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
 
 			if ! struct_func=$(declare -fp $type.$method 2>/dev/null); then
 				echo "(Composição de método)"
