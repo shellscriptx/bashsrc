@@ -13,6 +13,7 @@ readonly __OS_SH=1
 
 source builtin.sh
 source time.sh
+source str.sh
 
 # Limite máximo de arquivos abertos
 readonly __FD_MAX=1024
@@ -21,6 +22,9 @@ readonly __FD_MAX=1024
 readonly __OS_ERR_MODE_PERM='modo de permissão inválido'
 readonly __OS_ERR_FILE_NOT_FOUND='arquivo não encontrado'
 readonly __OS_ERR_FD_OPEN_MAX='limite máximo de arquivos abertos alcançado'
+readonly __OS_ERR_FD_READ='erro de leitura no descritor'
+readonly __OS_ERR_FD_WRITE='erro de escrita no descritor'
+readonly __OS_ERR_FD_CREATE='erro ao criar o descritor'
 
 # constantes
 readonly STDIN=/dev/stdin
@@ -31,6 +35,12 @@ readonly STDERR=/dev/stderr
 readonly O_RDONLY=0		# Somente leitura
 readonly O_WRONLY=1		# Somente gravação
 readonly O_RDWR=2		# Leitura e gravação
+
+# func os.file <[var]name> ...
+#
+# Cria variável do tipo 'os.file'
+#
+function os.file(){ __init_obj_type "$FUNCNAME" "$@"; return $?; }
 
 # func os.chdir <[str]dir> => [bool]
 #
@@ -388,41 +398,176 @@ function os.stat()
 # func os.open <[str]filename> => [os.file]
 function os.open()
 {
-	getopt.parse "file:str:+:$1" "flags:uint:+:$2"
+	getopt.parse "fd:var:+:$1" "file:str:+:$2" "flag:uint:+:$3"
 	
-	local file=$1
-	local mode=$2
-	local path=/dev/fd
-	local av=0
-	local fd
+	local __file=$2
+	local __mode=$3
+	local __path=/dev/fd
+	local __av=0
+	local __fd
+	declare -n __fdref=$1
 
-	[[ -e $path ]] || return 1
+	[[ -e $__path ]] || return 1
 
-	for ((fd=3; fd <= __FD_MAX; fd++)); do
-		if [[ ! -e $path/$fd ]]; then av=1; break; fi
+	for ((__fd=3; __fd <= __FD_MAX; __fd++)); do
+		if [[ ! -e $__path/$__fd ]]; then __av=1; break; fi
 	done
 
-	if [ $av -eq 0 ]; then
-		error.__exit 'file' 'fd' "$file" "$__OS_ERR_FD_OPEN_MAX"
+	if [ $__av -eq 0 ]; then
+		error.__exit 'file' 'fd' "$__file" "$__OS_ERR_FD_OPEN_MAX"
 	fi
 	
-	case $mode in
+	case $__mode in
 		0)
-			[[ -e "$file" ]] || error.__exit 'file' 'str' "$file" "$__OS_ERR_FILE_NOT_FOUND"
-			exec $fd < $file
+			[[ -e "$__file" ]] || error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_FOUND"
+			parse="$__fd<$__file"
 			;;
+		1) parse="$__fd>>$__file";;
+		2) parse="$__fd<>$__file";;
 	esac
 
-	# fd path filename seek flag stat
-	declare -x __OPEN_FD_ATTR
-	
-	# criar função stat
-	__OPEN_FD_ATTR[$fd]="$fd|${file%/*}|${file##*/}|0"
-	__OPEN_FD_STAT[$fd]=
-	
+	eval exec "$parse" 2>/dev/null || \
+	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_CREATE '$__fd'"
+
+	mkdir -p "$__OS_CACHE/fd"
+
+	echo "$__file|$__fd|0" > "$__OS_CACHE/fd/$__fd"
+
+	__fdref=$__fd
+
+	return 0
 }
 
-function file.name(){ echo "${1##*/}"; return 0; }
+function os.file.name()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	str.field "$(< "$__OS_CACHE/fd/$1")" '|' 0
+	return $?
+}
+
+function os.file.stat()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	os.stat "$(os.file.name $1)"
+	return $?
+}
+
+function os.file.fd()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	str.field "$(< "$__OS_CACHE/fd/$1")" '|' 1
+	return 0
+}
+
+function os.file.readlines()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	
+	local attr cur
+	local bytes=0
+
+	while read line; do
+		bytes=$((bytes+${#line}))
+		echo "$line"
+	done <&$1 2>/dev/null || \
+	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$1'"
+	
+	attr=$(< "$__OS_CACHE/fd/$1")
+	cur=${attr##*|}
+	seek=$((cur+bytes))
+
+	echo "${attr%|*}|$seek" > "$__OS_CACHE/fd/$1"
+	
+	return 0
+}
+
+function os.file.readline()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	
+	local seek len attr line cur
+
+	read line <&$1 2>/dev/null || \
+	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$1'"
+
+	len=${#line}
+	attr=$(< "$__OS_CACHE/fd/$1")
+	cur=${attr##*|}
+	seek=$((cur+len))
+
+	echo "${attr%|*}|$seek" > "$__OS_CACHE/fd/$1"
+	echo "$line"
+
+	return 0
+}
+
+function os.file.read()
+{
+	getopt.parse "descriptor:fd:+:$1" "bytes:uint:+:$2"
+		
+	local attr cur seek ch
+	local bytes=0
+
+	(($2 == 0)) && return 0	
+
+	while read -N1 ch; do
+		echo -n "${ch:- }"
+		(($((++bytes)) == $2)) && break
+	done <&$1 2>/dev/null || \
+	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$1'"
+	echo
+	
+	attr=$(< "$__OS_CACHE/fd/$1")
+	cur=${attr##*|}
+	seek=$((cur+bytes))
+
+	echo "${attr%|*}|$seek" > "$__OS_CACHE/fd/$1"
+	return 0
+}
+
+function os.file.writestring()
+{
+	getopt.parse "descriptor:fd:+:$1" "string:str:-:$2"
+	
+	echo "$2" >&$1 2>/dev/null || \
+	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_WRITE '$1'"
+	
+	return $?
+}
+
+function os.file.write()
+{
+	getopt.parse "descriptor:fd:+:$1" "string:str:-:$2" "bytes:uint:+:$3"
+	
+	(($3 == 0)) && return 0
+
+	echo "${2:0:$3}" >&$1 2>/dev/null || \
+	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_WRITE '$1'"
+	
+	return $?
+}
+
+function os.file.close()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	
+	local fd=$(os.file.fd $1)
+	
+	if eval exec "$fd>&-" && eval exec "$fd<&-"; then
+		> "$__OS_CACHE/fd/$1"
+	else
+		return 1
+	fi
+	
+	return 0
+}
+
+function os.file.getpos()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	str.field "$(< "$__OS_CACHE/fd/$1")" '|' 2
+	return 0
+}
 
 function os.__init()
 {
@@ -437,9 +582,14 @@ function os.__init()
 
 	[[ $deps ]] && error.__depends $FUNCNAME ${BASH_SOURCE##*/} "${deps[*]}"
 
+	readonly __OS_CACHE=$BASHSRC_PATH/.cache/os
+	
+	if ! mkdir -p "$__OS_CACHE"; then
+		error.__exit '' '__FILE_FD_ATTR' "$__OS_CACHE" 'erro durante a tentativa de criar o arquivo de cache.'
+	fi
+
 	return 0
 }
-
 
 
 os.__init
