@@ -25,7 +25,8 @@ readonly __OS_ERR_FD_OPEN_MAX='limite máximo de arquivos abertos alcançado'
 readonly __OS_ERR_FD_READ='erro de leitura no descritor'
 readonly __OS_ERR_FD_WRITE='erro de escrita no descritor'
 readonly __OS_ERR_FD_CREATE='erro ao criar o descritor'
-readonly __OS_ERR_OPEN_FLAG='flag de acesso inválida'
+readonly __OS_ERR_OPEN_FLAG='open flag de acesso inválida'
+readonly __OS_ERR_SEEK_FLAG='seek flag de fluxo inválida'
 
 # constantes
 readonly STDIN=/dev/stdin
@@ -36,6 +37,11 @@ readonly STDERR=/dev/stderr
 readonly O_RDONLY=0		# Somente leitura
 readonly O_WRONLY=1		# Somente gravação
 readonly O_RDWR=2		# Leitura e gravação
+
+# seek - posição de fluxo [flags]
+readonly SEEK_SET=0
+readonly SEEK_CUR=1
+readonly SEEK_END=2
 
 # func os.file <[var]name> ...
 #
@@ -569,11 +575,44 @@ function os.file.close()
 	return 0
 }
 
-function os.file.getpos()
+function os.file.tell()
 {
 	getopt.parse "descriptor:fd:+:$1"
-	str.field "$(< "$__OS_CACHE/fd/$1")" '|' 2
+	str.field "$(< "$__OS_CACHE/fd/$1")" '|' 3
 	return 0
+}
+
+function os.file.seek()
+{
+	getopt.parse "descriptor:fd:+:$1" "offset:uint:+:$2" "whence:uint:+:$3"
+	
+	local fd=$1
+	local offset=$2
+	local whence=$3
+	local mode file cur end
+	
+	mode=$(os.file.mode $fd)
+	file=$(os.file.name $fd)
+	cur=$(os.file.tell $fd)
+	end=$(str.field "$(os.stat "$file")" '|' 6)
+
+	case $mode in
+		0) 	parse="$fd<$file";;
+		1) 	parse="$fd>>$file";;
+		2)	parse="$fd<>$file";;
+		*) 	error.__exit 'flag' 'uint' "$mode" "$__OS_ERR_OPEN_FLAG";;
+	esac
+	
+	eval exec "$parse" 2>/dev/null || error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$d'"
+
+	case $whence in
+		0)	os.file.read $fd $offset 1>/dev/null;;
+		1) 	os.file.read $fd $((cur+offset)) 1>/dev/null;;
+		2)	os.file.read $fd $end 1>/dev/null;;
+		*) 	error.__exit 'whence' 'uint' "$whence" "$__OS_ERR_SEEK_FLAG";;
+	esac
+
+	return $?
 }
 
 function os.__init()
