@@ -113,6 +113,20 @@ fnreplace
 fnnreplace
 '
 
+__SRC_OBJ_METHOD[os.file]='
+name
+stat
+fd
+readlines
+readline
+read
+writestring
+write
+close
+getpos
+mode
+'
+
 readonly __SRC_OBJ_METHOD
 
 # /* __TYPES_SH */
