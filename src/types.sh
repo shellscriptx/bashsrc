@@ -127,6 +127,9 @@ tell
 mode
 seek
 size
+isatty
+writable
+readable
 '
 
 readonly __SRC_OBJ_METHOD
