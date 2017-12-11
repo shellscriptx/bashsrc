@@ -402,10 +402,49 @@ function os.stat()
 	return $?	
 }
 
-# func os.open <[str]filename> => [os.file]
+# func os.open <[var]fd> <[str]filename> <[uint]flag> => [bool]
+#
+# Abre o arquivo especificado em 'filename' associando um descritor 
+# válido para modo de acesso determinado em 'flag'. Se o arquivo for
+# aberto com sucesso retorna true e salva em 'fd' o descritor, caso 
+# contrário uma mensagem de erro é retornada. O descritor é utilizado
+# em chamadas de leitura e escrita no fluxo.
+#
+# Flags:
+#
+# O_RDONLY - 0 Somente leitura
+# O_WRONLY - 1 Somente gravação
+# O_RDWR   - 2 Leitura e gravação
+#	
+# Exemplo:
+#
+# source o.sh
+#
+# # Criando objeto do tipo 'os.file'.
+# $ os.file arq
+#
+# # Abrindo arquivo para leitura
+# $ os.open arq '/etc/group' $O_RDONLY
+#
+# # Lendo uma única linha do arquivo.
+# $ arq.readline
+# root:x:0:
+#
+# # O mesmo processo utilizando o descritor.
+# $ os.file.readline $arq
+# daemon:x:1:
+#
+# # Fechando arquivo
+# $ arq.close
+# ou
+# $ arq.file.close $arq
+#
+# # Deletando 'arq'
+# del arq
+#
 function os.open()
 {
-	getopt.parse "fd:var:+:$1" "file:str:+:$2" "flag:uint:+:$3"
+	getopt.parse "fd:var:+:$1" "filename:str:+:$2" "flag:uint:+:$3"
 	
 	local __file=$2
 	local __mode=$3
@@ -442,6 +481,27 @@ function os.open()
 	__fdref=$__fd
 
 	return 0
+}
+
+function os.file.isatty()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	[ -t /dev/fd/$1 ]
+	return $?
+}
+
+function os.file.writable()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	[ -w /dev/fd/$1 ]
+	return $?
+}
+
+function os.file.readable()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	[ -r /dev/fd/$1 ]
+	return $?
 }
 
 function os.file.size()
