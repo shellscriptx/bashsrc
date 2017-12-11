@@ -453,7 +453,11 @@ function os.open()
 
 	declare -n __fdref=$1
 
-	[ -d /dev/fd ] || error.__exit '' '' '' "'/dev/fd' diretório FIFOs para método I/O não encontrado"
+	if [ ! -d /dev/fd ]; then
+		error.__exit '' '' '' "'/dev/fd' diretório FIFOs para método I/O não encontrado"
+	elif [ -d "$__file" ]; then
+		error.__exit 'filename' 'str' "$__file" 'é um diretório'
+	fi
 
 	for ((__fd=3; __fd <= __FD_MAX; __fd++)); do
 		if [ ! -e /dev/fd/$__fd ]; then __av=1; break; fi
@@ -471,10 +475,10 @@ function os.open()
 		*) error.__exit 'flag' 'uint' "$__mode" "$__OS_ERR_OPEN_FLAG";;
 	esac
 
+	mkdir -p "$__OS_CACHE/fd"
+	
 	eval exec "$__parse" 2>/dev/null || \
 	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_CREATE '$__fd'"
-
-	mkdir -p "$__OS_CACHE/fd"
 
 	echo "$__file|$__mode|$__fd|0" > "$__OS_CACHE/fd/$__fd"
 
