@@ -444,6 +444,13 @@ function os.open()
 	return 0
 }
 
+function os.file.size()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	str.field "$(os.file.stat $1)" '|' 6
+	return $?
+}
+
 function os.file.name()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -594,7 +601,7 @@ function os.file.seek()
 	mode=$(os.file.mode $fd)
 	file=$(os.file.name $fd)
 	cur=$(os.file.tell $fd)
-	end=$(str.field "$(os.stat "$file")" '|' 6)
+	end=$(os.file.size $fd)
 
 	case $mode in
 		0) 	parse="$fd<$file";;
