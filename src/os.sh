@@ -453,7 +453,7 @@ function os.open()
 
 	declare -n __fdref=$1
 
-	[ -e /dev/fd ] || return 1
+	[ -d /dev/fd ] || error.__exit '' '' '' "'/dev/fd' diretório FIFOs para método I/O não encontrado"
 
 	for ((__fd=3; __fd <= __FD_MAX; __fd++)); do
 		if [ ! -e /dev/fd/$__fd ]; then __av=1; break; fi
