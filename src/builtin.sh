@@ -1049,6 +1049,19 @@ function __init_obj_type()
 	return 0		
 }
 
+function __init()
+{
+	readonly __RUNTIME=/tmp/bashsrc/runtime
+	
+	if ! mkdir -p "$__RUNTIME" &>/dev/null; then
+		error.__exit '' '' "$__RUNTIME" 'não foi possível gerar os arquivos temporários'
+	fi
+
+	return $?
+}
+
+__init
+
 readonly -f has \
 			sum \
 			fnmap \
@@ -1076,6 +1089,7 @@ readonly -f has \
 			mod \
 			del \
 			count \
-			__init_obj_type
+			__init_obj_type \
+			__init
 
 # /* BUILTIN_SRC */
