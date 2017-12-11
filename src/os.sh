@@ -674,7 +674,7 @@ function os.file.seek()
 		*) 	error.__exit 'flag' 'uint' "$mode" "$__OS_ERR_OPEN_FLAG";;
 	esac
 	
-	eval exec "$parse" 2>/dev/null || error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$d'"
+	eval exec "$parse" 2>/dev/null || error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$fd'"
 
 	case $whence in
 		0)	os.file.read $fd $offset 1>/dev/null;;
