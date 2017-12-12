@@ -34,7 +34,7 @@ readonly str_printable="${str_digits}${str_letters}${str_punctuation}${str_white
 #
 # Cria variável do tipo 'str'
 #
-function str(){ __init_obj_type "$FUNCNAME" "$@"; return $?; }
+function str(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
 
 # func str.len <[str]exp> => [uint]
 #

@@ -130,6 +130,7 @@ size
 isatty
 writable
 readable
+rewind
 '
 
 readonly __SRC_OBJ_METHOD

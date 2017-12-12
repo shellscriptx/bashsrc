@@ -17,7 +17,7 @@ source builtin.sh
 #
 # Cria variável do tipo 'map'
 #
-function map(){ __init_obj_type "$FUNCNAME" "$@"; return $?; }
+function map(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
 
 # func map.clear <[map]name>
 #

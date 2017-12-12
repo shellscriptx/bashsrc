@@ -27,7 +27,7 @@ readonly regex_ignorecase=2   # [flag] - ignora a diferença entre caracteres ma
 #
 # Cria variável do tipo 'regex'
 #
-function regex(){ __init_obj_type "$FUNCNAME" "$@"; return $?; }
+function regex(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
 
 # func regex.findall <[str]pattern> <[str]exp> <[uint]flag> => [str]
 #

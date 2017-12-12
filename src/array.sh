@@ -17,7 +17,7 @@ source builtin.sh
 #
 # Cria variável do tipo 'array'
 #
-function array(){ __init_obj_type "$FUNCNAME" "$@"; return $?; }
+function array(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
 
 # func array.append <[array]name> <[str]object>
 #
