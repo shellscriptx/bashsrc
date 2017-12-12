@@ -34,9 +34,9 @@ readonly STDOUT=/dev/stdout
 readonly STDERR=/dev/stderr
 
 # open [flags]
-readonly O_RDONLY=0		# Somente leitura
-readonly O_WRONLY=1		# Somente gravação
-readonly O_RDWR=2		# Leitura e gravação
+readonly O_RDONLY=0
+readonly O_WRONLY=1
+readonly O_RDWR=2
 
 # seek - posição de fluxo [flags]
 readonly SEEK_SET=0
@@ -47,7 +47,7 @@ readonly SEEK_END=2
 #
 # Cria variável do tipo 'os.file'
 #
-function os.file(){ __init_obj_type "$FUNCNAME" "$@"; return $?; }
+function os.file(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
 
 # func os.chdir <[str]dir> => [bool]
 #
@@ -408,7 +408,9 @@ function os.stat()
 # válido para modo de acesso determinado em 'flag'. Se o arquivo for
 # aberto com sucesso retorna true e salva em 'fd' o descritor, caso 
 # contrário uma mensagem de erro é retornada. O descritor é utilizado
-# em chamadas de leitura e escrita no fluxo.
+# em chamadas de leitura e escrita no fluxo. 
+# A chamada 'os.open' cria 'filename' caso ele não exista. Se a flag
+# 'O_WRONLY' for utilizada, anexa os dados ao final do arquivo.
 #
 # Flags:
 #
@@ -416,6 +418,10 @@ function os.stat()
 # O_WRONLY - 1 Somente gravação
 # O_RDWR   - 2 Leitura e gravação
 #	
+# Obs: Se a flag 'O_WRONLY' for utilizada não será possível posicionar
+# o fluxo de gravação com 'os.file.seek', fazendo com que os dados sejam
+# anexados somente no final do arquivo.
+#
 # Exemplo:
 #
 # source o.sh
@@ -487,6 +493,11 @@ function os.open()
 	return 0
 }
 
+# func os.file.isatty <[uint]fd> => [bool]
+#
+# Retorna 'true' se há um arquivo aberto associado ao descritor 'fd'.
+# Caso contrário retorna 'false'.
+#
 function os.file.isatty()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -494,6 +505,10 @@ function os.file.isatty()
 	return $?
 }
 
+# func os.file.writable <[uint]fd> => [bool]
+#
+# Retorna 'true' se é um descritor de escrita. Caso contrário 'false'.
+#
 function os.file.writable()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -501,6 +516,10 @@ function os.file.writable()
 	return $?
 }
 
+# func os.file.readable <[uint]fd> => [bool]
+#
+# Retorna 'true' se é um descritor de leitura. Caso contrário 'false'.
+#
 function os.file.readable()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -508,6 +527,10 @@ function os.file.readable()
 	return $?
 }
 
+# func os.file.size <[uint]fd> => [uint]
+#
+# Retorna o comprimento em bytes do arquivo associado ao descritor 'fd'.
+#
 function os.file.size()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -515,6 +538,10 @@ function os.file.size()
 	return $?
 }
 
+# func os.file.name <[uint]fd> => [str]
+#
+# Retorna o nome completo do arquivo associado ao descritor 'fd'.
+#
 function os.file.name()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -522,6 +549,14 @@ function os.file.name()
 	return $?
 }
 
+# func os.file.mode <[uint]fd> => [uint]
+#
+# Retorna um inteiro positivo indicando o modo de acesso.
+#
+# 0 - somente leitura
+# 1 - somente gravação
+# 2 - gravação e leitura
+#
 function os.file.mode()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -529,6 +564,25 @@ function os.file.mode()
 	return $?
 }
 
+# func os.file.stat <[uint]fd> => [str]
+#
+# Lê as informações de status do arquivo ou diretório.
+# As informações retornadas são separadas pelo delimitador '|' PIPE,
+# respeitando a ordem estabelecida abaixo:
+#
+# %A|%a|%G|%U|%g|%u|%s|%y|%Y|$?
+#
+# %A - Permissões de acesso (leitura humana)
+# %a - Permissões de acesso em octal
+# %G - Nome do grupo dono
+# %U - Nome do usuário dono
+# %g - ID do grupo dono
+# %u - ID do usuário dono
+# %s - Tamanho total em bytes
+# %y - Data da última modificação (leitura humana)
+# %Y - Data da última modificação em segundos
+# $? - Se é um diretório. (0=Sim ou 1=Não)
+#
 function os.file.stat()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -536,6 +590,10 @@ function os.file.stat()
 	return $?
 }
 
+# func os.file.fd <[uint]fd> => [uint]
+#
+# Retorna um inteiro sem sinal indicando o número do descritor associado.
+#
 function os.file.fd()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -543,6 +601,10 @@ function os.file.fd()
 	return 0
 }
 
+# func os.file.readlines <[uint]fd> => [str]
+#
+# Lê todas as linhas contidas no arquivo apontado por 'fd'. 
+#
 function os.file.readlines()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -565,6 +627,25 @@ function os.file.readlines()
 	return 0
 }
 
+# func os.file.readline <[uint]fd> => [str]
+#
+# Lê uma única linha do arquivo e seta o fluxo no inicio da próxima linha.
+#
+# Exemplo:
+#
+# $ source o.sh
+# $ os.file arq
+# $ os.open arq '/etc/group' $O_RDONLY
+#
+# # Lendo uma linha por vez
+# $ arq.readline
+# root:x:0:
+# $ arq.readline
+# root:x:0:
+#
+# # Fechando arquivo
+# $ arq.close
+#
 function os.file.readline()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -585,6 +666,23 @@ function os.file.readline()
 	return 0
 }
 
+# func os.file.read <[uint]fd> <[uint]bytes> => [str]
+#
+# Lê N'bytes' a partir da posição atual do fluxo.
+#
+# Exemplo:
+#
+# $ source o.sh
+# $ os.file arq
+# $ os.open arq '/etc/group' $O_RDONLY
+#
+# # Lendo os primeiros 4 bytes.
+# $ arq.read 4
+# root
+#
+# # fechando arquivo
+# arq.close
+# 
 function os.file.read()
 {
 	getopt.parse "descriptor:fd:+:$1" "bytes:uint:+:$2"
@@ -609,9 +707,14 @@ function os.file.read()
 	return 0
 }
 
+# func os.file.writeline <[uint]fd> <[str]exp> => [bool]
+#
+# Grava em 'fd' o conteúdo de 'exp'. Retorna 'true' se for gravado
+# com sucesso, caso contrário uma mensagem de erro é retornada.
+#
 function os.file.writeline()
 {
-	getopt.parse "descriptor:fd:+:$1" "string:str:-:$2"
+	getopt.parse "descriptor:fd:+:$1" "exp:str:-:$2"
 	
 	echo "$2" >&$1 2>/dev/null || \
 	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_WRITE '$1'"
@@ -619,9 +722,30 @@ function os.file.writeline()
 	return $?
 }
 
+# func os.file.write <[uint]fd> <[str]exp> <[uint]bytes> => [bool]
+#
+# Grava no arquivo os primeiros N'bytes' de 'exp'. Retorna 'true' para êxito,
+# caso contrário uma mensagem de erro é retornada.
+#
+# Exemplo:
+#
+# $ source os.sh
+# $ os.file arq
+#
+# # Abrindo arquivo para escrita.
+# $ os.open arq 'test.txt' $O_WRONLY
+#
+# $ texto='Seja Livre !! Use Linux'
+#
+# # Gravando os primeiros 13 bytes.
+# $ arq.write "$texto" 13
+#
+# $ cat test.txt
+# Seja Livre !!
+#
 function os.file.write()
 {
-	getopt.parse "descriptor:fd:+:$1" "string:str:-:$2" "bytes:uint:+:$3"
+	getopt.parse "descriptor:fd:+:$1" "exp:str:-:$2" "bytes:uint:+:$3"
 	
 	(($3 == 0)) && return 0
 
@@ -631,6 +755,10 @@ function os.file.write()
 	return $?
 }
 
+# func os.file.close <[uint]fd> => [bool]
+#
+# Fecha a conexão com o descritor 'fd'.
+#
 function os.file.close()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -646,6 +774,10 @@ function os.file.close()
 	return 0
 }
 
+# func os.file.tell <[uint]fd> => [uint]
+#
+# Retorna a posição atual do fluxo apontado por 'fd'.
+#
 function os.file.tell()
 {
 	getopt.parse "descriptor:fd:+:$1"
@@ -653,6 +785,51 @@ function os.file.tell()
 	return 0
 }
 
+# func os.file.rewind <[uint]fd> => [bool]
+#
+# Seta a posição do fluxo para o inicio do arquivo apontado por 'fd'.
+# Retorna 'true' para sucesso, caso contrário 'false' e uma mensagem de erro
+# é retornada.
+# 
+function os.file.rewind()
+{
+	getopt.parse "descriptor:fd:+:$1"
+	os.file.seek $1 0 $SEEK_SET
+	return $?
+}
+
+# func os.file.seek <[uint]fd> <[uint]offset> <[uint]whence> => [bool]
+#
+# Seta a posição do arquivo de fluxo apontado por 'fd'. A nova posição medida
+# em bytes é obitida pelo acréscimo de 'offset' bytes à posição especificada 
+# por 'whence'.
+# Retorna 'true' para sucesso, caso contrário uma mensagem de erro é retornada.
+#
+# whence:
+#
+# SEEK_SET - Inicio do arquivo
+# SEEK_CUR - Posição atual do fluxo
+# SEEK_END - Fim do arquivo
+#
+# Exemplo:
+#
+# # Considere o arquivo abaixo com o seguinte conteúdo.
+# $ cat frase.txt
+# Existem duas maneiras de construir um projeto de software. Uma é fazê-lo tão simples que obviamente não há falhas. A outra é fazê-lo tão complicado que não existem falhas óbvias.
+#
+# $ source os.sh
+# $ os.file arq
+#
+# # Abrindo arquivo para leitura
+# $ os.open arq 'frase.txt' $O_RDONLY
+#
+# # Definindo o fluxo na posição do byte '59' relativo ao inicio do arquivo.
+# $ arq.seek 59 $SEEK_SET
+#
+# # Lendo todas as linhas a partir da posição atual do fluxo.
+# $ arq.readlines
+# Uma é fazê-lo tão simples que obviamente não há falhas. A outra é fazê-lo tão complicado que não existem falhas óbvias.
+#
 function os.file.seek()
 {
 	getopt.parse "descriptor:fd:+:$1" "offset:uint:+:$2" "whence:uint:+:$3"
@@ -702,5 +879,52 @@ function os.__init()
 	return 0
 }
 
-
 os.__init
+
+readonly -f os.file \
+			os.chdir \
+			os.chmod \
+			os.stackdir \
+			os.exists \
+			os.environ \
+			os.getenv \
+			os.setenv \
+			os.geteuid \
+			os.argv \
+			os.argc \
+			os.getgid \
+			os.getgroups \
+			os.getpid \
+			os.getppid \
+			os.getwd \
+			os.hostname \
+			os.chatime \
+			os.chmtime \
+			os.chtime \
+			os.mkdir \
+			os.remove \
+			os.rename \
+			os.tempdir \
+			os.create \
+			os.stat \
+			os.open \
+			os.file.isatty \
+			os.file.writable \
+			os.file.readable \
+			os.file.size \
+			os.file.name \
+			os.file.mode \
+			os.file.stat \
+			os.file.fd \
+			os.file.readlines \
+			os.file.readline \
+			os.file.read \
+			os.file.writeline \
+			os.file.write \
+			os.file.close \
+			os.file.tell \
+			os.file.rewind \
+			os.file.seek \
+			os.__init 
+
+# /* __OS_SH */ #
