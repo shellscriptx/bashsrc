@@ -27,6 +27,9 @@ readonly __OS_ERR_FD_WRITE='erro de escrita no descritor'
 readonly __OS_ERR_FD_CREATE='erro ao criar o descritor'
 readonly __OS_ERR_OPEN_FLAG='open flag de acesso inválida'
 readonly __OS_ERR_SEEK_FLAG='seek flag de fluxo inválida'
+readonly __OS_ERR_FILE_NOT_WRITE='não é permitido gravar no arquivo'
+readonly __OS_ERR_FILE_NOT_READ='não é permitido ler o arquivo'
+readonly __OS_ERR_FILE_NOT_RW='não é permitido ler/gravar no arquivo'
 
 # constantes
 readonly STDIN=/dev/stdin
@@ -474,18 +477,35 @@ function os.open()
 	fi
 	
 	case $__mode in
-		0) [[ -e "$__file" ]] || error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_FOUND"
-		   __parse="$__fd<$__file";;
-		1) __parse="$__fd>>$__file";;
-		2) __parse="$__fd<>$__file";;
+		0)
+			if [[ ! -e "$__file" ]]; then
+				error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_FOUND"
+			elif [[ ! -r "$__file" ]]; then
+				error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_READ"
+			fi
+			__parse="$__fd<$__file"
+			;;
+
+		1)
+			if [[ -e "$__file" && ! -w "$__file" ]]; then
+				error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_WRITE"
+			fi
+			__parse="$__fd>>$__file"
+			;;
+
+		2) 
+			if [[ -e "$__file" ]] && [[ ! -w "$__file" || ! -r "$__file" ]]; then
+				error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_RW"
+			fi
+			__parse="$__fd<>$__file"
+			;;
 		*) error.__exit 'flag' 'uint' "$__mode" "$__OS_ERR_OPEN_FLAG";;
 	esac
 
-	mkdir -p "$__RUNTIME/$$/fd"
-	
 	eval exec "$__parse" 2>/dev/null || \
 	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_CREATE '$__fd'"
 
+	mkdir -p "$__RUNTIME/$$/fd"
 	echo "$__file|$__mode|$__fd|0" > "$__RUNTIME/$$/fd/$__fd"
 
 	__fdref=$__fd
