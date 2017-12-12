@@ -7,7 +7,7 @@
 #-------------------------------------------------------
 
 readonly BASENAME=${0##*/}
-readonly BASHSRC_VERSION=0.1.0-alpha
+readonly BASHSRC_VERSION=0.1.1-alpha
 
 if [[ ${#@} -eq 0 ]]; then
 	echo "Uso: $BASENAME [OPÇÕES]"
