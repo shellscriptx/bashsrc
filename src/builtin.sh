@@ -18,6 +18,9 @@ source map.sh
 source array.sh
 source str.sh
 
+# runtime
+readonly __RUNTIME=$BASHSRC_PATH/.runtime
+
 # erros
 readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando interno'
 readonly __BUILTIN_ERR_VAR_TYPE='tipo da variável inválida'
@@ -991,7 +994,7 @@ function del()
 	return 0
 }
 
-function __init_obj_type()
+function builtin.__init_obj_type()
 {
 	getopt.parse "vartype:func:+:$1"
 
@@ -1049,10 +1052,8 @@ function __init_obj_type()
 	return 0		
 }
 
-function __init()
+function builtin.__init()
 {
-	readonly __RUNTIME=/tmp/bashsrc/runtime
-	
 	if ! mkdir -p "$__RUNTIME" &>/dev/null; then
 		error.__exit '' '' "$__RUNTIME" 'não foi possível gerar os arquivos temporários'
 	fi
@@ -1060,7 +1061,7 @@ function __init()
 	return $?
 }
 
-__init
+builtin.__init
 
 readonly -f has \
 			sum \
@@ -1089,7 +1090,7 @@ readonly -f has \
 			mod \
 			del \
 			count \
-			__init_obj_type \
-			__init
+			builtin.__init_obj_type \
+			builtin.__init
 
 # /* BUILTIN_SRC */
