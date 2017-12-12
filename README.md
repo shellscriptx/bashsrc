@@ -30,6 +30,8 @@ AMBIENTE
 
        Configurando
 
+       $ git clone git@github.com:shellscriptx/bashsrc.git
+
        Após realizar o download copie a pasta do projeto para o diretório de sua  preferência.
        Por padrão utilize o ‘$HOME’ do seu usuário.
 
