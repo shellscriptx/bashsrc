@@ -138,6 +138,8 @@ dirname
 basename
 relpath
 ext
+split
+slash
 '
 
 readonly __SRC_OBJ_METHOD
