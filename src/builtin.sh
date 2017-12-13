@@ -23,7 +23,6 @@ readonly __RUNTIME=$BASHSRC_PATH/.runtime
 
 # erros
 readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando interno'
-readonly __BUILTIN_ERR_VAR_TYPE='tipo da variável inválida'
 readonly __BUILTIN_ERR_TYPE_REG='nomenclatura da variável é de um tipo reservado'
 readonly __BUILTIN_ERR_ALREADY_INIT='a variável já foi inicializada'
 
@@ -994,29 +993,27 @@ function del()
 	return 0
 }
 
-function builtin.__init_obj_type()
+function var()
 {
-	getopt.parse "vartype:func:+:$1"
+	getopt.parse "name:type:+:${@: -1}"
 
-	local type obj_types method proto ptr_func struct_func var i 
+	local type regtypes method proto ptr_func struct_func var i 
+	type=${@: -1}
 
-	type=$1
-	obj_types=${!__SRC_OBJ_METHOD[@]}
-
-	if [[ ! "$type" =~ ^(${obj_types// /|})$ ]]; then
-		error.__exit 'varname' 'var' "$type" "$__BUILTIN_ERR_VAR_TYPE"
-	fi
+	regtypes=${!__SRC_OBJ_METHOD[@]}
 			
-	for var in ${@:2}; do
+	for var in ${@:1:$((${#@}-1))}; do
 		getopt.parse "varname:var:+:$var"
 
 		i=0
-
-		if [[ "$var" =~ ^(${obj_types// /|})$ ]]; then
+			
+		if [[ "$var" =~ ^(${regtypes// /|})$ ]]; then
 			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_TYPE_REG"
 		elif [[ ${__REG_LIST_VAR[$var]} ]]; then
 			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_ALREADY_INIT"
 		fi
+	
+		[[ "$type" == "map" ]] && declare -Ag $var
 
 		for method in ${__SRC_OBJ_METHOD[$type]}; do
 			
@@ -1037,11 +1034,9 @@ function builtin.__init_obj_type()
 				exit 1
 			fi
 			
-			if [[ $struct_func =~ $ptr_func ]]; then
-				proto="%s(){ %s %s \"\$@\"; }"
-			else
-				proto="%s(){ %s \"\$%s\" \"\$@\"; }"
-			fi
+			[[ $struct_func =~ $ptr_func ]] && 
+			proto="%s(){ %s %s \"\$@\"; }" || 
+			proto="%s(){ %s \"\$%s\" \"\$@\"; }"
 		
 			eval "$(printf "$proto\n" $var.$method $type.$method $var)"
 			__REG_LIST_VAR[$var]+="$var.$method "
@@ -1090,7 +1085,7 @@ readonly -f has \
 			mod \
 			del \
 			count \
-			builtin.__init_obj_type \
+			var \
 			builtin.__init
 
 # /* BUILTIN_SRC */
