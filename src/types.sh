@@ -131,13 +131,13 @@ isatty
 writable
 readable
 rewind
-ext
 '
 
-__SRC_OBJ_METHOD[os.path]='
+__SRC_OBJ_METHOD[filepath]='
 dirname
 basename
 relpath
+ext
 '
 
 readonly __SRC_OBJ_METHOD

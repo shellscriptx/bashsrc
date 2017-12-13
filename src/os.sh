@@ -877,54 +877,6 @@ function os.file.seek()
 	return $?
 }
 
-function os.file.ext()
-{
-	getopt.parse "path:str:+:$1"
-	[[ $1 =~ \.[a-zA-Z0-9_-]+$ ]]
-	echo "${BASH_REMATCH[0]}"
-	return 0
-}
-
-function os.path.basename()
-{
-	getopt.parse "path:str:+:$1"
-	echo "${1##*/}"
-	return 0
-}
-
-function os.path.dirname()
-{
-	getopt.parse "path:str:+:$1"
-	echo "${1%/*}"
-	return 0
-}
-
-function os.path.relpath()
-{
-	getopt.parse "path:str:+:$1"
-
-	local IFSbkp cur path relpath slash item i
-
-	IFSbkp=$IFS; IFS='/'
-	cur=(${PWD#\/}); path=(${1#\/})
-	IFS=$IFSbkp
-		
-	for ((i=${#cur[@]}-1; i >= 0; i--)); do
-		[[ "${cur[$i]}" == "${path[0]}" ]] && break
-		slash+='../'
-	done
-		
-	for item in "${path[@]:$((i >= 0 ? 1 : 0))}"; do
-		relpath+=$item'/'
-	done
-	
-	relpath=${slash}${relpath%\/}
-
-	echo "${relpath:-.}"
-
-	return 0	
-}
-
 function os.__init()
 {
 	local depends=(touch mkdir stat)
@@ -986,9 +938,6 @@ readonly -f os.chdir \
 			os.file.tell \
 			os.file.rewind \
 			os.file.seek \
-			os.path.dirname \
-			os.path.basename \
-			os.path.relpath
 			os.__init 
 
 # /* __OS_SH */ #
