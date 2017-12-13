@@ -54,6 +54,25 @@ function filepath.relpath()
     return 0
 }
 
+function filepath.split()
+{
+	getopt.parse "path:str:+:$1"
+	echo "$(filepath.dirname "$1")|$(filepath.basename "$1")"
+	return 0
+}
+
+# func filepath.slash <[str]path> => [str]
+#
+# Retorna uma lita iterável removendo o separador de diretório '/'.
+#
+function filepath.slash()
+{
+	getopt.parse "path:str:+:$1"
+	local path=$(str.ltrim "$1" "/")
+	echo -e "${path//\//\\n}"
+	return 0	
+}
+
 readonly -f filepath.ext \
 			filepath.basename \
 			filepath.dirname \
