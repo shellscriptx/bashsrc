@@ -13,12 +13,6 @@ readonly __MAP_SH=1
 
 source builtin.sh
 
-# func map <[var]name> ...
-#
-# Cria variável do tipo 'map'
-#
-function map(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
-
 # func map.clear <[map]name>
 #
 # Limpa todos os elementos de 'name'.
@@ -228,7 +222,6 @@ readonly -f map.clear \
 			map.remove \
 			map.add \
 			map.contains \
-			map.pop  \
-			map
+			map.pop  
 
 # /* __MAP_SRC */

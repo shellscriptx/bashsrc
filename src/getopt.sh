@@ -11,7 +11,7 @@
 
 readonly __GETOPT_SH=1
 
-source error.sh
+source builtin.sh
 
 readonly __GETOPT_ERR_PARAM_NAME='nome do parâmetro inválido'
 readonly __GETOPT_ERR_TYPE_ARG='o argumento esperado é do tipo'
@@ -25,6 +25,7 @@ readonly __GETOPT_ERR_DIR_NOT_FOUND='diretório não encontrado'
 readonly __GETOPT_ERR_FILE_NOT_FOUND='arquivo não encontrado'
 readonly __GETOPT_ERR_PATH_NOT_FOUND='arquivo ou diretório não encontrado'
 readonly __GETOPT_ERR_FD_NOT_EXISTS='o descritor do arquivo não existe'
+readonly __GETOPT_ERR_VAR_TYPE='tipo da variável inválida'
 
 # func getopt.parse <[str]name:type:flag:value> ... -> [bool]
 #
@@ -74,7 +75,7 @@ readonly __GETOPT_ERR_FD_NOT_EXISTS='o descritor do arquivo não existe'
 #
 function getopt.parse()
 {
-	local name ctype flag value ref flags names attr IFSbkp
+	local name ctype flag value ref flags names attr IFSbkp obj_types
 
 	for param in "$@"
 	do
@@ -162,6 +163,8 @@ function getopt.parse()
 			path) [[ -e $value ]] || error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_PATH_NOT_FOUND";;
 			fd) ([[ $value =~ ^(0|[1-9][0-9]*)$ ]]; [[ -e /dev/fd/$value ]]) || \
 				error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_FD_NOT_EXISTS";;
+			type) obj_types=${!__SRC_OBJ_METHOD[@]}
+				  [[ "$value" =~ ^(${obj_types// /|})$ ]] || error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_VAR_TYPE";;
 
 			*) error.__exit "$name" "$ctype" '' "$__GETOPT_ERR_TYPE_PARAM '$ctype'";;
        	esac

@@ -30,12 +30,6 @@ readonly str_whitespace=' \t\n\r\x0b\x0c'
 readonly str_printable="${str_digits}${str_letters}${str_punctuation}${str_whitespace}"
 
 
-# func str <[var]name> ...
-#
-# Cria variável do tipo 'str'
-#
-function str(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
-
 # func str.len <[str]exp> => [uint]
 #
 # Retorna o comprimento de 'exp'.
@@ -1011,7 +1005,6 @@ readonly -f str.len \
 			str.slice \
 			str.filter \
 			str.field \
-			str.trimspace \
-			str
+			str.trimspace 
 
 # /* __STR_SRC */

@@ -133,6 +133,12 @@ readable
 rewind
 '
 
+__SRC_OBJ_METHOD[os.path]='
+dirname
+basename
+relpath
+'
+
 readonly __SRC_OBJ_METHOD
 
 # /* __TYPES_SH */

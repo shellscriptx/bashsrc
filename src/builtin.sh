@@ -993,6 +993,10 @@ function del()
 	return 0
 }
 
+# func var <[var]varname> ... <[type]typename>
+#
+# Inicializa uma ou mais variáveis do tipo 'typename'.
+# 
 function var()
 {
 	getopt.parse "name:type:+:${@: -1}"

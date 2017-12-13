@@ -46,12 +46,6 @@ readonly SEEK_SET=0
 readonly SEEK_CUR=1
 readonly SEEK_END=2
 
-# func os.file <[var]name> ...
-#
-# Cria variável do tipo 'os.file'
-#
-function os.file(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
-
 # func os.chdir <[str]dir> => [bool]
 #
 # Altera o diretório atual para 'dir'. Retorna 'true' para sucesso,
@@ -155,7 +149,7 @@ function os.setenv()
 function os.geteuid()
 {
 	getopt.parse "-:null:-:$*"
-	id --user
+	echo $UID
 	return 0
 }
 
@@ -190,7 +184,7 @@ function os.argc()
 function os.getgid()
 {
 	getopt.parse "-:null:-:$*"
-	id --group
+	echo ${GROUPS[0]}
 	return 0
 }
 
@@ -201,7 +195,7 @@ function os.getgid()
 function os.getgroups()
 {
 	getopt.parse "-:null:-:$*"
-	id --groups
+	echo ${GROUPS[@]}
 	return 0
 }
 
@@ -234,7 +228,7 @@ function os.getppid()
 function os.getwd()
 {
 	getopt.parse "-:null:-:$*"
-	pwd; return 0
+	echo "$PWD"; return 0
 }
 
 # func os.hostname => [str]
@@ -405,7 +399,7 @@ function os.stat()
 	return $?	
 }
 
-# func os.open <[var]fd> <[str]filename> <[uint]flag> => [bool]
+# func os.open <[var]os.file> <[str]filename> <[uint]flag> => [bool]
 #
 # Abre o arquivo especificado em 'filename' associando um descritor 
 # válido para modo de acesso determinado em 'flag'. Se o arquivo for
@@ -430,7 +424,7 @@ function os.stat()
 # source o.sh
 #
 # # Criando objeto do tipo 'os.file'.
-# $ os.file arq
+# $ var arq os.file
 #
 # # Abrindo arquivo para leitura
 # $ os.open arq '/etc/group' $O_RDONLY
@@ -654,7 +648,7 @@ function os.file.readlines()
 # Exemplo:
 #
 # $ source o.sh
-# $ os.file arq
+# $ var arq os.file
 # $ os.open arq '/etc/group' $O_RDONLY
 #
 # # Lendo uma linha por vez
@@ -693,7 +687,7 @@ function os.file.readline()
 # Exemplo:
 #
 # $ source o.sh
-# $ os.file arq
+# $ var arq os.file
 # $ os.open arq '/etc/group' $O_RDONLY
 #
 # # Lendo os primeiros 4 bytes.
@@ -724,7 +718,7 @@ function os.file.read()
 	seek=$((cur+bytes))
 
 	echo "${attr%|*}|$seek" > "$__RUNTIME/$$/fd/$1"
-	return 0
+	return $?
 }
 
 # func os.file.writeline <[uint]fd> <[str]exp> => [bool]
@@ -750,7 +744,7 @@ function os.file.writeline()
 # Exemplo:
 #
 # $ source os.sh
-# $ os.file arq
+# $ var arq os.file
 #
 # # Abrindo arquivo para escrita.
 # $ os.open arq 'test.txt' $O_WRONLY
@@ -838,7 +832,7 @@ function os.file.rewind()
 # Existem duas maneiras de construir um projeto de software. Uma é fazê-lo tão simples que obviamente não há falhas. A outra é fazê-lo tão complicado que não existem falhas óbvias.
 #
 # $ source os.sh
-# $ os.file arq
+# $ var arq os.file
 #
 # # Abrindo arquivo para leitura
 # $ os.open arq 'frase.txt' $O_RDONLY
@@ -883,9 +877,49 @@ function os.file.seek()
 	return $?
 }
 
+function os.path.basename()
+{
+	getopt.parse "path:str:+:$1"
+	echo "${1##*/}"
+	return 0
+}
+
+function os.path.dirname()
+{
+	getopt.parse "path:str:+:$1"
+	echo "${1%/*}"
+	return 0
+}
+
+function os.path.relpath()
+{
+	getopt.parse "path:str:+:$1"
+
+	local IFSbkp cur path relpath slash item i
+
+	IFSbkp=$IFS; IFS='/'
+	cur=(${PWD#\/}); path=(${1#\/})
+	IFS=$IFSbkp
+		
+	for ((i=${#cur[@]}-1; i >= 0; i--)); do
+		[[ "${cur[$i]}" == "${path[0]}" ]] && break
+		slash+='../'
+	done
+		
+	for item in "${path[@]:$((i >= 0 ? 1 : 0))}"; do
+		relpath+=$item'/'
+	done
+	
+	relpath=${slash}${relpath%\/}
+
+	echo "${relpath:-.}"
+
+	return 0	
+}
+
 function os.__init()
 {
-	local depends=(id pwd touch mkdir stat)
+	local depends=(touch mkdir stat)
 	local dep deps
 
 	for dep in ${depends[@]}; do
@@ -901,8 +935,7 @@ function os.__init()
 
 os.__init
 
-readonly -f os.file \
-			os.chdir \
+readonly -f os.chdir \
 			os.chmod \
 			os.stackdir \
 			os.exists \
