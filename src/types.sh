@@ -131,6 +131,7 @@ isatty
 writable
 readable
 rewind
+ext
 '
 
 __SRC_OBJ_METHOD[os.path]='
