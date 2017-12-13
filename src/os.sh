@@ -877,6 +877,14 @@ function os.file.seek()
 	return $?
 }
 
+function os.file.ext()
+{
+	getopt.parse "path:str:+:$1"
+	[[ $1 =~ \.[a-zA-Z0-9_-]+$ ]]
+	echo "${BASH_REMATCH[0]}"
+	return 0
+}
+
 function os.path.basename()
 {
 	getopt.parse "path:str:+:$1"
@@ -978,6 +986,9 @@ readonly -f os.chdir \
 			os.file.tell \
 			os.file.rewind \
 			os.file.seek \
+			os.path.dirname \
+			os.path.basename \
+			os.path.relpath
 			os.__init 
 
 # /* __OS_SH */ #
