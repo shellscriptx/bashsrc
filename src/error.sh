@@ -32,13 +32,13 @@ function error.__exit()
 		0)
 			exec 2>/dev/null
 
-			declare -g ERR_NO=1
-			declare -g ERR_STACK=${FUNCNAME[@]}
-			declare -g ERR_ARG=$1
-			declare -g ERR_TYPE=$2
-			declare -g ERR_VAL=$3
-			declare -g ERR_MSG=$4
-			declare -g ERR_FUNC=$t
+			declare -g ERR_NO=1 \
+						ERR_STACK=${FUNCNAME[@]} \
+						ERR_ARG=$1 \
+						ERR_TYPE=$2 \
+						ERR_VAL=$3 \
+						ERR_MSG=$4 \
+						ERR_FUNC=$t 
 
 			return 1
 			;;
