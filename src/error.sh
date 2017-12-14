@@ -25,26 +25,12 @@ function error.__exit()
 	l=(${BASH_LINENO[@]:$fn})
 	
 	for ((i=${#t[@]}-1; i>=0; i--)); do
-		stack+="[${l[$i]}:${t[$i]}] => "
+		stack+="[${l[$i]}:${t[$i]}] "
 	done
 	
-	case $__EXIT_TRACE_ERROR in
+	case ${__EXIT_TRACE_ERROR:-0} in
 		0)
-			exec 2>/dev/null
-
-			declare -g ERR_NO=1 \
-						ERR_STACK=${FUNCNAME[@]} \
-						ERR_ARG=$1 \
-						ERR_TYPE=$2 \
-						ERR_VAL=$3 \
-						ERR_MSG=$4 \
-						ERR_FUNC=$t 
-
-			return 1
-			;;
-		*)
-			exec 1>&2
-
+			stack=${stack// / => }
 			echo "(Pilha de rastreamento)"
 			echo "Arquivo: $0"
 			echo
@@ -58,11 +44,23 @@ function error.__exit()
 			echo -e "Erro: ${4:-erro desconhecido}"
 			echo ------------------------
 
-			exec 1<&-
 			exit 1
-		;;
+			;;
+		*)
+			declare -g ERR=1 \
+						ERR_STACK=${stack% } \
+						ERR_ARG=$1 \
+						ERR_TYPE=$2 \
+						ERR_VAL=$3 \
+						ERR_MSG=$4 \
+						ERR_FUNC=${FUNCNAME[1]}
+
+			return 1
+			;;
 	esac
 }
+
+function error.__clear(){ unset ERR ERR_STACK ERR_ARG ERR_TYPE ERR_VAL ERR_MSG ERR_FUNC; return 0; }
 
 function error.__depends()
 {
@@ -86,20 +84,77 @@ function error.__depends()
 	exit 1
 }
 
-function error()
+# func error.resume <[str]flag>
+#
+# Habilita/Desabilita a rotina para tratamento de erro em tempo de execução.
+#
+# Flags:
+#
+# off - Se ocorrer um erro, uma mensagem é exibida contendo as informações da
+# pilha de rastreamento e a execução do script é interrompida (padrão).
+#
+# on - Se ocorrer um erro, serão inicializadas as variáveis de rastreamento 
+# 'ERR*' e o script continuará seu fluxo de execução.
+#
+# Variáveis de rastreamento:
+#
+# ERR - Status do erro
+# ERR_STACK - Funções de desencadeamento
+# ERR_ARG - Argumento da função
+# ERR_TYPE - Tipo de dado do argumento
+# ERR_VAL - Valor do argumento
+# ERR_MSG - Mensagem de erro
+# ERR_FUNC - Função que provocou o erro
+# 
+# Obs: A função fecha o descritor de erro '2' afetando quaisquer redirecionamento
+# para o mesmo, podendo ser restaurada utilizando a flag 'off'. 
+#
+# Exemplo:
+#
+# #!/bin/bash
+#
+# source os.sh
+# 
+# var arq os.file
+#
+# # Desabilitando o tratamento de erro
+# error.resume on
+#
+# # Tentando ler um arquivo que não existe.
+# os.open arq '/home/usuario/arquivo_nao_existe.txt' $O_RDONLY
+#
+# # Testa o status do erro 
+# if [ $ERR ]; then
+#     echo 'Ops !! Aconteceu algo !!'
+#     echo "Encontrei o erro -> $ERR_MSG"
+#     echo "Aconteceu aqui -> $ERR_FUNC"
+# fi
+#
+# Restaurando o tratamento de erro
+# error.resume off
+#
+# ----------------------
+# Saida:
+#
+# Ops !! Aconteceu algo !!
+# Encontrei o erro -> erro ao criar o descritor '3'
+# Aconteceu aqui -> os.open
+#
+function error.resume()
 {
 	getopt.parse "flag:str:+:$1"
 	
 	case $1 in
-		off)	declare -g __EXIT_TRACE_ERROR=0;;
-		on)		exec 2>/dev/stdout; declare -g __EXIT_TRACE_ERROR=1;;
+		on)		exec 2<&-; declare -g __EXIT_TRACE_ERROR=1;;
+		off)	exec 2>/dev/tty; exec 1>&2; declare -g __EXIT_TRACE_ERROR=0;;
 		*)		error.__exit 'flag' 'str' "$1" "flag inválida";;
 	esac
 
 	return 0
 }
 
-readonly -f error.__exit \
-			error.__depends
+readonly -f error.resume \
+			error.__exit \
+			error.__depends 
 
 # /* __ERROR_SRC */
