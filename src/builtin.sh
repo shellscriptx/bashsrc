@@ -26,6 +26,9 @@ readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando inter
 readonly __BUILTIN_ERR_TYPE_REG='nomenclatura da variável é de um tipo reservado'
 readonly __BUILTIN_ERR_ALREADY_INIT='a variável já foi inicializada'
 
+# [map] inicialização de variáveis.
+declare -A __REG_LIST_VAR
+
 # func has <[str]exp> on <[var]name> => [bool]
 #
 # Retorna 'true' se 'name' contém 'exp'. Caso contrário 'false'
@@ -995,7 +998,7 @@ function del()
 
 # func var <[var]varname> ... <[type]typename>
 #
-# Inicializa uma ou mais variáveis do tipo 'typename'.
+# Inicializa uma ou mais variáveis do tipo definido em 'typename'.
 # 
 function var()
 {
