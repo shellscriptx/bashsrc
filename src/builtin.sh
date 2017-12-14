@@ -983,11 +983,11 @@ function del()
 
 	for obj in $@; do
 		getopt.parse "varname:var:+:$obj"
-		for func in ${__REG_LIST_VAR[$obj]}; do
+		for func in ${__REG_LIST_VAR[${FUNCNAME[1]}.${obj}]}; do
 			unset -f $func
 			init=1
 		done
-		[[ $init ]] && unset __REG_LIST_VAR[$obj] $obj init
+		[[ $init ]] && unset __REG_LIST_VAR[${FUNCNAME[1]}.${obj}] $obj init
 	done
 
 	return 0
@@ -999,7 +999,7 @@ function del()
 # 
 function var()
 {
-	getopt.parse "name:type:+:${@: -1}"
+	getopt.parse "varname:var:+:$1" "name:type:+:$2"
 
 	local type regtypes method proto ptr_func struct_func var i 
 	type=${@: -1}
@@ -1013,7 +1013,7 @@ function var()
 			
 		if [[ "$var" =~ ^(${regtypes// /|})$ ]]; then
 			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_TYPE_REG"
-		elif [[ ${__REG_LIST_VAR[$var]} ]]; then
+		elif [[ ${__REG_LIST_VAR[${FUNCNAME[1]}.$var]} ]]; then
 			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_ALREADY_INIT"
 		fi
 	
@@ -1043,7 +1043,7 @@ function var()
 			proto="%s(){ %s \"\$%s\" \"\$@\"; }"
 		
 			eval "$(printf "$proto\n" $var.$method $type.$method $var)"
-			__REG_LIST_VAR[$var]+="$var.$method "
+			__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.$method "
 			((i++))
 		done
 	done
