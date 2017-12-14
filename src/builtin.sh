@@ -1056,6 +1056,8 @@ function var()
 
 function builtin.__init()
 {
+	error.resume off
+
 	if ! mkdir -p "$__RUNTIME" &>/dev/null; then
 		error.__exit '' '' "$__RUNTIME" 'não foi possível gerar os arquivos temporários'
 	fi
