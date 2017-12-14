@@ -28,8 +28,19 @@ function error.__exit()
 		stack+="[${l[$i]}:${t[$i]}] "
 	done
 	
-	case ${__EXIT_TRACE_ERROR:-0} in
+	case $__EXIT_TRACE_ERROR in
 		0)
+			declare -g ERR=1 \
+						ERR_STACK=${stack% } \
+						ERR_ARG=$1 \
+						ERR_TYPE=$2 \
+						ERR_VAL=$3 \
+						ERR_MSG=$4 \
+						ERR_FUNC=${FUNCNAME[1]}
+
+			return 1
+			;;
+		*)
 			stack=${stack// / => }
 			echo "(Pilha de rastreamento)"
 			echo "Arquivo: $0"
@@ -45,17 +56,6 @@ function error.__exit()
 			echo ------------------------
 
 			exit 1
-			;;
-		*)
-			declare -g ERR=1 \
-						ERR_STACK=${stack% } \
-						ERR_ARG=$1 \
-						ERR_TYPE=$2 \
-						ERR_VAL=$3 \
-						ERR_MSG=$4 \
-						ERR_FUNC=${FUNCNAME[1]}
-
-			return 1
 			;;
 	esac
 }
@@ -145,8 +145,8 @@ function error.resume()
 	getopt.parse "flag:str:+:$1"
 	
 	case $1 in
-		on)		exec 2<&-; declare -g __EXIT_TRACE_ERROR=1;;
-		off)	exec 2>/dev/tty; exec 1>&2; declare -g __EXIT_TRACE_ERROR=0;;
+		on)		exec 2<&-; declare -g __EXIT_TRACE_ERROR=0;;
+		off)	exec 2>/dev/tty; exec 1>&2; declare -g __EXIT_TRACE_ERROR=1;;
 		*)		error.__exit 'flag' 'str' "$1" "flag inválida";;
 	esac
 
