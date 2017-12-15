@@ -87,3 +87,5 @@ function user.__get_info()
 
 	return $?
 }
+
+# /* __USER_SH */
