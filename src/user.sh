@@ -45,7 +45,7 @@ function user.current()
 
 function user.__get_info()
 {
-	local match tmp id line info
+	local match tmp id line info users
 	local flag=$1 user=$2
 	
 	if [ -r "$__USER_GROUP" ]; then	
