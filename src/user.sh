@@ -36,44 +36,54 @@ function user.id()
 	return $?	
 }
 
+function user.current()
+{
+	getopt.parse "-:null:-:$*"
+	user.__get_info user $UID
+	return $?	
+}
+
 function user.__get_info()
 {
-	local groups match comp tmp
-	local flag=$1
-	local user=$2
+	local match tmp id line info
+	local flag=$1 user=$2
 	
 	if [ -r "$__USER_GROUP" ]; then	
 		while read line; do
 			case $flag in
 				id) 	if [[ "$user" == "${line%%:*}" ]]; then
-							comp=${line%:*}; comp=${comp##*:}
+							info=${line%:*}; info=${info##*:}
 							match=1
 							break
 						fi
 						;;
 				groups)	users=${line##*:}; users=${users//,/|}
 						if [[ $user =~ ^($users)$ ]]; then
-							groups+=(${line%%:*}); comp=$user
+							info=($user ${info[@]:1} ${line%%:*})
 							match=1
 						fi
 						;;
 				gids)	users=${line##*:}; users=${users//,/|}
 						tmp=${line%:*}; tmp=${tmp##*:}
 						if [[ "$user" == "${line%%:*}" ]]; then
-							comp=$tmp
+							info=($tmp ${info[@]}); match=1
 						elif [[ $user =~ ^($users)$ ]]; then
-							groups+=($tmp)
-							match=1
+							info+=($tmp); match=1
 						fi
 						;;
-				*) return 1;;
+				user)	id=${line%:*}; id=${id##*:}
+						if [[ "$2" == "$id" ]]; then
+							info=${line%%:*}; match=1
+							break
+						fi
+						;;
 			esac
 		done < $__USER_GROUP
 	else
 		error.__exit '' '' '' "'$__USER_GROUP' não foi possível ler o arquivo base"
 	fi
 		
-	[ "$match" ] && echo "${comp:+$comp }${groups[@]}"
+	[ "$match" ] && echo "${info[@]}"
 
 	return $?
 }
