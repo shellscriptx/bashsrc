@@ -877,24 +877,6 @@ function os.file.seek()
 	return $?
 }
 
-function os.__init()
-{
-	local depends=(touch mkdir stat)
-	local dep deps
-
-	for dep in ${depends[@]}; do
-		if ! command -v $dep &>/dev/null; then
-			deps+=($dep)
-		fi
-	done
-
-	[[ $deps ]] && error.__depends $FUNCNAME ${BASH_SOURCE##*/} "${deps[*]}"
-
-	return 0
-}
-
-os.__init
-
 readonly -f os.chdir \
 			os.chmod \
 			os.stackdir \
@@ -937,7 +919,6 @@ readonly -f os.chdir \
 			os.file.close \
 			os.file.tell \
 			os.file.rewind \
-			os.file.seek \
-			os.__init 
+			os.file.seek
 
 # /* __OS_SH */ #
