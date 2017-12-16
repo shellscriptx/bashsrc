@@ -481,7 +481,7 @@ function time.time()
 #
 function time.ctime()
 {
-	getopt.parse "seconds:int:+:$1"
+	getopt.parse "seconds:uint:+:$1"
 	printf "%(%a %b %d %H:%M:%S %Y %z)T\n" $1
 	return 0
 }
