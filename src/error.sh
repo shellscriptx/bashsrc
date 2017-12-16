@@ -19,7 +19,7 @@ function error.__exit()
 	local i l t fn
 	local stack
 
-	[[ ${FUNCNAME[1]} == getopt.parse ]] && fn=2 || fn=1
+	[[ "${FUNCNAME[1]}" == "getopt.parse" ]] && fn=2 || fn=1
 
 	t=(${FUNCNAME[@]:$fn})
 	l=(${BASH_LINENO[@]:$fn})
