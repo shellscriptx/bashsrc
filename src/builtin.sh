@@ -26,9 +26,7 @@ readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando inter
 readonly __BUILTIN_ERR_TYPE_REG='nomenclatura da variável é de um tipo reservado'
 readonly __BUILTIN_ERR_ALREADY_INIT='a variável já foi inicializada'
 readonly __BUILTIN_ERR_TYPE_CONFLICT='conflito de tipos'
-
-# [map] inicialização de variáveis.
-declare -A __REG_LIST_VAR
+readonly __BUILTIN_ERR_TYPE_NOT_MAP='não é do tipo map'
 
 # func has <[str]exp> on <[var]name> => [bool]
 #
@@ -1003,48 +1001,57 @@ function del()
 # 
 function var()
 {
-	getopt.parse "varname:var:+:$1" "name:type:+:$2"
+	getopt.parse "varname:var:+:$1" "type:type:+:${@: -1}"
 
-	local type regtypes method proto ptr_func struct_func var
+	local type regtypes method proto ptr_func struct_func var attr err
 	type=${@: -1}
 
-	regtypes="${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__SRC_TYPE_IMPLEMENTS[@]:+ ${!__SRC_TYPE_IMPLEMENTS[@]}}"
-			
-	for var in ${@:1:$((${#@}-1))}; do
-		getopt.parse "varname:var:+:$var"
-
-		if [[ "$var" =~ ^(${regtypes// /|})$ ]]; then
-			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_TYPE_REG"
-		elif [[ ${__REG_LIST_VAR[${FUNCNAME[1]}.$var]} ]]; then
-			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_ALREADY_INIT"
+	if read _ attr _ < <(declare -p __SRC_TYPE_IMPLEMENTS 2>/dev/null); then
+		if [[ "$attr" =~ A ]]; then
+			for vartype in ${!__BUILTIN_TYPE_IMPLEMENTS[@]}; do
+				if [[ ${__SRC_TYPE_IMPLEMENTS[$vartype]} ]]; then
+					error.__exit '' '' '' "'__SRC_TYPE_IMPLEMENTS[$vartype]' $__BUILTIN_ERR_TYPE_CONFLICT"
+					err=1
+				fi
+			done
+		else
+			error.__exit '' '' '' "'__SRC_TYPE_IMPLEMENTS' $__BUILTIN_ERR_TYPE_NOT_MAP"
+			err=1
 		fi
+	fi
+
+	if [[ ! $err ]] ; then
+		regtypes="${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__SRC_TYPE_IMPLEMENTS[@]:+ ${!__SRC_TYPE_IMPLEMENTS[@]}}"
+			
+		for var in ${@:1:$((${#@}-1))}; do
+			getopt.parse "varname:var:+:$var"
+
+			if [[ $var =~ ^(${regtypes// /|})$ ]]; then
+				error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_TYPE_REG"
+			elif [[ ${__REG_LIST_VAR[${FUNCNAME[1]}.$var]} ]]; then
+				error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_ALREADY_INIT"
+			else
 	
-		[[ "$type" == "map" ]] && declare -Ag $var
+				[[ "$type" == "map" ]] && declare -Ag $var
 
-		for method in ${__BUILTIN_TYPE_IMPLEMENTS[$type]} ${__SRC_TYPE_IMPLEMENTS[$type]}; do
+				for method in ${__BUILTIN_TYPE_IMPLEMENTS[$type]} ${__SRC_TYPE_IMPLEMENTS[$type]}; do
 			
-			ptr_func="$type\.$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
+					ptr_func="$type\.$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
 
-			if ! struct_func=$(declare -fp $type.$method 2>/dev/null); then
-				echo "(Implementação de método)"
-				echo
-				echo "Tipo: $type"
-				echo "Herança: $type.$method"
-				echo "Composição: $var.$method"
-				echo "Método: $method"
-				echo "Erro: o método de herança é inválido"
-				echo "------------------------"
-				exit 1
-			fi
-			
-			[[ $struct_func =~ $ptr_func ]] && 
-			proto="%s(){ %s %s \"\$@\"; }" || 
-			proto="%s(){ %s \"\$%s\" \"\$@\"; }"
+					if ! struct_func=$(declare -fp $type.$method 2>/dev/null); then
+						error.__exit "$var" "$type" "$method" "o método de implementação não existe" 1
+					else
+						[[ $struct_func =~ $ptr_func ]] && 
+						proto="%s(){ %s %s \"\$@\"; }" || 
+						proto="%s(){ %s \"\$%s\" \"\$@\"; }"
 		
-			eval "$(printf "$proto\n" $var.$method $type.$method $var)"
-			__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.$method "
+						eval "$(printf "$proto\n" $var.$method $type.$method $var)"
+						__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.$method "
+					fi
+				done
+			fi
 		done
-	done
+	fi
 
 	return 0		
 }
@@ -1054,7 +1061,7 @@ function builtin.__init()
 	error.resume off
 
     local depends=(touch mkdir stat cp)
-    local dep deps vartype
+    local dep deps
 
     for dep in ${depends[@]}; do
         if ! command -v $dep &>/dev/null; then
@@ -1068,11 +1075,9 @@ function builtin.__init()
 		error.__exit '' '' "$__RUNTIME" 'não foi possível gerar os arquivos temporários'
 	fi
 
-	for vartype in ${!__BUILTIN_TYPE_IMPLEMENTS[@]}; do
-		if [[ ${__SRC_TYPE_IMPLEMENTS[$vartype]} ]]; then
-			error.__exit '' '' '' "'__SRC_TYPE_IMPLEMENTS[$vartype]' $__BUILTIN_ERR_TYPE_CONFLICT"
-		fi
-	done
+	# definições
+	declare -Ag __REG_LIST_VAR \
+				__SRC_TYPE_IMPLEMENTS
 
     return 0
 }
