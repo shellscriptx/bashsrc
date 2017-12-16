@@ -76,19 +76,21 @@ readonly __GETOPT_ERR_VAR_TYPE='tipo da variável inválida'
 function getopt.parse()
 {
 	local name ctype flag value ref flags names attr IFSbkp obj_types
+	
+	error.__clear
 
 	for param in "$@"
 	do
 		
-		IFSbkp=$IFS
+		IFSbkp="$IFS"
 		IFS=':'
 		args=($param)
-		IFS=$IFSbkp
+		IFS="$IFSbkp"
 		
-		name=${args[0]%:}
-		ctype=${args[1]%:}
-		flag=${args[2]%:}
-		value=${args[@]:3}
+		name="${args[0]%:}"
+		ctype="${args[1]%:}"
+		flag="${args[2]%:}"
+		value="${args[@]:3}"
 		
 		[[ $name =~ ^(${names%|})$ ]] && error.__exit "$name" '' "$value" "$__GETOPT_ERR_NAME_CONFLICT"
 		[[ $name =~ ^[a-zA-Z0-9_-]+$ ]] || error.__exit "$name" '' "$value" "$__GETOPT_ERR_PARAM_NAME"
@@ -163,7 +165,7 @@ function getopt.parse()
 			path) [[ -e $value ]] || error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_PATH_NOT_FOUND";;
 			fd) ([[ $value =~ ^(0|[1-9][0-9]*)$ ]]; [[ -e /dev/fd/$value ]]) || \
 				error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_FD_NOT_EXISTS";;
-			type) obj_types=${!__SRC_OBJ_METHOD[@]}
+			type) obj_types="${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__SRC_TYPE_IMPLEMENTS[@]:+ ${!__SRC_TYPE_IMPLEMENTS[@]}}"
 				  [[ "$value" =~ ^(${obj_types// /|})$ ]] || error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_VAR_TYPE";;
 
 			*) error.__exit "$name" "$ctype" '' "$__GETOPT_ERR_TYPE_PARAM '$ctype'";;
