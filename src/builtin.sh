@@ -1036,17 +1036,17 @@ function var()
 
 				for method in ${__BUILTIN_TYPE_IMPLEMENTS[$type]} ${__SRC_TYPE_IMPLEMENTS[$type]}; do
 			
-					ptr_func="$type\.$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
+					ptr_func="^\s*$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
 
-					if ! struct_func=$(declare -fp $type.$method 2>/dev/null); then
+					if ! struct_func=$(declare -fp $method 2>/dev/null); then
 						error.__exit "$var" "$type" "$method" "o método de implementação não existe" 1
 					else
 						[[ $struct_func =~ $ptr_func ]] && 
-						proto="%s(){ %s %s \"\$@\"; }" || 
-						proto="%s(){ %s \"\$%s\" \"\$@\"; }"
+						proto="%s(){ %s %s \"\$@\"; return \$?; }" || 
+						proto="%s(){ %s \"\$%s\" \"\$@\"; return \$?; }"
 		
-						eval "$(printf "$proto\n" $var.$method $type.$method $var)"
-						__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.$method "
+						eval "$(printf "$proto\n" $var.${method##*.} $method $var)"
+						__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.${method##*.} "
 					fi
 				done
 			fi
