@@ -8,10 +8,14 @@
 
 readonly __TYPES_SH=1
 
-declare -A __SRC_OBJ_METHOD
-declare -A __REG_LIST_VAR
+declare -A __BUILTIN_TYPE_IMPLEMENTS
 
-__SRC_OBJ_METHOD[str]='
+__BUILTIN_TYPE_IMPLEMENTS[time]='
+localtime
+ctime
+'
+
+__BUILTIN_TYPE_IMPLEMENTS[str]='
 capitalize 
 center 
 count 
@@ -60,7 +64,7 @@ len
 field
 '
 
-__SRC_OBJ_METHOD[array]='
+__BUILTIN_TYPE_IMPLEMENTS[array]='
 append 
 clear 
 copy 
@@ -84,7 +88,7 @@ listindex
 list
 '
 
-__SRC_OBJ_METHOD[map]='
+__BUILTIN_TYPE_IMPLEMENTS[map]='
 clone
 copy
 fromkeys
@@ -98,7 +102,7 @@ contains
 pop
 '
 
-__SRC_OBJ_METHOD[regex]='
+__BUILTIN_TYPE_IMPLEMENTS[regex]='
 findall
 fullmatch 
 match 
@@ -113,7 +117,7 @@ fnreplace
 fnnreplace
 '
 
-__SRC_OBJ_METHOD[os.file]='
+__BUILTIN_TYPE_IMPLEMENTS[os.file]='
 name
 stat
 fd
@@ -133,15 +137,47 @@ readable
 rewind
 '
 
-__SRC_OBJ_METHOD[filepath]='
+__BUILTIN_TYPE_IMPLEMENTS[filepath]='
 dirname
 basename
+glob
 relpath
 ext
+splitlist
 split
 slash
+join
+scandir
+walk
+exists
+match
+copy
 '
 
-readonly __SRC_OBJ_METHOD
+__BUILTIN_TYPE_IMPLEMENTS[filepath.fileinfo]='
+name
+size
+mode
+modtime
+modstime
+isdir
+perm
+ext
+type
+inode
+path
+gid
+group
+uid
+user
+'
+
+__BUILTIN_TYPE_IMPLEMENTS[user]='
+groups
+gids
+id
+'
+
+readonly __BUILTIN_TYPE_IMPLEMENTS
 
 # /* __TYPES_SH */
