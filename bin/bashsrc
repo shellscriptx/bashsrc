@@ -74,10 +74,14 @@ function view_doc()
 		
 		var='^\s*(readonly|(typeset|declare)\s+-[a-zAF]*r[a-zAF]*)\s+[a-zA-Z]+[a-zA-Z_]*=.*'
 		func='^\s*#\s*func\s+[a-zA-Z0-9.-]+[a-zA-Z0-9._-]*.*'
-		about='^\s*#\s*\[about]'
+		about='^\s*#\s*\*'
 
 		while read line; do
-			[[ $line =~ ($var|$func) ]] && echo ${line#+(#)}
+			if [[ $line =~ ($var|$func) ]]; then
+				echo ${line#+(#)}
+			elif [[ $line =~ $about ]]; then
+				echo "${line#+(#)}"
+			fi
 		done < "$srcdir/$srcfile"
 	else
 
