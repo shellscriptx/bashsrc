@@ -24,7 +24,7 @@ function grp.getgrall()
         done < $filedb
         IFS=$IFSbkp
     else
-        error.__exit '' '' '' "'$filedb' $__USER_ERR_READ_BASE_FILE"
+        error.__exit '' '' '' "'$filedb' não foi possível ler o arquivo base"
 		err=1
     fi
 
@@ -91,7 +91,7 @@ function grp.__get_gid_info()
 			fi
 		done < $filedb
 	else
-        error.__exit '' '' '' "'$filedb' $__USER_ERR_READ_BASE_FILE"
+        error.__exit '' '' '' "'$filedb' não foi possível ler o arquivo base"
 	fi
 
 	IFS=$IFSbkp
