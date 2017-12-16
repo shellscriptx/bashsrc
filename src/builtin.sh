@@ -1053,7 +1053,7 @@ function var()
 		done
 	fi
 
-	return 0		
+	return $?
 }
 
 function builtin.__init()

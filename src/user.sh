@@ -21,30 +21,6 @@ readonly __USER_SH=1
 source builtin.sh
 
 readonly __USER_ERR_READ_BASE_FILE='não foi possível ler o arquivo base'
-readonly __USER_GROUP=/etc/group
-
-# func user.getgrall => [str]
-#
-# Retorna uma lista iterável com o nome de todos os grupos do sistema.
-#
-function user.getgrall()
-{
-	getopt.parse "-:null:-:$*"
-	
-	local grp IFSbkp m
-
-	if [ -r "$__USER_GROUP" ]; then
-		IFSbkp=$IFS
-		IFS=':'; while read grp _ _ _; do
-			echo "$grp"
-		done < $__USER_GROUP
-		IFS=$IFSbkp
-	else
-		error.__exit '' '' '' "'$__USER_GROUP' $__USER_ERR_READ_BASE_FILE"
-	fi
-
-	return $?
-}
 
 function user.groups()
 {
@@ -85,8 +61,9 @@ function user.__get_info()
 {
 	local tmp id line info users
 	local flag=$1 user=$2
+	local filedb=/etc/group
 	
-	if [ -r "$__USER_GROUP" ]; then	
+	if [ -r "$filedb" ]; then	
 		while read line; do
 			case $flag in
 				id) 	if [[ "$user" == "${line%%:*}" ]]; then
@@ -114,9 +91,9 @@ function user.__get_info()
 						fi
 						;;
 			esac
-		done < $__USER_GROUP
+		done < $filedb
 	else
-		error.__exit '' '' '' "'$__USER_GROUP' $__USER_ERR_READ_BASE_FILE"
+		error.__exit '' '' '' "'$filedb' $__USER_ERR_READ_BASE_FILE"
 	fi
 
 	[[ $info ]] && printf '%s\n' "${info[@]}"
