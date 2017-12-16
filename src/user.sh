@@ -20,8 +20,6 @@ readonly __USER_SH=1
 
 source builtin.sh
 
-readonly __USER_ERR_READ_BASE_FILE='não foi possível ler o arquivo base'
-
 function user.groups()
 {
 	getopt.parse "username:str:+:$1"
@@ -93,7 +91,7 @@ function user.__get_info()
 			esac
 		done < $filedb
 	else
-		error.__exit '' '' '' "'$filedb' $__USER_ERR_READ_BASE_FILE"
+		error.__exit '' '' '' "'$filedb' não foi possível ler o arquivo base"
 	fi
 
 	[[ $info ]] && printf '%s\n' "${info[@]}"
