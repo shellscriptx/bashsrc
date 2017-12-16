@@ -7,13 +7,15 @@
 # E-mail:           shellscriptx@gmail.com
 #----------------------------------------------#
 
-# * tipos/implementação:
-# *
-# *  user
-# *      .groups
-# *      .gids
-# *      .id
-# *
+#* source: user.sh
+#*
+#* Tipos:
+#*
+#* [user] => .groups
+#*           .gids
+#*           .id
+#*
+
 [[ $__USER_SH ]] && return 0
 
 readonly __USER_SH=1

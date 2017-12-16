@@ -6,6 +6,16 @@ readonly __GRP_SH=1
 
 source builtin.sh
 
+#* source: grp.sh
+#*
+#* Tipos:
+#*
+#* [group] => .passwd
+#*            .members
+#*            .gid
+#*            .info
+#* 
+
 # func grp.getgrall => [str]
 #
 # Retorna uma lista iterável com o nome de todos os grupos do sistema.
@@ -31,13 +41,21 @@ function grp.getgrall()
     return ${err:-0}
 }
 
+# func grp.name <[uint]gid> => [str]
+#
+# Retorna o nome do grupo associado ao 'gid'.
+#
 function grp.name()
 {
-	getopt.parse "gid:str:+:$1"
+	getopt.parse "gid:uint:+:$1"
 	grp.__get_gid_info grp $1
 	return $?
 }
 
+# func grp.passwd <[str]grpname> => [str]
+#
+# Retorna a flag de senha.
+#
 function grp.passwd()
 {
 	getopt.parse "grpname:str:+:$1"
@@ -45,6 +63,10 @@ function grp.passwd()
 	return $?
 }
 
+# func grp.members <[str]grpname> => [str]
+#
+# Retorna uma lista iterável com os membros de 'grpname'.
+#
 function grp.members()
 {
 	getopt.parse "grpname:str:+:$1"
@@ -52,6 +74,10 @@ function grp.members()
 	return $?
 }
 
+# func grp.gid <[str]grpname> => [uint]
+#
+# Retorna o 'gid' de 'grpname' associado.
+#
 function grp.gid()
 {
 	getopt.parse "grpname:str:+:$1"
@@ -59,6 +85,10 @@ function grp.gid()
 	return $?
 }
 
+# func grp.info <[str]grpname> => [str]
+#
+# Retorna todas as informações de 'grpname'.
+#
 function grp.info()
 {
 	getopt.parse "grpname:str:+:$1"
