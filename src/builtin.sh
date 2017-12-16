@@ -25,6 +25,7 @@ readonly __RUNTIME=$BASHSRC_PATH/.runtime
 readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando interno'
 readonly __BUILTIN_ERR_TYPE_REG='nomenclatura da variável é de um tipo reservado'
 readonly __BUILTIN_ERR_ALREADY_INIT='a variável já foi inicializada'
+readonly __BUILTIN_ERR_TYPE_CONFLICT='conflito de tipos'
 
 # [map] inicialização de variáveis.
 declare -A __REG_LIST_VAR
@@ -1004,16 +1005,14 @@ function var()
 {
 	getopt.parse "varname:var:+:$1" "name:type:+:$2"
 
-	local type regtypes method proto ptr_func struct_func var i 
+	local type regtypes method proto ptr_func struct_func var
 	type=${@: -1}
 
-	regtypes=${!__SRC_OBJ_METHOD[@]}
+	regtypes="${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__SRC_TYPE_IMPLEMENTS[@]:+ ${!__SRC_TYPE_IMPLEMENTS[@]}}"
 			
 	for var in ${@:1:$((${#@}-1))}; do
 		getopt.parse "varname:var:+:$var"
 
-		i=0
-			
 		if [[ "$var" =~ ^(${regtypes// /|})$ ]]; then
 			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_TYPE_REG"
 		elif [[ ${__REG_LIST_VAR[${FUNCNAME[1]}.$var]} ]]; then
@@ -1022,19 +1021,16 @@ function var()
 	
 		[[ "$type" == "map" ]] && declare -Ag $var
 
-		for method in ${__SRC_OBJ_METHOD[$type]}; do
+		for method in ${__BUILTIN_TYPE_IMPLEMENTS[$type]} ${__SRC_TYPE_IMPLEMENTS[$type]}; do
 			
 			ptr_func="$type\.$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
 
 			if ! struct_func=$(declare -fp $type.$method 2>/dev/null); then
-				echo "(Composição de método)"
+				echo "(Implementação de método)"
 				echo
 				echo "Tipo: $type"
 				echo "Herança: $type.$method"
 				echo "Composição: $var.$method"
-				echo "Source: types.sh"
-				echo "Map: __SRC_OBJ_METHOD[$type]"
-				echo "Índice: $i"
 				echo "Método: $method"
 				echo "Erro: o método de herança é inválido"
 				echo "------------------------"
@@ -1047,7 +1043,6 @@ function var()
 		
 			eval "$(printf "$proto\n" $var.$method $type.$method $var)"
 			__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.$method "
-			((i++))
 		done
 	done
 
@@ -1058,11 +1053,28 @@ function builtin.__init()
 {
 	error.resume off
 
+    local depends=(touch mkdir stat cp)
+    local dep deps vartype
+
+    for dep in ${depends[@]}; do
+        if ! command -v $dep &>/dev/null; then
+            deps+=($dep)
+        fi
+    done
+
+    [[ $deps ]] && error.__depends $FUNCNAME ${BASH_SOURCE##*/} "${deps[*]}"
+	
 	if ! mkdir -p "$__RUNTIME" &>/dev/null; then
 		error.__exit '' '' "$__RUNTIME" 'não foi possível gerar os arquivos temporários'
 	fi
 
-	return $?
+	for vartype in ${!__BUILTIN_TYPE_IMPLEMENTS[@]}; do
+		if [[ ${__SRC_TYPE_IMPLEMENTS[$vartype]} ]]; then
+			error.__exit '' '' '' "'__SRC_TYPE_IMPLEMENTS[$vartype]' $__BUILTIN_ERR_TYPE_CONFLICT"
+		fi
+	done
+
+    return 0
 }
 
 builtin.__init
