@@ -45,7 +45,7 @@ function user.current()
 
 function user.__get_info()
 {
-	local match tmp id line info users
+	local tmp id line info users
 	local flag=$1 user=$2
 	
 	if [ -r "$__USER_GROUP" ]; then	
@@ -53,27 +53,25 @@ function user.__get_info()
 			case $flag in
 				id) 	if [[ "$user" == "${line%%:*}" ]]; then
 							info=${line%:*}; info=${info##*:}
-							match=1
 							break
 						fi
 						;;
 				groups)	users=${line##*:}; users=${users//,/|}
 						if [[ $user =~ ^($users)$ ]]; then
 							info=($user ${info[@]:1} ${line%%:*})
-							match=1
 						fi
 						;;
 				gids)	users=${line##*:}; users=${users//,/|}
 						tmp=${line%:*}; tmp=${tmp##*:}
 						if [[ "$user" == "${line%%:*}" ]]; then
-							info=($tmp ${info[@]}); match=1
+							info=($tmp ${info[@]})
 						elif [[ $user =~ ^($users)$ ]]; then
-							info+=($tmp); match=1
+							info+=($tmp)
 						fi
 						;;
 				user)	id=${line%:*}; id=${id##*:}
 						if [[ "$2" == "$id" ]]; then
-							info=${line%%:*}; match=1
+							info=${line%%:*}
 							break
 						fi
 						;;
@@ -82,8 +80,8 @@ function user.__get_info()
 	else
 		error.__exit '' '' '' "'$__USER_GROUP' não foi possível ler o arquivo base"
 	fi
-		
-	[ "$match" ] && echo "${info[@]}"
+
+	[[ $info ]] && echo "${info[@]}"
 
 	return $?
 }
