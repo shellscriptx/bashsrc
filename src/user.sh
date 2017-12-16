@@ -36,6 +36,13 @@ function user.id()
 	return $?	
 }
 
+function user.name()
+{
+	getopt.parse "uid:uint:+:$1"
+	user.__get_info user $1
+	return $?
+}
+
 function user.current()
 {
 	getopt.parse "-:null:-:$*"
