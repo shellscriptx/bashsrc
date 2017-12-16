@@ -7,13 +7,44 @@
 # E-mail:           shellscriptx@gmail.com
 #----------------------------------------------#
 
+# * tipos/implementação:
+# *
+# *  user
+# *      .groups
+# *      .gids
+# *      .id
+# *
 [[ $__USER_SH ]] && return 0
 
 readonly __USER_SH=1
 
 source builtin.sh
 
+readonly __USER_ERR_READ_BASE_FILE='não foi possível ler o arquivo base'
 readonly __USER_GROUP=/etc/group
+
+# func user.getgrall => [str]
+#
+# Retorna uma lista iterável com o nome de todos os grupos do sistema.
+#
+function user.getgrall()
+{
+	getopt.parse "-:null:-:$*"
+	
+	local grp IFSbkp m
+
+	if [ -r "$__USER_GROUP" ]; then
+		IFSbkp=$IFS
+		IFS=':'; while read grp _ _ _; do
+			echo "$grp"
+		done < $__USER_GROUP
+		IFS=$IFSbkp
+	else
+		error.__exit '' '' '' "'$__USER_GROUP' $__USER_ERR_READ_BASE_FILE"
+	fi
+
+	return $?
+}
 
 function user.groups()
 {
@@ -36,7 +67,7 @@ function user.id()
 	return $?	
 }
 
-function user.name()
+function user.getname()
 {
 	getopt.parse "uid:uint:+:$1"
 	user.__get_info user $1
@@ -85,10 +116,10 @@ function user.__get_info()
 			esac
 		done < $__USER_GROUP
 	else
-		error.__exit '' '' '' "'$__USER_GROUP' não foi possível ler o arquivo base"
+		error.__exit '' '' '' "'$__USER_GROUP' $__USER_ERR_READ_BASE_FILE"
 	fi
 
-	[[ $info ]] && echo "${info[@]}"
+	[[ $info ]] && printf '%s\n' "${info[@]}"
 
 	return $?
 }
