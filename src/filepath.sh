@@ -282,7 +282,7 @@ function filepath.scandir()
 # source filepath.sh
 #
 # # Define variável do tipo 'fileinfo'
-# var arq filepath.fileinfo
+# var arq fileinfo
 #
 # exibir_tamanho(){
 #

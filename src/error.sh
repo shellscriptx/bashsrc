@@ -54,8 +54,8 @@ function error.__exit()
 			case $nmsg in
 				1)
 					echo "Tipo: $2"
-					echo "Implementação: $2.$3"
-					echo "Composição: $1.$3"
+					echo "Implementação: $3"
+					echo "Composição: $1.${3##*.}"
 					echo "Método: $3"
 					echo "Erro: ${4:-erro desconhecido}"
 					echo "------------------------"
