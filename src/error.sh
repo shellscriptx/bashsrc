@@ -18,6 +18,7 @@ function error.__exit()
 {
 	local i l t fn
 	local stack
+	local nmsg=$5
 
 	[[ "${FUNCNAME[1]}" == "getopt.parse" ]] && fn=2 || fn=1
 
@@ -49,12 +50,24 @@ function error.__exit()
 			echo "Função: ${FUNCNAME[1]}"
 			echo
 			echo -e "Pilha: ${stack% => }"
-			echo -e "Argumento: <${1:--}>"
-			echo -e "Tipo: [${2:--}]"
-			echo -e "Valor: '${3:--}'"
-			echo -e "Erro: ${4:-erro desconhecido}"
-			echo ------------------------
 
+			case $nmsg in
+				1)
+					echo "Tipo: $2"
+					echo "Implementação: $2.$3"
+					echo "Composição: $1.$3"
+					echo "Método: $3"
+					echo "Erro: ${4:-erro desconhecido}"
+					echo "------------------------"
+					;;
+				*)
+					echo -e "Argumento: <${1:--}>"
+					echo -e "Tipo: [${2:--}]"
+					echo -e "Valor: '${3:--}'"
+					echo -e "Erro: ${4:-erro desconhecido}"
+					echo ------------------------
+					;;
+			esac
 			exit 1
 			;;
 	esac
