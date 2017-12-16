@@ -178,6 +178,13 @@ user.gids
 user.id
 '
 
+__BUILTIN_TYPE_IMPLEMENTS[group]='
+grp.passwd
+grp.members
+grp.gid
+grp.info
+'
+
 readonly __BUILTIN_TYPE_IMPLEMENTS
 
 # /* __TYPES_SH */
