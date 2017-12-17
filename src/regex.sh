@@ -364,8 +364,7 @@ function regex.replace()
 	local exp=$2
 	local flag=$5
 	local seg=0
-	local groups grp pos c
-	local def
+	local groups grp pos c def new
 
 	shopt -q nocasematch && def='s' || def='u'
 	
@@ -450,8 +449,7 @@ function regex.nreplace()
 	local pattern=$1
 	local exp=$2
 	local flag=$5
-	local groups grp seg m
-	local def
+	local groups grp seg m def new def
 
 	shopt -q nocasematch && def='s' || def='u'
 	
@@ -562,8 +560,7 @@ function regex.fnreplace()
 	local func=$5
 	local exp=$2
 	local flag=$4
-	local pos c seg new
-	local def
+	local pos c seg new def
 
 	shopt -q nocasematch && def='s' || def='u'
 	
