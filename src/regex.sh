@@ -384,7 +384,7 @@ function regex.replace()
 		
 		while [[ $new =~ \\[1-9][0-9]* ]]; do
 			grp=${BASH_REMATCH[0]#\\}
-			new=${new/\\$grp/${groups[0]}}
+			new=${new/\\$grp/${groups[$grp]}}
 		done
 		
 		for ((pos=seg; pos < ${#exp}; pos++)); do
@@ -469,7 +469,7 @@ function regex.nreplace()
 	
 		while [[ $new =~ \\[1-9][0-9]* ]]; do
 			grp=${BASH_REMATCH[0]#\\}
-			new=${new/\\$grp/${groups[0]}}
+			new=${new/\\$grp/${groups[$grp]}}
 		done
 		
 		for ((pos=seg; pos < ${#exp}; pos++)); do
