@@ -928,6 +928,18 @@ function iter()
 	return 0	
 }
 
+# func fniter <[str]iterable> <[func]iterfunc> => [str]
+#
+# Chama 'iterfunc' a cada iteração de 'iterable' passando o elemento
+# atual como argumento posicional '$1'.
+#
+function fniter()
+{
+	getopt.parse "iterfunc:func:+:$2"
+	local item; while read item; do $2 "$item";	done <<< "$1"
+	return 0
+}
+
 # func niter <[str]iterable> <[int]pos> => [str]
 #
 # Retorna o item na posição 'pos' em 'iterable'. Utilize notação negativa 
