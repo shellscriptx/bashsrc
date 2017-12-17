@@ -57,7 +57,7 @@ str.zfill
 str.compare 
 str.nocasecompare 
 str.contains 
-str.map 
+str.fnmap 
 str.slice 
 str.filter
 str.len
