@@ -48,7 +48,7 @@ function grp.getgrall()
 function grp.name()
 {
 	getopt.parse "gid:uint:+:$1"
-	grp.__get_gid_info grp $1
+	grp.__get_grp_info grp "$1"
 	return $?
 }
 
@@ -59,7 +59,7 @@ function grp.name()
 function grp.passwd()
 {
 	getopt.parse "grpname:str:+:$1"
-	grp.__get_gid_info pass $1
+	grp.__get_grp_info pass "$1"
 	return $?
 }
 
@@ -70,7 +70,7 @@ function grp.passwd()
 function grp.members()
 {
 	getopt.parse "grpname:str:+:$1"
-	printf '%s\n' $(grp.__get_gid_info mem $1)
+	printf '%s\n' $(grp.__get_grp_info mem "$1")
 	return $?
 }
 
@@ -81,7 +81,7 @@ function grp.members()
 function grp.gid()
 {
 	getopt.parse "grpname:str:+:$1"
-	grp.__get_gid_info gid $1
+	grp.__get_grp_info gid "$1"
 	return $?
 }
 
@@ -92,32 +92,30 @@ function grp.gid()
 function grp.info()
 {
 	getopt.parse "grpname:str:+:$1"
-	grp.__get_gid_info all $1
+	grp.__get_grp_info all "$1"
 	return $?
 }
 
-function grp.__get_gid_info()
+function grp.__get_grp_info()
 {
-	local grp pass gid mem
+	local grp pass gid mem err
 	local filedb=/etc/group
-	local err=1
 	local IFSbkp=$IFS
 	local flag=$1
 	local field=$2
 
 	if [ -r "$filedb" ]; then	
 		IFS=':'; while read grp pass gid mem; do
-			if [[ "$flag" == "grp" && "$field" == "$gid" ]]; then
-				err=0; info=$grp; break
-			elif [[ "$field" == "$grp" ]]; then
+			if [[ "$field" == "$grp" || "$field" == "$gid" ]]; then
+				err=0
 				case $flag in
+					grp)	info=$grp; break;;
 					pass)	info=$pass; break;;
 					gid)	info=$gid; break;;
 					mem)	info=${mem//,/ }; break;;
 					all)	info="$grp|$pass|$gid|$mem"; break;;
-					*) return 1; break;;
+					*) return 1;;
 				esac
-				err=0
 			fi
 		done < $filedb
 	else
@@ -128,5 +126,5 @@ function grp.__get_gid_info()
 	
 	echo "$info"
 
-	return $err
+	return ${err:-1}
 }
