@@ -19,8 +19,6 @@ readonly __REGEX_ERR_FLAG_INVALID='a flag especificada é inválida'
 readonly __REGEX_ERR_GROUP_REF='referência do grupo inválida'
 
 # constantes
-readonly regex_case=1         # [flag] - considera a diferença entre caracteres maiúsuculos e minúsculos.
-readonly regex_ignorecase=2   # [flag] - ignora a diferença entre caracteres maiúsculos e minúsculos.
 readonly REG_ICASE=2
 
 # func regex.findall <[str]pattern> <[str]exp> <[uint]flag> => [str]
@@ -269,7 +267,7 @@ function regex.groups()
 # texto="Seja livre use <Linux>. Escolha sua distro <Debian>, <Slackware>, <Redhat> e desfrute da liberdade."
 #
 # # Aplica a regex em 'texto' e salva as expressões casadas em 'grupo'.
-# regex.savegroups "$padrao" "$texto" $regex_case grupo
+# regex.savegroups "$padrao" "$texto" $REG_ICASE grupo
 #
 # # Lista os elementos de 'grupo'.
 # for grp in "${grupo[@]}"
@@ -338,16 +336,16 @@ function regex.savegroups()
 #
 # # Removendo tudo antes de 'Linux Torvalds'.
 # echo -n '1 - '
-# regex.replace "^.*por " '' "$texto" 1 $regex_case
+# regex.replace "^.*por " '' "$texto" 1 $REG_ICASE
 #
 # # Retirando somente os números.
 # echo -n '2 - '
-# regex.replace "[0-9]+" '' "$texto" -1 $regex_case
+# regex.replace "[0-9]+" '' "$texto" -1 $REG_ICASE
 #
 # # Colocando os números entre '[...]' utilizando grupo/retrovisor.
 # # '\1' represeta o padrão casado no primeiro grupo entre (...).
 # echo -n '3 - '
-# regex.replace "([0-9]+)" '[\1]' "$texto" -1 $regex_case
+# regex.replace "([0-9]+)" '[\1]' "$texto" -1 $REG_ICASE
 #
 # # FIM
 #
@@ -425,16 +423,16 @@ function regex.replace()
 #
 # # Apagando a segunda palavra que termina com a letra 'a'.
 # echo -n '1 - '
-# regex.nreplace "\w+a\s" '' "$texto" 2 $regex_case
+# regex.nreplace "\w+a\s" '' "$texto" 2 $REG_ICASE
 #
 # # Colocando entre parênteses a terceira palavra com mais de 3 letras.
 # echo -n '2 - '
-# regex.nreplace "(\w{3,})" '(\1)' "$texto" 3 $regex_case
+# regex.nreplace "(\w{3,})" '(\1)' "$texto" 3 $REG_ICASE
 #
 # # Criando dois grupos de captura e invertendo a ordem dos retrovisores
 # '\1' e '\2' para geração de uma nova frase.
 # echo -n '3 - '
-# regex.nreplace "(\w{3,}).*\s(\w{3,})$" '\2 \1' "$texto" 1 $regex_case
+# regex.nreplace "(\w{3,}).*\s(\w{3,})$" '\2 \1' "$texto" 1 $REG_ICASE
 #
 # # FIM
 #
@@ -535,16 +533,16 @@ function regex.nreplace()
 # }
 #
 # echo -n '1 - '
-# regex.fnreplace "[0-9]+" "$texto" -1 $regex_case rotular
+# regex.fnreplace "[0-9]+" "$texto" -1 $REG_ICASE rotular
 #
 # echo -n '2 - '
-# regex.fnreplace "[0-9]+" "$texto" -1 $regex_case somando
+# regex.fnreplace "[0-9]+" "$texto" -1 $REG_ICASE somando
 #
 # echo -n '3 - '
-# regex.fnreplace "[0-9]+" "$texto" -1 $regex_case impar
+# regex.fnreplace "[0-9]+" "$texto" -1 $REG_ICASE impar
 #
 # echo -n '4 - '
-# regex.fnreplace "[0-9]+" "$texto" 2 $regex_case decimal
+# regex.fnreplace "[0-9]+" "$texto" 2 $REG_ICASE decimal
 #
 # # FIM
 #
@@ -646,15 +644,15 @@ function regex.fnreplace()
 #
 # # Atribui nome ao número do mês.
 # echo -n '1 - '
-# regex.fnnreplace '/([1-9]|1[0-2])/' "$texto" 1 $regex_case mes_nome
+# regex.fnnreplace '/([1-9]|1[0-2])/' "$texto" 1 $REG_ICASE mes_nome
 #
 # # Converte para maiúsculo a quinta palavra.
 # echo -n '2 - '
-# regex.fnnreplace '\w+\s' "$texto" 5 $regex_case maiusculo
+# regex.fnnreplace '\w+\s' "$texto" 5 $REG_ICASE maiusculo
 #
 # # Mascara o vigésimo quarto caractere.
 # echo -n '3 - '
-# regex.fnnreplace '.' "$texto" 24 $regex_case mascara
+# regex.fnnreplace '.' "$texto" 24 $REG_ICASE mascara
 #
 # # FIM
 #
