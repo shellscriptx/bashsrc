@@ -13,6 +13,38 @@ readonly __ARRAY_SH=1
 
 source builtin.sh
 
+# type array
+#
+# Uma estrutura de dados que armazena uma coleção de elementos onde cada elemento
+# é acessado utilizando uma índice ou vetor, demoninado de array indexado.
+#
+# Implementa 'S' com os métodos:
+#
+# S.append <[str]object>
+# S.clear
+# S.clone <[array]dest>
+# S.copy <[array]dest>
+# S.count <[str]object> => [uint]
+# S.items => [str]
+# S.index <[str]object> => [int]
+# S.insert <[uint]index> <[str]object>
+# S.pop <[int]index> => [object]
+# S.remove <[str]object>
+# S.removeall <[str]object>
+# S.reverse
+# S.len => [uint]
+# S.sort
+# S.join <[str]exp> => [str]
+# S.item <[int]index> => [object]
+# S.contains <[str]object> => [bool]
+# S.reindex
+# S.slice <[slice]slice> ... => [object]
+# S.listindex => [uint]
+# S.list => [uint|object]
+#
+# Obs: 'S' é uma variável válida.
+#
+
 # func array.append <[array]name> <[str]object>
 #
 # Anexa 'object' no final de 'name'.
@@ -215,7 +247,7 @@ function array.reverse()
 	return 0
 }
 
-# func array.len <[array]name>
+# func array.len <[array]name> => [uint]
 #
 # Retorna o total de elementos em 'name'.
 #

@@ -21,6 +21,31 @@ readonly __REGEX_ERR_GROUP_REF='referência do grupo inválida'
 # constantes
 readonly REG_ICASE=2
 
+
+# type regex
+#
+# Uma sequência de caracteres que determinam um padrão ou mais, associado a
+# uma cadeia de caracteres de um determinado texto. Esta em conformidade com 
+# o padrão (ERE).
+#
+# Implementa 'S' com os métodos:
+#
+# S.findall <[str]exp> <[uint]flag> => [str]
+# S.fullmatch <[str]exp> <[uint]flag> => [uint|uint|str]
+# S.match <[str]exp> [uint]flag => [str]
+# S.search <[str]exp> <[uint]flag> => [uint|uint|str]
+# S.split <[str]exp> <[uint]flag> => [str]
+# S.ismatch <[str]exp> <[uint]flag> => [bool]
+# S.groups <[str]exp> <[uint]flag> => [str]
+# S.savegroups <[str]exp> <[uint]flag> <[array]name>
+# S.replace <[str]exp> <[str]new> <[int]count> <[uint]flag> => [str]
+# S.nreplace <[str]exp> <[str]new> <[uint]match> <[uint]flag> => [str]
+# S.fnreplace <[str]exp> <[int]count> <[uint]flag> <[func]funcname> <[str]args> ... => [str]
+# S.fnnreplace <[str]exp> <[uint]match> <[uint]flag> <[func]funcname> <[str]args> ... => [str]
+#
+# Obs: 'S' é uma variável válida.
+#
+
 # func regex.findall <[str]pattern> <[str]exp> <[uint]flag> => [str]
 #
 # Retorna uma lista de todas as correspondências não sobrepostas na cadeia.

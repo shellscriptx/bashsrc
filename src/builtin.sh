@@ -1009,7 +1009,8 @@ function del()
 
 # func var <[var]varname> ... <[type]typename>
 #
-# Inicializa uma ou mais variáveis do tipo definido em 'typename'.
+# Inicializa uma ou mais variáveis do tipo especificado em 'typename' e
+# implementa seus métodos disponíveis.
 # 
 function var()
 {

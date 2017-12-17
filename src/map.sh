@@ -13,6 +13,29 @@ readonly __MAP_SH=1
 
 source builtin.sh
 
+# type map
+#
+# Uma estrutura de dados que armazena uma coleção de elementos onde cada elemento
+# é acessado utilizando uma chave, demoninado de array associativo.
+#
+# Implementa 'S' com os métodos:
+#
+# S.clear
+# S.clone <[map]dest>
+# S.copy <[map]dest>
+# S.fromkeys <[str]key> ...
+# S.get <[str]key> => [object]
+# S.keys => [key]
+# S.items => [object]
+# S.list => [key|object]
+# S.remove <[str]key>
+# S.add <[str]key> <[str]object>
+# S.contains <[str]key> => [bool]
+# S.pop => [key|object]
+#
+# Obs: 'S' é o nome de uma variável válida.
+#
+
 # func map.clear <[map]name>
 #
 # Limpa todos os elementos de 'name'.

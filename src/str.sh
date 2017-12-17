@@ -29,6 +29,64 @@ readonly STR_PUNCTUATION='!"#$%&\()*+,-./:;<=>?@[\\]^_`{|}~'"'"
 readonly STR_WHITESPACE=' \t\n\r\x0b\x0c'
 readonly STR_PRINTABLE="${STR_DIGITS}${STR_LETTERS}${STR_PUNCTUATION}${STR_WHITESPACE}"
 
+# type str
+#
+# Manipula uma cadeia de caracteres.
+#
+# Implementa 'S' com os métodos:
+#
+# S.len => [uint]
+# S.capitalize => [str]
+# S.center <[uint]width> <[char]fillchar> => [str]
+# S.count <[str]sub> => [uint]
+# S.hassuffix <[str]suffix> => [bool]
+# S.hasprefix <[str]prefix> => [bool]
+# S.expandtabs <[uint]tabsize> => [str]
+# S.find <[str]sub> => [int]
+# S.rfind <[str]sub> => [int]
+# S.isalnum => [bool]
+# S.isalpha => [bool]
+# S.isdecimal => [bool]
+# S.isdigit => [bool]
+# S.isspace => [bool]
+# S.isprintable => [bool]
+# S.islower => [bool]
+# S.isupper => [bool]
+# S.istitle => [bool]
+# S.join <[str]elem> => [str]
+# S.ljust <[uint]width> <[char]fillchar> => [str]
+# S.rjust <[uint]width> <[char]fillchar> => [str]
+# S.tolower => [str]
+# S.toupper => [str]
+# S.trim <[str]sub> => [str]
+# S.ltrim <[str]sub> => [str]
+# S.rtrim <[str]sub> => [str]
+# S.remove <[str]sub> => [str]
+# S.rmprefix <[str]prefix> => [str]
+# S.rmsuffix <[str]suffix> => [str]
+# S.replace <[str]old> <[str]new> <[int]count> => [str]
+# S.fnreplace <[str]old> <[int]count> <[func]funcname> <[str]args> ... => [str]
+# S.nreplace <[str]old> <[str]new> <[int]match> => [str]
+# S.fnnreplace <[str]old> <[int]match> <[func]funcname> <[str]args> ... => [str]
+# S.split <[str]sep> => [str]
+# S.swapcase => [str]
+# S.totitle = [str]
+# S.reverse => [str]
+# S.repeat <[uint]count> => [str]
+# S.zfill <[uint]width> => [uint]
+# S.compare <[str]exp2> => [bool]
+# S.nocasecompare <[str]exp2> => [bool]
+# S.contains <[str]sub> => [bool]
+# S.fnmap <[func]funcname> <[str]args> ... => [str]
+# S.slice <[ini:len]slice> ... => [str]
+# S.filter <[flag]name> ... => [object]
+# S.field <[str]sub> <[uint]num> ... => [str]
+# S.trimspace => [str]
+#
+# Obs: 'S' é uma variável válida.
+#
+
+#
 # func str.len <[str]exp> => [uint]
 #
 # Retorna o comprimento de 'exp'.
