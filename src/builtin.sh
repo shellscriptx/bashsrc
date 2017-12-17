@@ -928,7 +928,7 @@ function iter()
 	return 0	
 }
 
-# func fniter <[str]iterable> <[func]iterfunc> => [str]
+# func fniter <[str]iterable> <[func]iterfunc>
 #
 # Chama 'iterfunc' a cada iteração de 'iterable' passando o elemento
 # atual como argumento posicional '$1'.
