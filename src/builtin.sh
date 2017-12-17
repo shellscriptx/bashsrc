@@ -28,6 +28,7 @@ readonly __BUILTIN_ERR_ALREADY_INIT='a variável já foi inicializada'
 readonly __BUILTIN_ERR_TYPE_CONFLICT='conflito de tipos'
 readonly __BUILTIN_ERR_TYPE_NOT_MAP='não é do tipo map'
 
+readonly NULL=0
 # func has <[str]exp> on <[var]name> => [bool]
 #
 # Retorna 'true' se 'name' contém 'exp'. Caso contrário 'false'
@@ -222,13 +223,12 @@ function sum(){
 	return 0
 }
 
-# func fnmap <[func]funcname> <[var]name> => [object]
+# func fnmap <[var]name> <[func]funcname> <[str]args> ... => [str]
 #
-# Chama a função 'funcname' a cada iteração de 'name' passando 
-# automaticamente o objeto atual como argumento.
+# Chama 'funcname' a cada iteração de 'name' passando automaticamente o elemento
+# atual como argumento posicional '$1' seguido de N'args' (opcional).
 #
-# O objeto irá depender do tipo de dado em 'name', aplicando
-# os seguintes critérios:
+# O objeto irá depender do tipo de dado em 'name', aplicando os seguintes critérios:
 #
 # var - itera cada caractere da expressão
 # array - itera o elemento.
@@ -236,17 +236,17 @@ function sum(){
 #
 function fnmap(){
 	
-	getopt.parse "funcname:func:+:$1" "name:var:+:$2"
+	getopt.parse "name:var:+:$1" "funcname:func:+:$2"
 	
-	declare -n __obj_ref=$2
+	declare -n __obj_ref=$1
 	local __item __key __ch __type
 	
-	read _ __type _ < <(declare -p $2 2>/dev/null)
+	read _ __type _ < <(declare -p $1 2>/dev/null)
 
 	case $__type in
-		*a*) for __item in "${__obj_ref[@]}"; do $1 "$__item"; done;;
-		*A*) for __key in "${!__obj_ref[@]}"; do $1 "$__key"; done;;
-		*) for ((__ch=0; __ch < ${#__obj_ref}; __ch++)); do $1 "${__obj_ref:$__ch:1}"; done;;
+		*a*) for __item in "${__obj_ref[@]}"; do $2 "$__item" "${@:3}"; done;;
+		*A*) for __key in "${!__obj_ref[@]}"; do $2 "$__key" "${@:3}"; done;;
+		*) for ((__ch=0; __ch < ${#__obj_ref}; __ch++)); do echo -n "$($2 "${__obj_ref:$__ch:1}" "${@:3}")"; done;;
 	esac
 
 	return 0
@@ -928,15 +928,15 @@ function iter()
 	return 0	
 }
 
-# func fniter <[str]iterable> <[func]iterfunc>
+# func fniter <[str]iterable> <[func]funcname> <[str]args> ... => [str]
 #
-# Chama 'iterfunc' a cada iteração de 'iterable' passando o elemento
-# atual como argumento posicional '$1'.
+# Chama 'iterfunc' a cada iteração passando o elemento atual como argumento posicional
+# '$1' seguido de N'args' (opcional).
 #
 function fniter()
 {
-	getopt.parse "iterfunc:func:+:$2"
-	local item; while read item; do $2 "$item";	done <<< "$1"
+	getopt.parse "funcname:func:+:$2"
+	local item; while read item; do $2 "$item" "${@:3}"; done <<< "$1"
 	return 0
 }
 
