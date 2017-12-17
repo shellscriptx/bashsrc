@@ -19,16 +19,15 @@ readonly __STR_ERR_SLICE='intervalo do slice inválido'
 readonly __STR_ERR_FLAG_CHAR_INVALID='flag de cadeia de caracteres inválida'
 
 # constantes
-readonly str_lowercase='abcdefghijklmnopqrstuvwxyz'
-readonly str_uppercase='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-readonly str_letters="${str_lowercase}${str_uppercase}"
-readonly str_digits='0123456789'
-readonly str_hexdigits='0123456789abcdefABCDEF'
-readonly str_octdigits='01234567'
-readonly str_punctuation='!"#$%&\()*+,-./:;<=>?@[\\]^_`{|}~'"'"
-readonly str_whitespace=' \t\n\r\x0b\x0c'
-readonly str_printable="${str_digits}${str_letters}${str_punctuation}${str_whitespace}"
-
+readonly STR_LOWERCASE='abcdefghijklmnopqrstuvwxyz'
+readonly STR_UPPERCASE='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+readonly STR_LETTERS="${STR_LOWERCASE}${STR_UPPERCASE}"
+readonly STR_DIGITS='0123456789'
+readonly STR_HEX_DIGITS='0123456789abcdefABCDEF'
+readonly STR_OCT_DIGITS='01234567'
+readonly STR_PUNCTUATION='!"#$%&\()*+,-./:;<=>?@[\\]^_`{|}~'"'"
+readonly STR_WHITESPACE=' \t\n\r\x0b\x0c'
+readonly STR_PRINTABLE="${STR_DIGITS}${STR_LETTERS}${STR_PUNCTUATION}${STR_WHITESPACE}"
 
 # func str.len <[str]exp> => [uint]
 #
