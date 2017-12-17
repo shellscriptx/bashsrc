@@ -588,7 +588,7 @@ function isobj()
 	return $?
 }
 
-# func sorted <[var]name> ... => [iterable]
+# func sorted <[var]name> ... => [str]
 #
 # Retorna uma lista iterável em ordem alfabética dos items em 'name'.
 # O objeto 'name' deve ser do tipo var, array ou map, podendo especificar
@@ -658,7 +658,7 @@ function fndef()
 	return 0
 }
 
-# func enum <[str]iterable> => [iterable]
+# func enum <[str]iterable> => [str]
 #
 # Retorna uma lista iterável enumerada.
 #
@@ -793,7 +793,7 @@ function list()
 	return 0	
 }
 
-# func unique <[var]source> ... => [iterable]
+# func unique <[var]source> ... => [str]
 #
 # Retorna uma lista iterável de elementos únicos contidos em 'source',
 # emitindo apenas a primeira ocorrência de uma sequência repetida.
@@ -843,7 +843,7 @@ function unique()
 	return 0	
 }
 
-# func reversed <[str]iterable> => [iterable]
+# func reversed <[str]iterable> => [str]
 #
 # Reverte os elementos contidos em 'iterable'.
 #
@@ -861,7 +861,7 @@ function reversed()
 	return 0
 }
 
-# func iter <[str]iterable> <[int]start> <[uint]count> => [iterable]
+# func iter <[str]iterable> <[int]start> <[uint]count> => [str]
 #
 # Retorna uma nova lista iterável contendo 'count' elementos de 'iterable'
 # a partir da posição 'start'. Se 'count' for menor que '0' (zero), lê todos os
