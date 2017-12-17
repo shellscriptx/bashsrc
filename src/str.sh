@@ -464,14 +464,15 @@ function str.replace()
 	return 0
 }
 
-# func str.fnreplace <[str]exp> <[str]old> <[func]name> <[int]count> => [str]
+# func str.fnreplace <[str]exp> <[str]old> <[int]count> <[func]funcname> <[str]args> ... => [str]
 #
-# Retorna uma cópia de 'exp' substituindo 'old' pelo retorno da função 'name'
-# em 'count' ocorrências. A função 'name' é chamada e a expressão 'old' é passada
-# como argumento automaticamente. Se 'count' for igual à '-1' realiza a
-# substituição em todas as ocorrências. 
+# Retorna uma cópia de 'exp' substituindo 'old' pelo retorno de 'funcname' em 'count' ocorrências. 
+# A função é chamada e a expressão 'old' é passada como argumento posicional '$1' automaticamente
+# com N'args' (opcional). Se 'count' for igual à '-1' chama a função em todas as ocorrências. 
 # 
-# Exemplo:
+# Exemplo 1:
+#
+# $ source str.sh
 #
 # # Função que converte para maiúsculo.
 # $ upper()
@@ -483,24 +484,35 @@ function str.replace()
 # $ source str.sh
 # $ frase='Viva o linux, linux é vida, linux é o futuro !!!'
 #
-# $ str.fnreplace "$frase" "linux" upper -1
+# $ str.fnreplace "$frase" "linux" -1 upper
 # Viva o LINUX, LINUX é vida, LINUX é o futuro !!!
+#
+# Exemplo 2:
+#
+# $ source str.sh
+# 
+# $ texto='laranja, azul e vermelho'
+#
+# # Passando argumento na função 'str.repeat' para triplicar todas
+# # as ocorrências de 'a' no texto.
+# $ str.fnreplace "$texto" 'a' -1 str.repeat 3
+# laaaraaanjaaa, aaazul e vermelho
 #
 function str.fnreplace()
 {
-	getopt.parse "exp:str:-:$1" "old:str:-:$2" "name:func:+:$3" "count:int:+:$4"
+	getopt.parse "exp:str:-:$1" "old:str:-:$2" "count:int:+:$3" "funcname:func:+:$4"
 	
 	local exp=$1
-	local func=$3
+	local func=$4
 	local old=$2
 	local pos c
 
 	for ((pos=0; pos < ${#exp}; pos++)); do
 		if [[ "${exp:$pos:${#old}}" == "$old" ]]; then
-			new=$($func "$old")			
+			new=$($func "$old" "${@:5}")			
 			exp=${exp:0:$pos}${new}${exp:$(($pos+${#old}))}
 			pos=$(($pos+${#new}-1))
-			((c++)); [[ $c -eq $4 ]] && break
+			((c++)); [[ $c -eq $3 ]] && break
 		fi
 	done
 
@@ -548,13 +560,12 @@ function str.nreplace()
 	return 0
 }
 
-# func str.fnnreplace <[str]exp> <[str]old> <[func]name> <[int]match> => [str]
+# func str.fnnreplace <[str]exp> <[str]old> <[int]match> <[func]funcname> <[str]args> ...  => [str]
 #
-# Retorna uma cópia de 'exp' substituindo uma única vez 'old' pelo retorno da
-# função 'name'. A função é chamada em 'N match' e a string 'old' é passada
-# automaticamente como argumento. Utilize notação negativa para 
-# leitura reversa. Se match for igual a '-1' será substituído a última ocorrência,
-# '-2' para penúltima e assim por diante.
+# Retorna uma cópia de 'exp' substituindo uma única vez 'old' pelo retorno de 'funcname'. A função
+# é chamada em N'match' passando a ocorrência como argumento posicional '$1' com N'args' (opcional).
+# Utilize notação negativa para leitura reversa. Se match for igual a '-1' será substituído a última 
+# ocorrência, '-2' para penúltima e assim por diante.
 #
 # Exemplo 1:
 # 
@@ -563,7 +574,7 @@ function str.nreplace()
 #
 # $ source str.sh
 # $ frase='Viva o linux, linux é vida !!!'
-# $ tr.fnnreplace "$frase" "linux" str.toupper 1
+# $ tr.fnnreplace "$frase" "linux" 1 str.toupper
 # Viva o LINUX, linux é vida !!!
 #
 # Exemplo 2:
@@ -581,29 +592,29 @@ function str.nreplace()
 #     echo "=> $(str.reverse "$(str.toupper "$1")") <="
 # }
 #
-# $ str.fnnreplace "$frase" "linux" my_func -1
+# $ str.fnnreplace "$frase" "linux" -1 my_func 
 # Viva o linux, => XUNIL <= é vida !!!
 #
 function str.fnnreplace()
 {
-	getopt.parse "exp:str:-:$1" "old:str:-:$2" "name:func:+:$3" "match:int:+:$4"
+	getopt.parse "exp:str:-:$1" "old:str:-:$2" "match:int:+:$3" "funcname:func:+:$4"
 	
 	local exp=$1
 	local old=$2
-	local func=$3
+	local func=$4
 	local new match cond op pos seg
 	
-	if [[ $4 -gt 0 ]]; then
+	if [[ $3 -gt 0 ]]; then
 		cond="pos < ${#exp}"; op='pos++'
 	fi
 
-	seg=$(($4 >= 0 ? 0 : $((${#exp}-1))))
+	seg=$(($3 >= 0 ? 0 : $((${#exp}-1))))
 
 	for ((pos=seg; ${cond:-pos >= 0}; ${op-pos--})); do
 		if [[ "${exp:$pos:${#old}}" == "$old" ]]; then
 			((match++))
-			if [[ $match -eq ${4#-} ]]; then
-				new=$($func "$old")			
+			if [[ $match -eq ${3#-} ]]; then
+				new=$($func "$old" "${@:5}")			
 				exp=${exp:0:$pos}${new}${exp:$(($pos+${#old}))}
 				pos=$(($pos+${#new}-1))
 				break
@@ -749,46 +760,36 @@ function str.contains()
 	return $?
 }
 
-# func str.map <[str]exp> <[func]funcname> => [str]
+# func str.fnmap <[str]exp> <[func]funcname> <[str]args> ... => [str]
 #
-# Retorna uma cópia da string 'exp' com todos os seus caracteres modificados
-# de acordo com a função de mapeamento.
-# Nota: A função de mapeamento é chamada a cada iteração passando o caractere
-# da posição atual.
+# Retorna uma cópia de 'exp' com todos os caracteres modificados de acordo com
+# a função de mapeamento, onde 'funcname' é chamada a cada caractere lido passando
+# o mesmo como argumento posicional '$1' com N'args' (opcional).
 #
 # Exemplo 1:
 #
-#    $ str='shaman'
-#    $ new+=$(str.map "$str" str.toupper)
-#    $ echo $new
-#    Saída:
-#        S H A M A N
+# $ source str.sh
+#
+# # Duplicando todos os caractere. 
+# $ str.fnmap 'Linux' str.repeat 2
+# LLiinnuuxx
 #
 # Exemplo 2:
 #
-#    $ foo(){
-#        echo "letra: <$1>"
-#    }
+# $ source str.sh
 #
-#    $ str='foobar'
-#    $ str.map "$str" "foo"
+# # Adicionado um zero a cada digito.
+# $ str.fnmap '11111' str.zfill 2
+# 0101010101
 #
-#    saída:
-#        letra: <f>
-#        letra: <o>
-#        letra: <o>
-#        letra: <b>
-#        letra: <a>
-#        letra: <r>
-#
-function str.map()
+function str.fnmap()
 {
 	getopt.parse "exp:str:-:$1" "funcname:func:+:$2"
 	
 	local i
 	
 	for ((i=0; i<${#1}; i++)); do
-		$2 ${1:$i:1}; done
+		echo -n "$($2 ${1:$i:1} "${@:3}")"; done
 
 	return 0
 }
@@ -1001,7 +1002,7 @@ readonly -f str.len \
 			str.compare \
 			str.nocasecompare \
 			str.contains \
-			str.map \
+			str.fnmap \
 			str.slice \
 			str.filter \
 			str.field \
