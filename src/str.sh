@@ -511,7 +511,7 @@ function str.replace()
 	for ((pos=0; pos < ${#exp}; pos++)); do
 		if [[ "${exp:$pos:${#old}}" == "$old" ]]; then
 			exp=${exp:0:$pos}${new}${exp:$(($pos+${#old}))}
-			pos=$(($pos+${#new}-1))
+			pos=$(($pos+${#new}))
 			((c++)); [[ $c -eq $4 ]] && break
 		fi
 	done
@@ -568,7 +568,7 @@ function str.fnreplace()
 		if [[ "${exp:$pos:${#old}}" == "$old" ]]; then
 			new=$($func "$old" "${@:5}")			
 			exp=${exp:0:$pos}${new}${exp:$(($pos+${#old}))}
-			pos=$(($pos+${#new}-1))
+			pos=$(($pos+${#new}))
 			((c++)); [[ $c -eq $3 ]] && break
 		fi
 	done
@@ -606,7 +606,7 @@ function str.nreplace()
 			((m++))
 			if [[ $m -eq ${4#-} ]]; then
 				exp=${exp:0:$pos}${new}${exp:$(($pos+${#old}))}
-				pos=$(($pos+${#new}-1))
+				pos=$(($pos+${#new}))
 				break
 			fi
 		fi
@@ -673,7 +673,7 @@ function str.fnnreplace()
 			if [[ $match -eq ${3#-} ]]; then
 				new=$($func "$old" "${@:5}")			
 				exp=${exp:0:$pos}${new}${exp:$(($pos+${#old}))}
-				pos=$(($pos+${#new}-1))
+				pos=$(($pos+${#new}))
 				break
 			fi
 		fi
