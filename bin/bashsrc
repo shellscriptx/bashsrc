@@ -7,7 +7,7 @@
 #-------------------------------------------------------
 
 readonly BASENAME=${0##*/}
-readonly BASHSRC_VERSION=0.1.0-alpha
+readonly BASHSRC_VERSION=0.1.2-alpha
 
 if [[ ${#@} -eq 0 ]]; then
 	echo "Uso: $BASENAME [OPÇÕES]"
@@ -55,7 +55,7 @@ function view_doc()
 	local srcname=(${1/./ })
 	local srcfile=${srcname[0]}.sh
 	local srcdir=$BASHSRC_PATH/src
-	local line var func match comm about
+	local line var flags match comm about
 
 	if [[ ${#srcname[@]} -eq 0 ]]; then
 		echo "$BASENAME: nome do source requerido" 1>&2
@@ -73,23 +73,20 @@ function view_doc()
 	if [[ ${#srcname[@]} -eq 1 ]]; then
 		
 		var='^\s*(readonly|(typeset|declare)\s+-[a-zAF]*r[a-zAF]*)\s+[a-zA-Z]+[a-zA-Z_]*=.*'
-		func='^\s*#\s*func\s+[a-zA-Z0-9.-]+[a-zA-Z0-9._-]*.*'
-		about='^\s*#\s*\*'
+		flags='^\s*#\s*(func|type)\s+[a-zA-Z0-9.-]+[a-zA-Z0-9._-]*.*'
 
 		while read line; do
-			if [[ $line =~ ($var|$func) ]]; then
+			if [[ $line =~ ($var|$flags) ]]; then
 				echo ${line#+(#)}
-			elif [[ $line =~ $about ]]; then
-				echo "${line#+(#)}"
 			fi
 		done < "$srcdir/$srcfile"
 	else
-
-		func="^\s*#\s*func\s+${1#builtin.}\s+"
-
+	
+		flags="^\s*#\s*(func\s+${1#builtin.}|(type|const|var|array|map)\s+${1#*.})"
+		
 		while read line; do
 			if [[ ! $match ]]; then
-				if [[ $line =~ $func ]]; then
+				if [[ $line =~ $flags ]]; then
 					echo "${line#+(#)}"
 					match=1
 				fi
