@@ -18,6 +18,47 @@ readonly __FILEPATH_ERR_READ_DIR='não foi possível ler o diretório'
 readonly __FILEPATH_ERR_COPY_PATH='não foi possível copiar o arquivo ou diretório'
 readonly __FILEPATH_ERR_WRITE_DENIED='acesso negado: não foi possível criar o arquivo'
 
+# type filepath
+#
+# Implementa 'S' com os métodos:
+#
+# S.ext => [str]
+# S.basename => [str]
+# S.dirname => [str]
+# S.relpath => [str]
+# S.split => [str]
+# S.splitlist => [str]
+# S.slash => [str]
+# S.join ... => [str]
+# S.match <[str]pattern> => [bool]
+# S.exists => [bool]
+# S.glob => [str]
+# S.scandir => [str]
+# S.walk <[func]walkfunc>
+# S.copy <[dir]dest> <[uint]override>
+#
+
+# type fileinfo
+#
+# Implementa 'S' com os métodos:
+#
+# S.name => [str]
+# S.size => [uint]
+# S.mode => [oct]
+# S.modtime => [str]
+# S.modstime => [uint]
+# S.isdir => [bool]
+# S.perm => [bool]
+# S.ext => [str]
+# S.type => [str]
+# S.inode => [str]
+# S.path => [str]
+# S.gid => [uint]
+# S.group => [str]
+# S.uid => [uint]
+# S.user => [str]
+#
+
 # func filepath.ext <[str]path> => [str]
 #
 # Retorna a extensão do arquivo contido em 'path'.
