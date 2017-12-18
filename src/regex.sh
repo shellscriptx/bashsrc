@@ -18,14 +18,17 @@ source str.sh
 readonly __REGEX_ERR_FLAG_INVALID='a flag especificada é inválida'
 readonly __REGEX_ERR_GROUP_REF='referência do grupo inválida'
 
-# constantes
+# const REG_ICASE=2
+#
+# Regex flag
+# Não diferencia maiúsculas de minúsculas.
 readonly REG_ICASE=2
 
 
 # type regex
 #
-# Uma sequência de caracteres que determinam um padrão ou mais, associado a
-# uma cadeia de caracteres de um determinado texto. Esta em conformidade com 
+# Uma sequência de caracteres que determina um padrão ou mais, associado a
+# uma cadeia de caracteres de um texto. Esta em conformidade com 
 # o padrão (ERE).
 #
 # Implementa 'S' com os métodos:
@@ -59,15 +62,17 @@ function regex.findall()
 	
 	local exp=$2
 	local flag=$3
-	local def
+	local def cur
 
-	shopt -q nocasematch && def='s' || def='u'
+	shopt -q nocasematch && cur='s' || cur='u'
 	
 	case $flag in
-		0) ;;
-		2) shopt -qs nocasematch;;
+		0) def='u';;
+		2) def='s';;
 		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
 	esac	
+
+	shopt -q${def} nocasematch
 
 	while [[ $exp =~ $1 ]]; do
 		for match in "${BASH_REMATCH[@]}"; do
@@ -76,7 +81,7 @@ function regex.findall()
 		done
 	done
 	
-	shopt -q${def} nocasematch
+	shopt -q${cur} nocasematch
 
 	return 0
 }
@@ -92,21 +97,23 @@ function regex.fullmatch()
 
 	local flag=$3
 	local exp=$2
-	local def
+	local def cur
 
-	shopt -q nocasematch && def='s' || def='u'
+	shopt -q nocasematch && cur='s' || cur='u'
 	
 	case $flag in
-		0) ;;
-		2) shopt -qs nocasematch;;
+		0) def='u';;
+		2) def='s';;
 		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
 	esac	
+
+	shopt -q${def} nocasematch
 
 	if [[ $exp =~ ^$1$ ]]; then
 		echo "0|${#BASH_REMATCH}|$BASH_REMATCH"
 	fi
 
-	shopt -q${def} nocasematch
+	shopt -q${cur} nocasematch
 	
 	return 0
 }
@@ -122,21 +129,23 @@ function regex.match()
 	
 	local flag=$3
 	local exp=$2
-	local def
+	local def cur
 
-	shopt -q nocasematch && def='s' || def='u'
+	shopt -q nocasematch && cur='s' || cur='u'
 	
 	case $flag in
-		0) ;;
-		2) shopt -qs nocasematch;;
+		0) def='u';;
+		2) def='s';;
 		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
 	esac	
 	
+	shopt -q${def} nocasematch
+
 	if [[ $exp =~ ^$1 ]]; then
 		echo "0|${#BASH_REMATCH}|$BASH_REMATCH"
 	fi
 
-	shopt -q${def} nocasematch
+	shopt -q${cur} nocasematch
 
 	return 0
 }
@@ -154,15 +163,17 @@ function regex.search()
 	local match s e
 	local flag=$3
 	local exp=$2
-	local def
+	local def cur
 
-	shopt -q nocasematch && def='s' || def='u'
+	shopt -q nocasematch && cur='s' || cur='u'
 	
 	case $flag in
-		0) ;;
-		2) shopt -qs nocasematch;;
+		0) def='u';;
+		2) def='s';;
 		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
 	esac	
+
+	shopt -q${def} nocasematch
 
 	if [[ $exp =~ $1 ]]; then
 		for match in "${BASH_REMATCH[@]}"; do
@@ -172,7 +183,7 @@ function regex.search()
 		done
 	fi
 
-	shopt -q${def} nocasematch
+	shopt -q${cur} nocasematch
 	
 	return 0
 }
@@ -190,22 +201,24 @@ function regex.split()
 	local exp=$2
 	local sub=$2
 	local flag=$3
-	local def
+	local def cur
 
-	shopt -q nocasematch && def='s' || def='u'
+	shopt -q nocasematch && cur='s' || cur='u'
 	
 	case $flag in
-		0) ;;
-		2) shopt -qs nocasematch;;
+		0) def='u';;
+		2) def='s';;
 		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
 	esac	
+
+	shopt -q${def} nocasematch
 
 	while [[ $sub =~ $1 ]]; do
 		exp=${exp//${BASH_REMATCH[0]}/\\n}
 		sub=${sub//${BASH_REMATCH[0]}/}
 	done
 
-	shopt -q${def} nocasematch
+	shopt -q${cur} nocasematch
 	
 	echo "$exp"
 
@@ -222,18 +235,20 @@ function regex.ismatch()
 
 	local flag=$3
 	local exp=$2
-	local def
+	local def cur
 
-	shopt -q nocasematch && def='s' || def='u'
+	shopt -q nocasematch && cur='s' || cur='u'
 	
 	case $flag in
-		0) ;;
-		2) shopt -qs nocasematch;;
+		0) def='u';;
+		2) def='s';;
 		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
 	esac	
 
+	shopt -q${def} nocasematch
+
 	if [[ $exp =~ $1 ]]; then
-		shopt -q${def} nocasematch
+		shopt -q${cur} nocasematch
 		return 0
 	fi
 
@@ -250,15 +265,17 @@ function regex.groups()
 
 	local exp=$2
 	local flag=$3
-	local def
+	local def cur
 
-	shopt -q nocasematch && def='s' || def='u'
+	shopt -q nocasematch && cur='s' || cur='u'
 	
 	case $flag in
-		0) ;;
-		2) shopt -qs nocasematch;;
+		0) def='u';;
+		2) def='s';;
 		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
 	esac	
+
+	shopt -q${def} nocasematch
 
 	while [[ $exp =~ $1 ]]; do
 		for match in "${BASH_REMATCH[@]}"; do
@@ -267,7 +284,7 @@ function regex.groups()
 		done
 	done
 
-	shopt -q${def} nocasematch
+	shopt -q${cur} nocasematch
 
 	return 0
 }
@@ -323,20 +340,22 @@ function regex.savegroups()
 	local __exp=$2
 	local __flag=$3
 	local __match
-	local __def
+	local __def __cur
 
-	shopt -q nocasematch && __def='s' || __def='u'
+	shopt -q nocasematch && __cur='s' || __cur='u'
 	
 	case $__flag in
-		0) ;;
-		2) shopt -qs nocasematch;;
+		0) __def='u';;
+		2) __def='s';;
 		*) error.__exit "flag" "uint" "$__flag" "$__REGEX_ERR_FLAG_INVALID";;
 	esac	
+
+	shopt -q${__def} nocasematch
 
 	[[ $__exp =~ $1 ]]
 	__ref=("${BASH_REMATCH[@]}")
 
-	shopt -q${__def} nocasematch
+	shopt -q${__cur} nocasematch
 
 	return 0
 }
@@ -389,16 +408,18 @@ function regex.replace()
 	local exp=$2
 	local flag=$5
 	local seg=0
-	local groups grp pos c def new
+	local groups grp pos c def new cur
 
-	shopt -q nocasematch && def='s' || def='u'
+	shopt -q nocasematch && cur='s' || cur='u'
 	
 	case $flag in
-		0) ;;
-		2) shopt -qs nocasematch;;
+		0) def='u';;
+		2) def='s';;
 		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
 	esac	
 	
+	shopt -q${def} nocasematch
+
 	for ((c=0; c != $4; c++)); do
 		new=$3
 		groups=()
@@ -421,7 +442,7 @@ function regex.replace()
 		exp=${exp:0:$pos}${new}${exp:$(($pos+${#groups[0]}))}
 	done
 
-	shopt -q${def} nocasematch
+	shopt -q${cur} nocasematch
 	
 	echo "$exp"
 	
@@ -474,15 +495,17 @@ function regex.nreplace()
 	local pattern=$1
 	local exp=$2
 	local flag=$5
-	local groups grp seg m def new def
+	local groups grp seg m def new def cur
 
-	shopt -q nocasematch && def='s' || def='u'
+	shopt -q nocasematch && cur='s' || cur='u'
 	
 	case $flag in
-		0) ;;
-		2) shopt -qs nocasematch;;
+		0) def='u';;
+		2) def='s';;
 		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
 	esac	
+
+	shopt -q${def} nocasematch
 
 	while [[ $4 -gt $m ]]; do
 		new=$3
@@ -508,7 +531,7 @@ function regex.nreplace()
 
 	[[ $m -eq $4 ]] && exp=${exp:0:$pos}${new}${exp:$(($pos+${#groups[0]}))}
 
-	shopt -q${def} nocasematch
+	shopt -q${cur} nocasematch
 
 	echo "$exp"
 
@@ -585,16 +608,18 @@ function regex.fnreplace()
 	local func=$5
 	local exp=$2
 	local flag=$4
-	local pos c seg new def
+	local pos c seg new def cur
 
-	shopt -q nocasematch && def='s' || def='u'
+	shopt -q nocasematch && cur='s' || cur='u'
 	
 	case $flag in
-		0) ;;
-		2) shopt -qs nocasematch;;
+		0) def='u';;
+		2) def='s';;
 		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
 	esac	
 	
+	shopt -q${def} nocasematch
+
 	for ((c=0; c != $3; c++)); do
 		[[ ${exp:$seg} =~ $pattern ]]
 		[[ $BASH_REMATCH ]] || break
@@ -609,7 +634,7 @@ function regex.fnreplace()
 		exp=${exp:0:$pos}${new}${exp:$(($pos+${#BASH_REMATCH}))}
 	done
 
-	shopt -q${def} nocasematch
+	shopt -q${cur} nocasematch
 	
 	echo "$exp"
 	
@@ -693,17 +718,18 @@ function regex.fnnreplace()
 	local func=$5
 	local exp=$2
 	local flag=$4
-	local pos seg m
-	local def
+	local pos seg m def cur
 
-	shopt -q nocasematch && def='s' || def='u'
+	shopt -q nocasematch && cur='s' || cur='u'
 	
 	case $flag in
-		0) ;;
-		2) shopt -qs nocasematch;;
+		0) def='u';;
+		2) def='s';;
 		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
 	esac	
 	
+	shopt -q${def} nocasematch
+
 	while [[ $3 -gt $m ]]; do
 		[[ ${exp:$seg} =~ $pattern ]]
 		[[ $BASH_REMATCH ]] || break
@@ -719,7 +745,7 @@ function regex.fnnreplace()
 
 	[[ $m -eq $3 ]] && exp=${exp:0:$pos}$($func "$BASH_REMATCH" "${@:6}")${exp:$(($pos+${#BASH_REMATCH}))}
 
-	shopt -q${def} nocasematch
+	shopt -q${cur} nocasematch
 
 	echo "$exp"
 	
