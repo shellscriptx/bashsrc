@@ -46,6 +46,32 @@ readonly SEEK_SET=0
 readonly SEEK_CUR=1
 readonly SEEK_END=2
 
+# type file
+#
+# É descritor de arquivo constituído de inteiro positivo associado a um fluxo
+# de leitura e escrita.
+#
+# Implementa 'S' com os métodos:
+#
+# S.isatty => [bool]
+# S.writable => [bool]
+# S.readable => [bool]
+# S.size => [uint]
+# S.name => [str]
+# S.mode => [uint]
+# S.stat => [str]
+# S.fd => [uint]
+# S.readlines => [str]
+# S.readline => [str]
+# S.read <[uint]bytes> => [str]
+# S.writeline <[str]exp> => [bool]
+# S.write <[str]exp> <[uint]bytes> => [bool]
+# S.close => [bool]
+# S.tell => [uint]
+# S.rewind => [bool]
+# S.seek <[uint]offset> <[uint]whence> => [bool]
+#
+
 # func os.chdir <[str]dir> => [bool]
 #
 # Altera o diretório atual para 'dir'. Retorna 'true' para sucesso,
@@ -399,7 +425,7 @@ function os.stat()
 	return $?	
 }
 
-# func os.open <[var]os.file> <[str]filename> <[uint]flag> => [bool]
+# func os.open <[var]file> <[str]filename> <[uint]flag> => [bool]
 #
 # Abre o arquivo especificado em 'filename' associando um descritor 
 # válido para modo de acesso determinado em 'flag'. Se o arquivo for
