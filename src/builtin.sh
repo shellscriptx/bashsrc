@@ -1092,6 +1092,9 @@ function builtin.__init()
 	declare -Ag __REG_LIST_VAR \
 				__SRC_TYPE_IMPLEMENTS
 
+
+	trap "rm -rf $__RUNTIME/$$ &>/dev/null" INT QUIT ABRT KILL TERM 
+
     return 0
 }
 
