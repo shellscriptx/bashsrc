@@ -1054,35 +1054,6 @@ function var()
 	return $?
 }
 
-#function builtin.__check_type_conflict()
-#{
-#	local srcfile cur old srcfile line
-#	local re='^[^#]*__(SRC|BUILTIN)_TYPE_IMPLEMENTS\[([^]]+)\]='
-#	local listdir="$BASHSRC_PATH/src"
-
-#	while read cur; do
-#		if [[ "${old%|*}" == "${cur%|*}" ]]; then
-#			error.__exit "${old#*|}" "${cur#*|}" "${old%|*}" "$__BUILTIN_ERR_TYPE_CONFLICT" 2
-#		fi
-#		old="$cur"
-#	done < <(while [[ $listdir ]]; do
-#				for dir in "${listdir[@]}"; do
-#					unset listdir
-#					for srcfile in "$dir/"*; do
-#						if [[ -d "$srcfile" ]]; then
-#							listdir+=("$srcfile")
-#						else
-#							while read line; do
-#								[[ "$line" =~ $re ]] && echo "${BASH_REMATCH[2]}|$srcfile"
-#							done < "$srcfile"
-#						fi
-#					done
-#				done
-#			 done | sort -d -t'|' -k1)
-
-#	return 0
-#}
-
 function builtin.__check_type_conflict()
 {
 	local attr type reg_types
