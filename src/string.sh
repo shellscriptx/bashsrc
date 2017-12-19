@@ -957,7 +957,7 @@ function string.filter()
 # func string.field <[str]exp> <[str]sub> <[int]num> ... => [str]
 #
 # Retorna 'num' campo(s) delimitado por 'sub' em 'exp', onde 
-# campo inicia a partir da posição '1'. Pode ser especificado um ou mais campos. 
+# campo inicia a partir da posição '1' podendo especificar um ou mais campos. 
 # Utilize notação negativa para leitura reversa, onde '-1' refere-se ao
 # último campo, '-2' penúltimo e assim por diante.
 #
