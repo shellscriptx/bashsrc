@@ -6,15 +6,15 @@ readonly __GRP_SH=1
 
 source builtin.sh
 
-#* source: grp.sh
-#*
-#* Tipos:
-#*
-#* [group] => .passwd
-#*            .members
-#*            .gid
-#*            .info
-#* 
+# type group
+#
+# Implementa 'S' com os métodos:
+#
+# S.passwd => [str]
+# S.members => [str]
+# S.gid => [uint]
+# S.info => [str]
+#
 
 # func grp.getgrall => [str]
 #
