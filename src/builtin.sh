@@ -7,7 +7,9 @@
 # E-mail:			shellscriptx@gmail.com
 #----------------------------------------------#
 
-[[ $__BUILTIN_SH ]] && return 0 
+__IMPORT_SOURCE=${BASH_SOURCE[-2]}
+
+[[ $__BUILTIN_SH ]] && { builtin.__check_type_conflict 2>/dev/null; return 0; }
 
 readonly __BUILTIN_SH=1
 
@@ -25,10 +27,9 @@ readonly __RUNTIME=$BASHSRC_PATH/.runtime
 readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando interno'
 readonly __BUILTIN_ERR_TYPE_REG='nomenclatura da variável é de um tipo reservado'
 readonly __BUILTIN_ERR_ALREADY_INIT='a variável já foi inicializada'
-readonly __BUILTIN_ERR_TYPE_CONFLICT='conflito de tipos'
-readonly __BUILTIN_ERR_TYPE_NOT_MAP='não é do tipo map'
 
 readonly NULL=0
+
 # func has <[str]exp> on <[var]name> => [bool]
 #
 # Retorna 'true' se 'name' contém 'exp'. Caso contrário 'false'
@@ -1019,54 +1020,96 @@ function var()
 	local type regtypes method proto ptr_func struct_func var attr err
 	type=${@: -1}
 
-	if read _ attr _ < <(declare -p __SRC_TYPE_IMPLEMENTS 2>/dev/null); then
-		if [[ "$attr" =~ A ]]; then
-			for vartype in ${!__BUILTIN_TYPE_IMPLEMENTS[@]}; do
-				if [[ ${__SRC_TYPE_IMPLEMENTS[$vartype]} ]]; then
-					error.__exit '' '' '' "'__SRC_TYPE_IMPLEMENTS[$vartype]' $__BUILTIN_ERR_TYPE_CONFLICT"
-					err=1
+	regtypes="${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__INIT_TYPE_IMPLEMENTS[@]:+ ${!__INIT_TYPE_IMPLEMENTS[@]}}"
+			
+	for var in ${@:1:$((${#@}-1))}; do
+		getopt.parse "varname:var:+:$var"
+
+		if [[ $var =~ ^(${regtypes// /|})$ ]]; then
+			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_TYPE_REG"
+		elif [[ ${__REG_LIST_VAR[${FUNCNAME[1]}.$var]} ]]; then
+			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_ALREADY_INIT"
+		else
+	
+			[[ "$type" == "map" ]] && declare -Ag $var
+
+			for method in ${__BUILTIN_TYPE_IMPLEMENTS[$type]} ${__INIT_TYPE_IMPLEMENTS[$type]}; do
+		
+				ptr_func="^\s*$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
+
+				if ! struct_func=$(declare -fp $method 2>/dev/null); then
+					error.__exit "$var" "$type" "$method" "o método de implementação não existe" 1
+				else
+					[[ $struct_func =~ $ptr_func ]] && 
+					proto="%s(){ %s %s \"\$@\"; return \$?; }" || 
+					proto="%s(){ %s \"\$%s\" \"\$@\"; return \$?; }"
+	
+					eval "$(printf "$proto\n" $var.${method##*.} $method $var)"
+					__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.${method##*.} "
 				fi
 			done
-		else
-			error.__exit '' '' '' "'__SRC_TYPE_IMPLEMENTS' $__BUILTIN_ERR_TYPE_NOT_MAP"
-			err=1
+		fi
+	done
+
+	return $?
+}
+
+#function builtin.__check_type_conflict()
+#{
+#	local srcfile cur old srcfile line
+#	local re='^[^#]*__(SRC|BUILTIN)_TYPE_IMPLEMENTS\[([^]]+)\]='
+#	local listdir="$BASHSRC_PATH/src"
+
+#	while read cur; do
+#		if [[ "${old%|*}" == "${cur%|*}" ]]; then
+#			error.__exit "${old#*|}" "${cur#*|}" "${old%|*}" "$__BUILTIN_ERR_TYPE_CONFLICT" 2
+#		fi
+#		old="$cur"
+#	done < <(while [[ $listdir ]]; do
+#				for dir in "${listdir[@]}"; do
+#					unset listdir
+#					for srcfile in "$dir/"*; do
+#						if [[ -d "$srcfile" ]]; then
+#							listdir+=("$srcfile")
+#						else
+#							while read line; do
+#								[[ "$line" =~ $re ]] && echo "${BASH_REMATCH[2]}|$srcfile"
+#							done < "$srcfile"
+#						fi
+#					done
+#				done
+#			 done | sort -d -t'|' -k1)
+
+#	return 0
+#}
+
+function builtin.__check_type_conflict()
+{
+	local attr type reg_types
+
+	if read _ attr _ < <(declare -p SRC_TYPE_IMPLEMENTS 2>/dev/null); then
+
+		if [[ "$attr" =~ r ]]; then
+			error.__exit '' "$__IMPORT_SOURCE" '' "'SRC_TYPE_IMPLEMENTS' o array possui atributo somente leitura" 2
+		elif [[ ! "$attr" =~ A ]]; then
+			error.__exit '' "$__IMPORT_SOURCE" '' "'SRC_TYPE_IMPLEMENTS' não é um array associativo" 2
+		elif [[ ${SRC_TYPE_IMPLEMENTS[@]} ]]; then
+				
+			reg_types="${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__INIT_TYPE_IMPLEMENTS[@]:+ ${!__INIT_TYPE_IMPLEMENTS[@]}}"
+
+			for type in ${!SRC_TYPE_IMPLEMENTS[@]}; do
+				if [[ $type =~ ^(${reg_types// /|})$ ]]; then
+					error.__exit '' "$__IMPORT_SOURCE" "$type" "foi detectado conflito de tipos: o tipo especificado já foi inicializado" 2
+				else
+					__INIT_TYPE_IMPLEMENTS[$type]=${SRC_TYPE_IMPLEMENTS[$type]}
+				fi
+			done
 		fi
 	fi
 
-	if [[ ! $err ]] ; then
-		regtypes="${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__SRC_TYPE_IMPLEMENTS[@]:+ ${!__SRC_TYPE_IMPLEMENTS[@]}}"
-			
-		for var in ${@:1:$((${#@}-1))}; do
-			getopt.parse "varname:var:+:$var"
+	unset SRC_TYPE_IMPLEMENTS
 
-			if [[ $var =~ ^(${regtypes// /|})$ ]]; then
-				error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_TYPE_REG"
-			elif [[ ${__REG_LIST_VAR[${FUNCNAME[1]}.$var]} ]]; then
-				error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_ALREADY_INIT"
-			else
-	
-				[[ "$type" == "map" ]] && declare -Ag $var
-
-				for method in ${__BUILTIN_TYPE_IMPLEMENTS[$type]} ${__SRC_TYPE_IMPLEMENTS[$type]}; do
-			
-					ptr_func="^\s*$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
-
-					if ! struct_func=$(declare -fp $method 2>/dev/null); then
-						error.__exit "$var" "$type" "$method" "o método de implementação não existe" 1
-					else
-						[[ $struct_func =~ $ptr_func ]] && 
-						proto="%s(){ %s %s \"\$@\"; return \$?; }" || 
-						proto="%s(){ %s \"\$%s\" \"\$@\"; return \$?; }"
-		
-						eval "$(printf "$proto\n" $var.${method##*.} $method $var)"
-						__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.${method##*.} "
-					fi
-				done
-			fi
-		done
-	fi
-
-	return $?
+	return 0
 }
 
 function builtin.__init()
@@ -1088,10 +1131,13 @@ function builtin.__init()
 		error.__exit '' '' "$__RUNTIME" 'não foi possível gerar os arquivos temporários'
 	fi
 
-	# definições
-	declare -Ag __REG_LIST_VAR \
-				__SRC_TYPE_IMPLEMENTS
+	# conf
+	shopt -s extglob
+	shopt -u nocasematch
 
+	# definições
+	declare -Ag __INIT_TYPE_IMPLEMENTS \
+				__REG_LIST_VAR \
 
 	trap "rm -rf $__RUNTIME/$$ &>/dev/null" INT QUIT ABRT KILL TERM 
 
@@ -1128,6 +1174,7 @@ readonly -f has \
 			del \
 			count \
 			var \
-			builtin.__init
+			builtin.__init \
+			builtin.__check_type_conflict
 
 # /* BUILTIN_SRC */
