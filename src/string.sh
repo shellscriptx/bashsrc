@@ -954,11 +954,12 @@ function string.filter()
 	return 0
 }
 
-# func string.field <[str]exp> <[str]sub> <[uint]num> ... => [str]
+# func string.field <[str]exp> <[str]sub> <[int]num> ... => [str]
 #
 # Retorna 'num' campo(s) delimitado por 'sub' em 'exp', onde 
-# campo inicia a partir da posição '0' (zero). Pode ser 
-# especificado um ou mais campos.
+# campo inicia a partir da posição '1'. Pode ser especificado um ou mais campos. 
+# Utilize notação negativa para leitura reversa, onde '-1' refere-se ao
+# último campo, '-2' penúltimo e assim por diante.
 #
 # Exemplo:
 #
@@ -982,28 +983,26 @@ function string.field()
 {
     getopt.parse "exp:str:-:$1" "sub:str:-:$2"
 
-    local field num str
-    local i=0 s=0 d=0
+    local field num exp i
 
-    for num in ${@:3}; do
-        getopt.parse "num:uint:+:$num"
-        for ((i=s; i < ${#1}; i++)); do
-            str=${1:$i:${#2}}
-            if [ "$str" == "$2" ]; then
-                ((d++)); continue
-            elif [ $d -eq $num ]; then
-                field+=$str
-            elif [ $d -gt $num ]; then
-                break
-            fi
-        done
-        field+=' '
-        s=$i
-    done
+	for num in ${@:3}; do
+		getopt.parse "num:int:+:$num"
 
-    echo "${field% }"
+		[ $num -eq 0 ] && continue
+		[ $num -eq -1 ] && { field+=(${1##*$2}); continue; }
 
-    return 0
+		exp=$1
+		
+		for ((i=1; i < ${num#-}; i++)); do
+			[ $num -gt 0 ] && exp=${exp#*$2} || exp=${exp%$2*}
+		done
+
+		[ $num -gt 0 ] && field+=(${exp%%$2*}) || field+=(${exp##*$2})
+	done
+
+	echo "${field[@]}"
+
+	return 0
 }
 
 # func string.trimspace <[str]exp> => [str]
