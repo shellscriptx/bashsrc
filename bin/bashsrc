@@ -41,6 +41,7 @@ function usage()
 	echo "                                consultada, omitindo a extensão '.sh' do arquivo."
  	echo "                                Se '.funcname' for omitido é retornado o protótipo"
 	echo "                                de todas as funções disponíveis em 'src'."
+	echo "-c, --check-conflicts           Verifica se há conflito de tipos em bibliotecas."
 	echo "-h, --help                      Exibe ajuda e sai."
 	echo "-v, --version                   Exibe a versão e sai."
 	echo
@@ -55,7 +56,7 @@ function view_doc()
 	local srcname=(${1/./ })
 	local srcfile=${srcname[0]}.sh
 	local srcdir=$BASHSRC_PATH/src
-	local line var flags match comm about
+	local line var flags match comm about prefix
 
 	if [[ ${#srcname[@]} -eq 0 ]]; then
 		echo "$BASENAME: nome do source requerido" 1>&2
@@ -81,8 +82,9 @@ function view_doc()
 			fi
 		done < "$srcdir/$srcfile"
 	else
-	
-		flags="^\s*#\s*(func\s+${1#builtin.}|(type|const|var|array|map)\s+${1#*.})"
+		
+		prefix=${1#builtin.}; prefix=${prefix##*/}	
+		flags="^\s*#\s*(func\s+$prefix|(type|const|var|array|map)\s+${1#*.})"
 		
 		while read line; do
 			if [[ ! $match ]]; then
@@ -103,21 +105,63 @@ function view_doc()
 	return 0
 }
 
+function check_conflicts()
+{
+   local srcfile cur old srcfile line c
+   local re='^[^#]*(SRC|__BUILTIN)_TYPE_IMPLEMENTS\[([^]]+)\]='
+   local listdir="$BASHSRC_PATH/src"
+
+	while read cur; do
+		if [[ "${old%|*}" == "${cur%|*}" ]]; then
+			[[  $c ]] || echo -e "Conflito(s):\n"
+			echo "Tipo: ${old%|*}"
+			echo "Source 1: ${old#*|}"
+			echo "Source 2: ${cur#*|}"
+			echo
+			c=1
+		fi
+		old="$cur"
+	done < <(while [[ $listdir ]]; do
+				for dir in "${listdir[@]}"; do
+					unset listdir
+					for srcfile in "$dir/"*; do
+						if [[ -d "$srcfile" ]]; then
+							listdir+=("$srcfile")
+						else
+							while read line; do
+								[[ "$line" =~ $re ]] && echo "${BASH_REMATCH[2]}|$srcfile"
+							done < "$srcfile"
+						fi
+					done
+				done
+			done | sort -d -t'|' -k1)
+
+	[[  $c ]] || echo "[OK]"
+
+	return ${c:-0}
+}
+
 function list_sources()
 {
-	local src c
+	local dir file c
+	local listdir="$BASHSRC_PATH/src"
 
-	echo -e "Diretório: $BASHSRC_PATH\n"
-	
-	for srcfile in "$BASHSRC_PATH/src/"*.sh; do
-		srcname=${srcfile##*/}
-		srcname=${srcname%.*}
-		echo "$srcname"
-		((c++))
+	while [[ $listdir ]]; do
+		for dir in "${listdir[@]}"; do
+			unset listdir
+			for file in "$dir/"*; do
+				if [[ -d "$file" ]]; then
+					listdir+=("$file")
+				else
+					echo "$file"
+					((c++))
+				fi
+			done
+		done
 	done
-	
-	echo -e "\nTotal: $c"
 
+	echo -e '-------------\nTotal:' $c
+	
 	return 0
 }
 
@@ -125,6 +169,7 @@ case $1 in
 	-d|--doc) view_doc $2;;
 	-l|--list) list_sources;;
 	-e|--env) printf "BASHSRC_PATH=%s\nPATH=%s\n" $BASHSRC_PATH $PATH;;
+	-c|--check-conflicts) check_conflicts;;
 	-h|--help) usage;;
 	-v|--version) echo "$BASENAME $BASHSRC_VERSION";;
 	man) man $BASHSRC_PATH/bin/intro.gz;;
@@ -132,4 +177,4 @@ case $1 in
 		echo "Tente '$BASENAME --help' para mais informações." 1>&2;;
 esac
 
-exit 0
+exit $?
