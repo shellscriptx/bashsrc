@@ -7,9 +7,7 @@
 # E-mail:			shellscriptx@gmail.com
 #----------------------------------------------#
 
-__IMPORT_SOURCE=${BASH_SOURCE[-2]}
-
-[[ $__BUILTIN_SH ]] && { builtin.__check_type_conflict 2>/dev/null; return 0; }
+[[ $__BUILTIN_SH ]] && return 0
 
 readonly __BUILTIN_SH=1
 
@@ -1054,8 +1052,10 @@ function var()
 	return $?
 }
 
-function builtin.__check_type_conflict()
+function builtin.init_type()
 {
+	getopt.parse "-:null:-:$*"
+
 	local attr type reg_types
 
 	if read _ attr _ < <(declare -p SRC_TYPE_IMPLEMENTS 2>/dev/null); then
@@ -1070,17 +1070,16 @@ function builtin.__check_type_conflict()
 
 			for type in ${!SRC_TYPE_IMPLEMENTS[@]}; do
 				if [[ $type =~ ^(${reg_types// /|})$ ]]; then
-					error.__exit '' "$__IMPORT_SOURCE" "$type" "foi detectado conflito de tipos: o tipo especificado já foi inicializado" 2
+					error.__exit '' "${BASH_SOURCE[-2]}" "$type" "foi detectado conflito de tipos: o tipo especificado já foi inicializado" 2
 				else
 					__INIT_TYPE_IMPLEMENTS[$type]=${SRC_TYPE_IMPLEMENTS[$type]}
+					unset SRC_TYPE_IMPLEMENTS[$type]
 				fi
 			done
 		fi
 	fi
 
-	unset SRC_TYPE_IMPLEMENTS
-
-	return 0
+	return $?
 }
 
 function builtin.__init()
@@ -1109,6 +1108,7 @@ function builtin.__init()
 	# definições
 	declare -Ag __INIT_TYPE_IMPLEMENTS \
 				__REG_LIST_VAR \
+				SRC_TYPE_IMPLEMENTS
 
 	trap "rm -rf $__RUNTIME/$$ &>/dev/null" INT QUIT ABRT KILL TERM 
 
@@ -1146,6 +1146,6 @@ readonly -f has \
 			count \
 			var \
 			builtin.__init \
-			builtin.__check_type_conflict
+			builtin.init_type
 
 # /* BUILTIN_SRC */
