@@ -1031,7 +1031,8 @@ function var()
 	
 			[[ "$type" == "map" ]] && declare -Ag $var
 
-			for method in ${__BUILTIN_TYPE_IMPLEMENTS[$type]} ${__INIT_TYPE_IMPLEMENTS[$type]}; do
+			for method in 	${__BUILTIN_TYPE_IMPLEMENTS[$type]} \
+							${__INIT_TYPE_IMPLEMENTS[$type]}; do
 		
 				ptr_func="^\s*$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
 
@@ -1052,7 +1053,7 @@ function var()
 	return $?
 }
 
-function builtin.init_type()
+function builtin.__TYPES__()
 {
 	getopt.parse "-:null:-:$*"
 
@@ -1118,6 +1119,7 @@ function builtin.__init()
 builtin.__init
 
 readonly -f has \
+			swap \
 			sum \
 			fnmap \
 			filter \
@@ -1132,6 +1134,7 @@ readonly -f has \
 			len \
 			range \
 			fnrange \
+			isobj \
 			sorted \
 			fndef \
 			enum \
@@ -1141,11 +1144,13 @@ readonly -f has \
 			unique \
 			reversed \
 			iter \
+			fniter \
+			niter \
 			mod \
-			del \
 			count \
+			del \
 			var \
-			builtin.__init \
-			builtin.init_type
+			builtin.__TYPES__ \
+			builtin.__init
 
 # /* BUILTIN_SRC */
