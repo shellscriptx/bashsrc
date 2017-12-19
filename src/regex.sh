@@ -12,7 +12,7 @@
 readonly __REGEX_SH=1
 
 source builtin.sh
-source str.sh
+source string.sh
 
 # errors
 readonly __REGEX_ERR_FLAG_INVALID='a flag especificada é inválida'
@@ -177,7 +177,7 @@ function regex.search()
 
 	if [[ $exp =~ $1 ]]; then
 		for match in "${BASH_REMATCH[@]}"; do
-			s=$(str.find "$exp" "$match")
+			s=$(string.find "$exp" "$match")
 			e=$((s+${#match}))
 			echo "$s|$e|$match"
 		done
@@ -654,7 +654,7 @@ function regex.fnreplace()
 # # script: re.sh
 #
 # source regex.sh
-# source str.sh
+# source string.sh
 #
 # texto='Slackware é uma distro Linux lançada em 16/7/1993'
 #
@@ -680,7 +680,7 @@ function regex.fnreplace()
 # }
 #
 # maiusculo(){
-#    str.toupper "$1"
+#    string.toupper "$1"
 # }
 #
 # mascara(){

@@ -16,7 +16,7 @@ source error.sh
 source getopt.sh
 source map.sh
 source array.sh
-source str.sh
+source string.sh
 
 # runtime
 readonly __RUNTIME=$BASHSRC_PATH/.runtime
@@ -169,7 +169,7 @@ function has(){
 	case $__type in
 		*a*) array.contains $3 "$1";;
 		*A*) map.contains $3 "$1";;
-		*) str.contains "$__obj_ref" "$1";;
+		*) string.contains "$__obj_ref" "$1";;
 	esac
 
 	return $?
@@ -279,14 +279,14 @@ function fnmap(){
 #
 # Exemplo 2:
 #
-# # Utilizando a função 'str.isupper' para listar somente
+# # Utilizando a função 'string.isupper' para listar somente
 # # os caracteres maiúsculos.
 # 
 # $ source builtin.sh
-# $ source str.sh
+# $ source string.sh
 #
 # $ letras='aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ'
-# $ maiusculas=$(filter str.isupper letras)
+# $ maiusculas=$(filter string.isupper letras)
 # $ echo $maiusculas
 # A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
 #
@@ -631,12 +631,12 @@ function sorted()
 # Exemplo:
 #
 # $ source builtin.sh
-# $ source str.sh
+# $ source string.sh
 #
 # $ texto='shell script é o poder. :D'
 #
-# # Nova nomenclatura para 'str.toupper'.
-# $ fndef str.toupper up
+# # Nova nomenclatura para 'string.toupper'.
+# $ fndef string.toupper up
 #
 # # Executando.
 # $ up "$texto"

@@ -160,8 +160,8 @@ function filepath.slash()
 	getopt.parse "path:str:+:$1"
 
 	local path
-	path=$(str.ltrim "$1" "/")
-	path=$(str.rtrim "$1" "/")
+	path=$(string.ltrim "$1" "/")
+	path=$(string.rtrim "$1" "/")
 	echo -e "${path//\//\\n}"
 
 	return 0	
@@ -177,8 +177,8 @@ function filepath.join()
 
 	for slash in "$@"; do
 		getopt.parse "elem:str:+:$slash"
-		slash=$(str.ltrim "$slash" '/')
-		slash=$(str.rtrim "$slash" '/')
+		slash=$(string.ltrim "$slash" '/')
+		slash=$(string.rtrim "$slash" '/')
 		path+='/'$slash	
 	done
 
