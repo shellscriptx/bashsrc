@@ -9,6 +9,8 @@
 
 [[ $__ERROR_SH ]] && return 0
 
+source builtin.sh
+
 readonly __ERROR_SH=1
 
 # errors
@@ -18,7 +20,8 @@ function error.__exit()
 {
 	local i l t fn
 	local stack
-	local nmsg=$5
+	local terr=$5
+	local err_msg=${4:-erro desconhecido}
 
 	[[ "${FUNCNAME[1]}" == "getopt.parse" ]] && fn=2 || fn=1
 
@@ -36,7 +39,7 @@ function error.__exit()
 						ERR_ARG=$1 \
 						ERR_TYPE=$2 \
 						ERR_VAL=$3 \
-						ERR_MSG=$4 \
+						ERR_MSG=$err_msg \
 						ERR_FUNC=${FUNCNAME[1]}
 
 			return 1
@@ -51,20 +54,25 @@ function error.__exit()
 			echo
 			echo -e "Pilha: ${stack% => }"
 
-			case $nmsg in
+			case $terr in
 				1)
 					echo "Tipo: $2"
 					echo "Implementação: $3"
 					echo "Composição: $1.${3##*.}"
 					echo "Método: $3"
-					echo "Erro: ${4:-erro desconhecido}"
+					echo "Erro: $err_msg"
 					echo "------------------------"
+					;;
+				2)
+					echo "Source: $2"
+					echo "Tipo: [$3]"
+					echo "Erro: $err_msg"
 					;;
 				*)
 					echo -e "Argumento: <${1:--}>"
 					echo -e "Tipo: [${2:--}]"
 					echo -e "Valor: '${3:--}'"
-					echo -e "Erro: ${4:-erro desconhecido}"
+					echo -e "Erro: $err_msg"
 					echo ------------------------
 					;;
 			esac
