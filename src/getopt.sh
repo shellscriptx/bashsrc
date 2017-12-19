@@ -165,7 +165,7 @@ function getopt.parse()
 			path) [[ -e $value ]] || error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_PATH_NOT_FOUND";;
 			fd) ([[ $value =~ ^(0|[1-9][0-9]*)$ ]]; [[ -e /dev/fd/$value ]]) || \
 				error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_FD_NOT_EXISTS";;
-			type) obj_types="${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__SRC_TYPE_IMPLEMENTS[@]:+ ${!__SRC_TYPE_IMPLEMENTS[@]}}"
+			type) obj_types="${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__INIT_TYPE_IMPLEMENTS[@]:+ ${!__INIT_TYPE_IMPLEMENTS[@]}}"
 				  [[ "$value" =~ ^(${obj_types// /|})$ ]] || error.__exit "$name" "$ctype" "$value" "$__GETOPT_ERR_VAR_TYPE";;
 
 			*) error.__exit "$name" "$ctype" '' "$__GETOPT_ERR_TYPE_PARAM '$ctype'";;
