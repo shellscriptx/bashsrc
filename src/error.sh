@@ -19,7 +19,7 @@ readonly __ERROR_VAR_READONLY='possui atributo somente leitura'
 function error.__exit()
 {
 	local i l t fn
-	local stack
+	local stack 
 	local terr=$5
 	local err_msg=${4:-erro desconhecido}
 
@@ -34,13 +34,13 @@ function error.__exit()
 	
 	case $__EXIT_TRACE_ERROR in
 		0)
-			declare -g ERR=1 \
-						ERR_STACK=${stack% } \
-						ERR_ARG=$1 \
-						ERR_TYPE=$2 \
-						ERR_VAL=$3 \
-						ERR_MSG=$err_msg \
-						ERR_FUNC=${FUNCNAME[1]}
+			declare -g __ERR__=1 \
+						__ERR_STACK__=${stack% } \
+						__ERR_ARG__=$1 \
+						__ERR_TYPE__=$2 \
+						__ERR_VAL__=$3 \
+						__ERR_MSG__=$err_msg \
+						__ERR_FUNC__=${FUNCNAME[1]}
 
 			return 1
 			;;
@@ -56,16 +56,16 @@ function error.__exit()
 
 			case $terr in
 				1)
-					echo "Tipo: $2"
-					echo "Implementação: $3"
-					echo "Composição: $1.${3##*.}"
-					echo "Método: $3"
+					echo "Tipo: ${2:--}"
+					echo "Implementação: ${3:--}"
+					echo "Composição: ${1:+$1.${3##*.}}"
+					echo "Método: ${3:--}"
 					echo "Erro: $err_msg"
 					echo "------------------------"
 					;;
 				2)
-					echo "Source: $2"
-					echo "Tipo: [$3]"
+					echo "Source: ${2:--}"
+					echo "Tipo: [${3:--}]"
 					echo "Erro: $err_msg"
 					;;
 				*)
@@ -81,7 +81,18 @@ function error.__exit()
 	esac
 }
 
-function error.__clear(){ unset ERR ERR_STACK ERR_ARG ERR_TYPE ERR_VAL ERR_MSG ERR_FUNC; return 0; }
+function error.__clear()
+{ 
+	unset __ERR__ \
+			__ERR_STACK__ \
+			__ERR_ARG__ \
+			__ERR_TYPE__ \
+			__ERR_VAL__ \
+			__ERR_MSG__ \
+			__ERR_FUNC__
+	
+	return 0
+}
 
 function error.__depends()
 {
@@ -115,17 +126,17 @@ function error.__depends()
 # pilha de rastreamento e a execução do script é interrompida (padrão).
 #
 # on - Se ocorrer um erro, serão inicializadas as variáveis de rastreamento 
-# 'ERR*' e o script continuará seu fluxo de execução.
+# '__ERR_*' e o script continuará seu fluxo de execução.
 #
 # Variáveis de rastreamento:
 #
-# ERR - Status do erro
-# ERR_STACK - Funções de desencadeamento
-# ERR_ARG - Argumento da função
-# ERR_TYPE - Tipo de dado do argumento
-# ERR_VAL - Valor do argumento
-# ERR_MSG - Mensagem de erro
-# ERR_FUNC - Função que provocou o erro
+# __ERR__ - Status do erro
+# __ERR_STACK__ - Funções de desencadeamento
+# __ERR_ARG__ - Argumento da função
+# __ERR_TYPE__ - Tipo de dado do argumento
+# __ERR_VAL__ - Valor do argumento
+# __ERR_MSG__ - Mensagem de erro
+# __ERR_FUNC__ - Função que provocou o erro
 # 
 # Obs: A função fecha o descritor de erro '2' afetando quaisquer redirecionamento
 # para o mesmo, podendo ser restaurada utilizando a flag 'off'. 
@@ -145,10 +156,10 @@ function error.__depends()
 # os.open arq '/home/usuario/arquivo_nao_existe.txt' $O_RDONLY
 #
 # # Testa o status do erro 
-# if [ $ERR ]; then
+# if [ $__ERR__ ]; then
 #     echo 'Ops !! Aconteceu algo !!'
-#     echo "Encontrei o erro -> $ERR_MSG"
-#     echo "Aconteceu aqui -> $ERR_FUNC"
+#     echo "Encontrei o erro -> $__ERR_MSG__"
+#     echo "Aconteceu aqui -> $__ERR_FUNC__"
 # fi
 #
 # Restaurando o tratamento de erro
@@ -167,7 +178,7 @@ function error.resume()
 	
 	case $1 in
 		on)		exec 2<&-; declare -g __EXIT_TRACE_ERROR=0;;
-		off)	exec 2>/dev/tty; exec 1>&2; declare -g __EXIT_TRACE_ERROR=1;;
+		off)	exec 2>/dev/tty; declare -g __EXIT_TRACE_ERROR=1;;
 		*)		error.__exit 'flag' 'str' "$1" "flag inválida";;
 	esac
 
