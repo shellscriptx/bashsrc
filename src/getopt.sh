@@ -75,23 +75,24 @@ readonly __GETOPT_ERR_VAR_TYPE='tipo da variável inválida'
 #
 function getopt.parse()
 {
-	local name ctype flag value ref flags names attr IFSbkp obj_types
+	local name ctype flag value ref flags names attr obj_types i args param
 	
 	error.__clear
 
 	for param in "$@"
 	do
+		for i in {0..2}; do
+			args[$i]=${param%%:*}
+			param=${param#*:}
+		done
 		
-		IFSbkp="$IFS"
-		IFS=':'
-		args=($param)
-		IFS="$IFSbkp"
+		args[$i+1]=$param
 		
-		name="${args[0]%:}"
-		ctype="${args[1]%:}"
-		flag="${args[2]%:}"
-		value="${args[@]:3}"
-		
+		name=${args[0]}
+		ctype=${args[1]}
+		flag=${args[2]}
+		value=${args[3]}
+			
 		[[ $name =~ ^(${names%|})$ ]] && error.__exit "$name" '' "$value" "$__GETOPT_ERR_NAME_CONFLICT"
 		[[ $name =~ ^[a-zA-Z0-9_-]+$ ]] || error.__exit "$name" '' "$value" "$__GETOPT_ERR_PARAM_NAME"
 
