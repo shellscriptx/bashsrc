@@ -17,6 +17,7 @@ source builtin.sh
 readonly __FILEPATH_ERR_READ_DIR='não foi possível ler o diretório'
 readonly __FILEPATH_ERR_COPY_PATH='não foi possível copiar o arquivo ou diretório'
 readonly __FILEPATH_ERR_WRITE_DENIED='acesso negado: não foi possível criar o arquivo'
+readonly __FILEPATH_ERR_READ_DENIED='acesso negado: não foi possível ler o arquivo'
 
 # type filepath
 #
@@ -29,14 +30,14 @@ readonly __FILEPATH_ERR_WRITE_DENIED='acesso negado: não foi possível criar o 
 # S.split => [str]
 # S.splitlist => [str]
 # S.slash => [str]
-# S.join ... => [str]
-# S.match <[str]pattern> => [bool]
+# S.ismatch <[str]pattern> => [bool]
+# S.match <[str]pattern> => [str]
 # S.exists => [bool]
-# S.glob => [str]
+# S.listdir => [str]
 # S.scandir => [str]
-# S.walk <[func]walkfunc>
+# S.fnscandir <[func]funcname> <[str]args> ...
+# S.walk <[func]walkfunc> <[func]args> ...
 # S.copy <[dir]dest> <[uint]override>
-#
 
 # type fileinfo
 #
@@ -187,7 +188,7 @@ function filepath.join()
 	return 0
 }
 
-# func filepath.match <[path]path> <[str]pattern> => [bool]
+# func filepath.ismatch <[path]path> <[str]pattern> => [bool]
 # 
 # Retorna 'true' se o caminho corresponde com o padrão em 'pattern',
 # caso contrário 'false'.
@@ -206,8 +207,8 @@ function filepath.join()
 # # Lendo os arquivos do diretório '/etc'.
 # while read file; do
 #     # Exibindo somente os arquivos com a extensão '.conf'
-#     file.match '.conf$' && file.basename
-# done < <(filepath.scandir '/etc')
+#     file.ismatch '.conf$' && file.basename
+# done < <(filepath.listdir '/etc')
 #
 # Saida:
 #
@@ -223,10 +224,21 @@ function filepath.join()
 # fwupd.conf
 # ...
 #
-function filepath.match()
+function filepath.ismatch()
 {
 	getopt.parse "path:path:+:$1" "pattern:str:+:$2"
 	[[ $1 =~ $2 ]]
+	return $?
+}
+
+# func filepath.match <[path]path> <[str]pattern> => [str]
+#
+# Retorna o padrão casado em 'path'. A sequência em 'pattern' pode ser uma expressão regular.
+#
+function filepath.match()
+{
+	getopt.parse "path:path:+:$1" "pattern:str:+:$2"
+	[[ $1 =~ $2 ]] && echo ${BASH_REMATCH[0]}
 	return $?
 }
 
@@ -265,13 +277,13 @@ function filepath.glob()
 	return $?
 }
 
-# func filepath.scandir <[dir]path> => [str]
+# func filepath.listdir <[dir]dir> => [str]
 #
 # Retorna uma lista iterável de todos os arquivos em 'path'.
 #
-function filepath.scandir()
+function filepath.listdir()
 {
-	getopt.parse "path:dir:+:$1"
+	getopt.parse "dir:dir:+:$1"
 
 	local file
 
@@ -284,10 +296,71 @@ function filepath.scandir()
 	return $?
 }
 
-# func filepath.walk <[dir]path> <[func]walkfunc>
+# func filepath.scandir <[dir]dir> => [str]
 #
-# Chama 'walkfunc' a cada iteração em 'path', passando como argumento o
-# caminho absoluto do arquivo.
+# Retorna uma lista iterável com o caminho completo dos arquivos em path e
+# sub-diretórios (recursivo).
+# Obs: arquivos ocultos não são listados.
+#
+function filepath.scandir()
+{
+	getopt.parse "dir:dir:+:$1"
+	
+	local listdir=${1%/}
+	local file dir
+
+	for dir in "${listdir[@]}"; do
+		for file in "$dir/"*; do
+			if [ -d "$file" ]; then
+				filepath.scandir "$file"
+			elif [ -f "$file" ]; then
+				echo "$file"
+			fi
+		done
+	done
+
+	return 0
+}
+
+# func filepath.fnscandir <[dir]dir> <[func]funcname> <[str]args> ...
+#
+# Chama 'funcname' a cada iteração de arquivo em 'path' e sub-diretórios (recursivo),
+# passando como argumento posicional '$1' o caminho completo do arquivo atual com N'args' (opcional).
+# Obs: Não lê arquivos ocultos.
+#
+# Exemplo:
+#
+# # Usando a função 'filepath.match' para listar somente os arquivos 'mp4', 'mp3' e 'avi'
+# # contidos em um diretório (recursivo).
+#
+# $ source filepath.sh
+# 
+# $ filepath.fnscandir '/home/usuario/Downloads' filepath.match '^.*\.(mp4|avi|mp3)$'
+#
+function filepath.fnscandir()
+{
+	getopt.parse "dir:dir:+:$1" "funcname:func:+:$2"
+	
+	local listdir=${1%/}
+	local file dir
+
+	for dir in "${listdir[@]}"; do
+		for file in "$dir/"*; do
+			if [ -d "$file" ]; then
+				filepath.fnscandir "$file" "$2" "${@:3}"
+			elif [ -f "$file" ]; then
+				$2 "$file" "${@:3}"	
+			fi
+		done
+	done
+
+	return 0
+}
+
+# func filepath.walk <[dir]dir> <[func]walkfunc> <[func]args> ...
+#
+# Chama 'walkfunc' a cada iteração em 'path' passando como argumento posicional '$1'
+# o caminho absoluto do arquivo com N'args' (opcional), 
 #
 # Exemplo 1:
 #
@@ -361,7 +434,7 @@ function filepath.walk()
 	local file
 
 	if [ -x "$1" ]; then
-		for file in "${1%/}/"*; do $2 "$file"; done
+		for file in "${1%/}/"*; do $2 "$file" "${@:3}"; done
 	else
 		error.__exit 'path' 'dir' "$1" "$__FILEPATH_ERR_READ_DIR"
 	fi
@@ -402,6 +475,52 @@ function filepath.copy()
 		error.__exit 'dest' 'dir' "$2" "$__FILEPATH_ERR_WRITE_DENIED"
 	fi
 		
+	return $?
+}
+
+# func filepath.diff <[file]file1> <[file]file2> => [str]
+#
+# Compara 'file1' com 'file2' e retorna as linhas diferentes se houver.
+# As linhas são retornas no seguinte formato:
+#
+# num_linha|file1_linha|file2_linha
+#
+function filepath.diff()
+{
+	getopt.parse "file1:file:+:$1" "file2:file:+:$2"
+	
+	local file1 file2 i diff l1 l2
+	
+	if [[ ! -r "$1" ]]; then
+		error.__exit 'file1' 'file' "$1" "$__FILEPATH_ERR_READ_DENIED"
+	elif [[ ! -r "$2" ]]; then
+		error.__exit 'file2' 'file' "$2" "$__FILEPATH_ERR_READ_DENIED"
+	else
+		mapfile -t file1 < "$1"
+		mapfile -t file2 < "$2"
+	
+		diff=0
+		i=0
+		l1=$file1
+		l2=$file2
+
+		while [[ $l1 || $l2 ]]; do
+			[[ "$l1" != "$l2" ]] && echo "$((i+1))|$l1|$l2" && diff=1
+			((i++)); l1=${file1[$i]}; l2=${file2[$i]}
+		done
+	fi
+
+	return $diff
+}
+
+# func filepath.equal <[file]file1> <[file]file2> => [bool]
+#
+# Retorna 'true' se 'file1' é igual a 'file2'. Caso contrário 'false'.
+#
+function filepath.equal()
+{
+	getopt.parse "file1:file:+:$1" "file2:file:+:$2"
+	filepath.diff "$1" "$2" 1>/dev/null
 	return $?
 }
 
@@ -569,7 +688,7 @@ function filepath.fileinfo.user()
 	return $?
 }
 
-readonly -f filepath.ext \
+readonly -f	filepath.ext \
 			filepath.basename \
 			filepath.dirname \
 			filepath.relpath \
@@ -577,12 +696,17 @@ readonly -f filepath.ext \
 			filepath.splitlist \
 			filepath.slash \
 			filepath.join \
+			filepath.ismatch \
 			filepath.match \
 			filepath.exists \
 			filepath.glob \
+			filepath.listdir \
 			filepath.scandir \
+			filepath.fnscandir \
 			filepath.walk \
 			filepath.copy \
+			filepath.diff \
+			filepath.equal \
 			filepath.fileinfo.name \
 			filepath.fileinfo.size \
 			filepath.fileinfo.mode \
