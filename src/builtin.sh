@@ -23,7 +23,7 @@ readonly __RUNTIME=$BASHSRC_PATH/.runtime
 
 # erros
 readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando interno'
-readonly __BUILTIN_ERR_TYPE_REG='nomenclatura da variável é de um tipo reservado'
+readonly __BUILTIN_ERR_TYPE_REG='nomenclatura da variável é um tipo reservado'
 readonly __BUILTIN_ERR_ALREADY_INIT='a variável já foi inicializada'
 
 readonly NULL=0
@@ -993,7 +993,7 @@ function count()
 function del()
 {
 	local obj func init
-
+	
 	for obj in $@; do
 		getopt.parse "varname:var:+:$obj"
 		for func in ${__REG_LIST_VAR[${FUNCNAME[1]}.${obj}]}; do
@@ -1015,7 +1015,7 @@ function var()
 {
 	getopt.parse "varname:var:+:$1" "type:type:+:${@: -1}"
 
-	local type regtypes method proto ptr_func struct_func var attr err
+	local type regtypes method proto ptr_func struct_func var attr err builtin_method
 	type=${@: -1}
 
 	regtypes="${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__INIT_TYPE_IMPLEMENTS[@]:+ ${!__INIT_TYPE_IMPLEMENTS[@]}}"
@@ -1030,11 +1030,16 @@ function var()
 		else
 	
 			[[ "$type" == "map" ]] && declare -Ag $var
-
+			[[ "$type" != "builtin" ]] && builtin_method=${__BUILTIN_TYPE_IMPLEMENTS[builtin]}
+				
+			eval "$var.__type__(){ echo $type; return 0; }"
+			__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.__type__ "
+			
 			for method in 	${__BUILTIN_TYPE_IMPLEMENTS[$type]} \
-							${__INIT_TYPE_IMPLEMENTS[$type]}; do
-		
-				ptr_func="^\s*$method\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
+							${__INIT_TYPE_IMPLEMENTS[$type]} \
+							$builtin_method; do
+			
+				ptr_func="^\s*${method//./\\.}\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
 
 				if ! struct_func=$(declare -fp $method 2>/dev/null); then
 					error.__exit "$var" "$type" "$method" "o método de implementação não existe" 1
@@ -1045,6 +1050,7 @@ function var()
 	
 					eval "$(printf "$proto\n" $var.${method##*.} $method $var)"
 					__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.${method##*.} "
+					
 				fi
 			done
 		fi
@@ -1082,6 +1088,159 @@ function builtin.__TYPES__()
 
 	return $?
 }
+
+function builtin.__extfncall(){ [[ "${FUNCNAME[-2]}" != "${FUNCNAME[1]}" ]]; return $?; }
+
+function builtin.__len__()
+{
+	getopt.parse "var:var:+:$1"
+	builtin.__extfncall && len "$1"
+	return 0
+}
+
+function builtin.__quote__()
+{
+	if builtin.__extfncall; then
+		local arr; mapfile -t arr <<< "$1"
+		printf "%q\n" "${arr[@]}"
+	fi
+	return 0
+}
+
+function builtin.__typeval__()
+{
+	if builtin.__extfncall; then
+		local t
+		if [[ ! $1 ]]; then	t='null'
+		elif [[ $1 == ?(-|+)+([0-9]) ]]; then t='int'
+		else t='string'; fi
+	fi
+
+	echo "$t"
+
+	return 0
+}
+
+function builtin.__isnum__()
+{
+	builtin.__extfncall && [[ $1 == ?(-|+)+([0-9]) ]]
+	return $?
+}
+
+function builtin.__isnull__()
+{
+	builtin.__extfncall && [[ ! $1 ]]
+	return $?
+}
+
+function builtin.__in__()
+{
+	getopt.parse "var:var:+:$1"
+	if builtin.__extfncall; then
+		declare -n __byref=$1
+		[[ $__byref == ?(-|+)+([0-9]) ]] && ((__byref++))
+	fi
+	return $?
+}
+
+function builtin.__dec__()
+{
+	getopt.parse "var:var:+:$1"
+	if builtin.__extfncall; then
+		declare -n __byref=$1
+		[[ $__byref == ?(-|+)+([0-9]) ]] && ((__byref--))
+	fi
+	return $?
+}
+
+function builtin.__eq__()
+{
+	if builtin.__extfncall; then
+		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -eq $2 ]] || [[ "$1" == "$2" ]]
+	fi
+	return $?
+}
+
+function builtin.__ne__()
+{
+	if builtin.__extfncall; then
+		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -ne $2 ]] || [[ "$1" != "$2" ]]
+	fi
+	return $?
+}
+
+function builtin.__gt__()
+{
+	if builtin.__extfncall; then
+		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -gt $2 ]] || [[ "$1" > "$2" ]]
+	fi
+	return $?
+}
+
+function builtin.__lt__()
+{
+	if builtin.__extfncall; then
+		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -lt $2 ]] || [[ "$1" < "$2" ]]
+	fi
+	return $?
+}
+
+function builtin.__ge__()
+{
+	if builtin.__extfncall; then
+		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -ge $2 ]]
+	fi
+	return $?
+}
+
+function builtin.__le__()
+{
+	if builtin.__extfncall; then
+		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -le $2 ]]
+	fi
+	return $?
+}
+
+function builtin.__float__()
+{
+	if builtin.__extfncall; then
+		[[ $1 == ?(-|+)+([0-9]) ]] && printf "%0.2f\n" "$1"
+	fi
+	return $?
+}
+
+function builtin.__upper__()
+{
+	builtin.__extfncall && echo "${1^^}"
+	return 0
+}
+
+function builtin.__lower__()
+{
+	builtin.__extfncall && echo "${1,,}"
+	return 0
+}
+
+function builtin.__iter__()
+{
+	getopt.parse "var:var:+:$1"
+	if builtin.__extfncall; then
+		local __attr __ch __i
+		declare -n __byref=$1
+		if read _ __attr _ < <(declare -p $1 2>/dev/null); then
+			case $__attr in
+				*a*)	array.items $1;;
+				*A*)	map.items $1;;
+				*)		for ((__i=0; __i<${#__byref}; __i++)); do 
+							__ch[$__i]=${__byref:$__i:1}; done
+							printf "%s\n" "${__ch[@]}";;
+			esac
+		fi	
+	fi
+
+	return $?
+}
+
 
 function builtin.__init()
 {
@@ -1150,6 +1309,24 @@ readonly -f has \
 			count \
 			del \
 			var \
+			builtin.__len__ \
+			builtin.__quote__ \
+			builtin.__typeval__ \
+			builtin.__isnum__ \
+			builtin.__isnull__ \
+			builtin.__in__ \
+			builtin.__dec__ \
+			builtin.__eq__ \
+			builtin.__ne__ \
+			builtin.__gt__ \
+			builtin.__lt__ \
+			builtin.__ge__ \
+			builtin.__le__ \
+			builtin.__float__ \
+			builtin.__upper__ \
+			builtin.__lower__ \
+			builtin.__iter__ \
+			builtin.__extfncall \
 			builtin.__TYPES__ \
 			builtin.__init
 
