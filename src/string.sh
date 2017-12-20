@@ -508,13 +508,17 @@ function string.replace()
 	local new=$3
 	local c pos
 
-	for ((pos=0; pos < ${#exp}; pos++)); do
-		if [[ "${exp:$pos:${#old}}" == "$old" ]]; then
-			exp=${exp:0:$pos}${new}${exp:$(($pos+${#old}))}
-			pos=$(($pos+${#new}))
-			((c++)); [[ $c -eq $4 ]] && break
-		fi
-	done
+	if [[ $4 -gt 0 ]]; then
+		for ((pos=0; pos < ${#exp}; pos++)); do
+			if [[ "${exp:$pos:${#old}}" == "$old" ]]; then
+				exp=${exp:0:$pos}${new}${exp:$(($pos+${#old}))}
+				pos=$(($pos+${#new}))
+				((c++)); [[ $c -eq $4 ]] && break
+			fi
+		done
+	elif [[ $4 -eq -1 ]]; then
+		exp=${exp//$2/$3}
+	fi
 
 	echo "$exp"
 
@@ -851,7 +855,7 @@ function string.fnmap()
 	return 0
 }
 
-# func string.slice <[str]exp> <[ini:len]slice> ... => [str]
+# func string.slice <[str]exp> <[ini:len]slice ...> => [str]
 #
 # Retorna uma substring de 'exp' a partir do intervalo '[ini:len]' especificado.
 # Onde 'ini' indica a posição inicial e 'len' o comprimento. 
@@ -894,8 +898,11 @@ function string.slice()
         delm=${BASH_REMATCH[1]//[0-9]/}
 
         [[ ! $delm ]] && length=1
+		
+		start=${start:-0}
+		length=${length:-${#exp}}
 
-        exp=${exp:${start:-0}:${length:-${#exp}}}
+        exp=${exp:$start:$length}
         slice=${slice/\[${BASH_REMATCH[1]}\]/}
         
     done
@@ -988,16 +995,16 @@ function string.field()
 	for num in ${@:3}; do
 		getopt.parse "num:int:+:$num"
 
-		[ $num -eq 0 ] && continue
-		[ $num -eq -1 ] && { field+=(${1##*$2}); continue; }
+		[[ $num -eq 0 ]] && continue
+		[[ $num -eq -1 ]] && { field+=(${1##*$2}); continue; }
 
 		exp=$1
 		
 		for ((i=1; i < ${num#-}; i++)); do
-			[ $num -gt 0 ] && exp=${exp#*$2} || exp=${exp%$2*}
+			[[ $num -gt 0 ]] && exp=${exp#*$2} || exp=${exp%$2*}
 		done
 
-		[ $num -gt 0 ] && field+=(${exp%%$2*}) || field+=(${exp##*$2})
+		[[ $num -gt 0 ]] && field+=(${exp%%$2*}) || field+=(${exp##*$2})
 	done
 
 	echo "${field[@]}"
