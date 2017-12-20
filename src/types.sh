@@ -10,6 +10,28 @@ readonly __TYPES_SH=1
 
 declare -Ag __BUILTIN_TYPE_IMPLEMENTS
 
+__BUILTIN_TYPE_IMPLEMENTS[builtin]='
+builtin.__len__
+builtin.__quote__
+builtin.__typeval__
+builtin.__isnum__
+builtin.__in__
+builtin.__dec__
+builtin.__isnull__
+builtin.__in__
+builtin.__dec__
+builtin.__eq__
+builtin.__ne__
+builtin.__gt__
+builtin.__lt__
+builtin.__ge__
+builtin.__le__
+builtin.__float__
+builtin.__upper__
+builtin.__lower__
+builtin.__iter__
+'
+
 __BUILTIN_TYPE_IMPLEMENTS[time]='
 time.localtime
 time.ctime
@@ -138,19 +160,20 @@ os.file.rewind
 '
 
 __BUILTIN_TYPE_IMPLEMENTS[filepath]='
-filepath.dirname
-filepath.basename
-filepath.glob
-filepath.relpath
 filepath.ext
-filepath.splitlist
+filepath.basename
+filepath.dirname
+filepath.relpath
 filepath.split
+filepath.splitlist
 filepath.slash
-filepath.join
-filepath.scandir
-filepath.walk
-filepath.exists
+filepath.ismatch
 filepath.match
+filepath.exists
+filepath.listdir
+filepath.scandir
+filepath.fnscandir
+filepath.walk
 filepath.copy
 '
 
