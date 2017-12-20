@@ -107,13 +107,16 @@ function view_doc()
 
 function check_conflicts()
 {
-   local srcfile cur old srcfile line c
+   local srcfile cur old line
    local re='^[^#]*(SRC|__BUILTIN)_TYPE_IMPLEMENTS\[([^]]+)\]='
-   local listdir="$BASHSRC_PATH/src"
 
-	while read cur; do
+	while read srcfile; do
+		while read line; do
+			[[ "$line" =~ $re ]] && echo "${BASH_REMATCH[2]}|$srcfile"
+		done < "$srcfile"
+	done < <(list_sources) | sort -d -t'|' -k1 | while read cur; do
 		if [[ "${old%|*}" == "${cur%|*}" ]]; then
-			[[  $c ]] || echo -e "Conflito(s):\n"
+			echo -e "Conflito:\n"
 			echo "Tipo: ${old%|*}"
 			echo "Source 1: ${old#*|}"
 			echo "Source 2: ${cur#*|}"
@@ -121,47 +124,26 @@ function check_conflicts()
 			c=1
 		fi
 		old="$cur"
-	done < <(while [[ $listdir ]]; do
-				for dir in "${listdir[@]}"; do
-					unset listdir
-					for srcfile in "$dir/"*; do
-						if [[ -d "$srcfile" ]]; then
-							listdir+=("$srcfile")
-						else
-							while read line; do
-								[[ "$line" =~ $re ]] && echo "${BASH_REMATCH[2]}|$srcfile"
-							done < "$srcfile"
-						fi
-					done
-				done
-			done | sort -d -t'|' -k1)
+	done
 
-	[[  $c ]] || echo "[OK]"
-
-	return ${c:-0}
+	return 0
 }
 
 function list_sources()
 {
-	local dir file c
-	local listdir="$BASHSRC_PATH/src"
+	local dir file
+	local listdir="${1:-"$BASHSRC_PATH/src"}"
 
-	while [[ $listdir ]]; do
-		for dir in "${listdir[@]}"; do
-			unset listdir
-			for file in "$dir/"*; do
-				if [[ -d "$file" ]]; then
-					listdir+=("$file")
-				else
-					echo "$file"
-					((c++))
-				fi
-			done
+	for dir in "${listdir[@]}"; do
+		for file in "$dir/"*; do
+			if [[ -d "$file" ]]; then
+				list_sources "$file"
+			else
+				echo "$file"
+			fi
 		done
 	done
 
-	echo -e '-------------\nTotal:' $c
-	
 	return 0
 }
 
