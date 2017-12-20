@@ -574,7 +574,7 @@ function os.file.readable()
 function os.file.size()
 {
 	getopt.parse "descriptor:fd:+:$1"
-	string.field "$(os.file.stat $1)" '|' 6
+	string.field "$(os.file.stat $1)" '|' 7
 	return $?
 }
 
@@ -585,7 +585,7 @@ function os.file.size()
 function os.file.name()
 {
 	getopt.parse "descriptor:fd:+:$1"
-	string.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 0
+	string.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 1
 	return $?
 }
 
@@ -600,7 +600,7 @@ function os.file.name()
 function os.file.mode()
 {
 	getopt.parse "descriptor:fd:+:$1"
-	string.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 1
+	string.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 2
 	return $?
 }
 
@@ -637,7 +637,7 @@ function os.file.stat()
 function os.file.fd()
 {
 	getopt.parse "descriptor:fd:+:$1"
-	string.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 2
+	string.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 3
 	return 0
 }
 
@@ -821,7 +821,7 @@ function os.file.close()
 function os.file.tell()
 {
 	getopt.parse "descriptor:fd:+:$1"
-	string.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 3
+	string.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 4
 	return 0
 }
 
