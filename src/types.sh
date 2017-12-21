@@ -15,8 +15,6 @@ builtin.__len__
 builtin.__quote__
 builtin.__typeval__
 builtin.__isnum__
-builtin.__in__
-builtin.__dec__
 builtin.__isnull__
 builtin.__in__
 builtin.__dec__
@@ -27,9 +25,15 @@ builtin.__lt__
 builtin.__ge__
 builtin.__le__
 builtin.__float__
+builtin.__iter__
+builtin.__fnmap__
+builtin.__fn__
 builtin.__upper__
 builtin.__lower__
-builtin.__iter__
+builtin.__rev__
+builtin.__repl__
+builtin.__rm__
+builtin.__swap__
 '
 
 __BUILTIN_TYPE_IMPLEMENTS[time]='
@@ -173,7 +177,7 @@ filepath.exists
 filepath.listdir
 filepath.scandir
 filepath.fnscandir
-filepath.walk
+filepath.fnlistdir
 filepath.copy
 '
 
