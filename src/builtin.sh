@@ -222,10 +222,10 @@ function sum(){
 	return 0
 }
 
-# func fnmap <[var]name> <[func]funcname> <[str]args> ... => [str]
+# func fnmap <[var]name> <[func]funcname> <[str]args> ...
 #
 # Chama 'funcname' a cada iteração de 'name' passando automaticamente o elemento
-# atual como argumento posicional '$1' seguido de N'args' (opcional).
+# atual como argumento posicional '$1' seguido de 'N'args (opcional).
 #
 # O objeto irá depender do tipo de dado em 'name', aplicando os seguintes critérios:
 #
@@ -481,24 +481,18 @@ function range()
 {
 	getopt.parse "min:int:+:$1" "max:int:+:$2" "step:int:+:$3"
 
-	local op i
-
-	[[ $1 -ge $2 && $3 -ge 0 ||
-	   $1 -le $2 && $3 -le 0 ]]  && return 0
+	local i op
 	
-	[[ $1 -gt $2 ]] && op='>='
-	
-	for ((i=$1; i ${op:-<=} $2; i=i+$3)); do
-		echo $i
-	done			
+	[[ $3 -lt 0 ]] && op='>=' || op='<='
+	for ((i=$1; i $op $2; i=i+$3)); do echo "$i"; done
 
 	return 0
 }
 
-# func fnrange <[func]funcname> <[int]min> <[int]max> <[int]step> => [object]
+# func fnrange <[int]min> <[int]max> <[int]step> <[func]funcname> <[str]args> ...
 #
-# Chama a função 'funcname' a cada iteração do intervalo especificado, passando
-# automaticamente o valor atual do elemento como argumento.
+# Chama 'funcname' a cada iteração com 'step' intervalo, passando automaticamente o valor
+# atual do elemento como argumento posicional '$1' com 'N'args (opcional).
 #
 # Exemplo:
 #
@@ -534,7 +528,7 @@ function range()
 # echo
 # 
 # echo "Removendo..."
-# fnrange del_intervalo 1 6 2
+# fnrange 1 6 2 del_intervalo
 # 
 # echo
 # echo "Lista [depois]:"
@@ -563,15 +557,13 @@ function range()
 #
 function fnrange()
 {
-	getopt.parse "funcname:func:+:$1" "min:int:+:$2" "max:int:+:$3" "step:int:+:$4"
+	#getopt.parse "funcname:func:+:$1" "min:int:+:$2" "max:int:+:$3" "step:int:+:$4"
+	getopt.parse "min:int:+:$1" "max:int:+:$2" "step:int:+:$3" "funcname:func:+:$4"
 
-	local op i
-
-	[[ $1 -ge $3 && $4 -ge 0 ||
-	   $1 -le $3 && $4 -le 0 ]]  && return 0
+	local i op
 	
-	[[ $2 -gt $3 ]] && op='>='
-	for ((i=$2; i ${op:-<=} $3; i=i+$4)); do $1 $i; done			
+	[[ $3 -lt 0 ]] && op='>=' || op='<='
+	for ((i=$1; i $op $2; i=i+$3)); do $4 $i "${@:5}"; done
 
 	return 0
 }
