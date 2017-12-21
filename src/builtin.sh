@@ -1051,7 +1051,7 @@ function var()
 	return $?
 }
 
-function builtin.__TYPES__()
+function builtin.loadtypes()
 {
 	getopt.parse "-:null:-:$*"
 
@@ -1203,13 +1203,68 @@ function builtin.__float__()
 
 function builtin.__upper__()
 {
-	builtin.__extfncall && echo "${1^^}"
+	getopt.parse "var:var:+:$1"
+	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref^^}
 	return 0
 }
 
 function builtin.__lower__()
 {
-	builtin.__extfncall && echo "${1,,}"
+	getopt.parse "var:var:+:$1"
+	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref,,}
+	return 0
+}
+
+function builtin.__swap__()
+{
+	getopt.parse "var:var:+:$1"
+	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref~~}
+	return 0
+}
+
+function builtin.__rev__()
+{
+	getopt.parse "var:var:+:$1"
+	builtin.__extfncall && declare -n __byref=$1 && __byref=$(string.reverse "$__byref")
+	return 0
+}
+
+function builtin.__repl__()
+{
+	getopt.parse "var:var:+:$1" "old:str:-:$2" "new:str:-:$3" "count:int:+:$4"
+	builtin.__extfncall && declare -n __byref=$1 && __byref=$(string.replace "$__byref" "$2" "$3" $4)
+	return 0
+}
+
+function builtin.__rm__()
+{
+	getopt.parse "var:var:+:$1"
+	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref//$2/}
+	return 0
+}
+
+function builtin.__fnmap__()
+{
+	getopt.parse "var:var:+:$1" "funcname:func:+:$2"
+	
+	if builtin.__extfncall; then
+		local __tmp __i
+		declare -n __byref=$1
+		
+		for ((__i=0; __i < ${#__byref}; __i++)); do
+			__tmp+=$($2 "${__byref:$__i:1}" "${@:3}")
+		done
+
+		__byref=$__tmp
+	fi
+
+	return 0
+}
+
+function builtin.__fn__()
+{
+	getopt.parse "var:var:+:$1" "funcname:func:+:$2"
+	builtin.__extfncall && declare -n __byref=$1 && __byref=$($2 "$__byref" "${@:3}")
 	return 0
 }
 
@@ -1301,6 +1356,7 @@ readonly -f has \
 			count \
 			del \
 			var \
+			builtin.loadtypes \
 			builtin.__len__ \
 			builtin.__quote__ \
 			builtin.__typeval__ \
@@ -1315,11 +1371,16 @@ readonly -f has \
 			builtin.__ge__ \
 			builtin.__le__ \
 			builtin.__float__ \
+			builtin.__fn__ \
+			builtin.__fnmap__ \
 			builtin.__upper__ \
 			builtin.__lower__ \
+			builtin.__rev__ \
+			builtin.__repl__ \
+			builtin.__rm__ \
+			builtin.__swap__ \
 			builtin.__iter__ \
 			builtin.__extfncall \
-			builtin.__TYPES__ \
 			builtin.__init
 
 # /* BUILTIN_SRC */
