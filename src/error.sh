@@ -45,6 +45,7 @@ function error.__exit()
 			return 1
 			;;
 		*)
+			exec 1>&2
 			stack=${stack// / => }
 			echo "(Pilha de rastreamento)"
 			echo "Arquivo: $0"
@@ -61,7 +62,6 @@ function error.__exit()
 					echo "Composição: ${1:+$1.${3##*.}}"
 					echo "Método: ${3:--}"
 					echo "Erro: $err_msg"
-					echo "------------------------"
 					;;
 				2)
 					echo "Source: ${2:--}"
@@ -73,9 +73,10 @@ function error.__exit()
 					echo -e "Tipo: [${2:--}]"
 					echo -e "Valor: '${3:--}'"
 					echo -e "Erro: $err_msg"
-					echo ------------------------
 					;;
 			esac
+			echo "------------------------"
+			exec 1<&-
 			exit 1
 			;;
 	esac
