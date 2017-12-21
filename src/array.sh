@@ -374,11 +374,15 @@ function array.slice()
 
         [[ ! $__delm ]] && __length=1
 
+		__start=${__start:-0}
+
 		if [[ $__ini -eq 0 ]]; then
-			__exp=${__arr[@]:${__start:-0}:${__length:-${#__arr[@]}}}
+			__length=${__length:-${#__arr[@]}}
+			__exp=${__arr[@]:$__start:$__length}
 			__ini=1
 		else
-			__exp=${__exp:${__start:-0}:${__length:-${#__exp}}}
+			__length=${__length:-${#__exp}}
+			__exp=${__exp:$__start:$__length}
 		fi
 	
 		__slice=${__slice/\[${BASH_REMATCH[1]}\]/}
