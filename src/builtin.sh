@@ -1169,18 +1169,18 @@ function builtin.__gt__()
 	return $?
 }
 
-function builtin.__lt__()
-{
-	if builtin.__extfncall; then
-		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -lt $2 ]] || [[ "$1" < "$2" ]]
-	fi
-	return $?
-}
-
 function builtin.__ge__()
 {
 	if builtin.__extfncall; then
 		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -ge $2 ]]
+	fi
+	return $?
+}
+
+function builtin.__lt__()
+{
+	if builtin.__extfncall; then
+		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -lt $2 ]] || [[ "$1" < "$2" ]]
 	fi
 	return $?
 }
