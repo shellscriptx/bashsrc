@@ -14,7 +14,7 @@ readonly __FILEPATH_SH=1
 source builtin.sh
 
 # Erros
-readonly __FILEPATH_ERR_READ_DIR='não foi possível ler o diretório'
+readonly __FILEPATH_ERR_READ_DIR='acesso negado: não foi possível ler o diretório'
 readonly __FILEPATH_ERR_COPY_PATH='não foi possível copiar o arquivo ou diretório'
 readonly __FILEPATH_ERR_WRITE_DENIED='acesso negado: não foi possível criar o arquivo'
 readonly __FILEPATH_ERR_READ_DENIED='acesso negado: não foi possível ler o arquivo'
@@ -263,15 +263,14 @@ function filepath.glob()
 	getopt.parse "pattern:str:+:$1"
 	
 	local file
-	local path=${1%/*}
 
-	if [ -x "${path:-.}" ]; then	
-		for file in "$path/"${1##*/}; do
-			[[ "$file" == "$path/${1##*/}" ]] && break
+	if [ -x "${1%/*}" ]; then	
+		for file in "${1%/*}/"${1##*/}; do
+			[[ "$file" == "${1%/*}/${1##*/}" ]] && break
 			echo "$file"
 		done
 	else
-		error.__exit 'path' 'dir' "$1" "$__FILEPATH_ERR_READ_DIR"
+		error.__exit 'path' 'dir' "${1%/*}" "$__FILEPATH_ERR_READ_DIR"
 	fi
 	
 	return $?
@@ -279,7 +278,7 @@ function filepath.glob()
 
 # func filepath.listdir <[dir]dir> => [str]
 #
-# Retorna uma lista iterável de todos os arquivos em 'path'.
+# Retorna uma lista iterável com o caminho completo de todos os arquivos em 'path'.
 #
 function filepath.listdir()
 {
@@ -287,36 +286,32 @@ function filepath.listdir()
 
 	local file
 
-	if [ -x "$1" ]; then
-		for file in "${1%/}/"*; do echo "$file"; done
-	else
-		error.__exit 'path' 'dir' "$1" "$__FILEPATH_ERR_READ_DIR"
-	fi
+	for file in "${1%/}/"* "${1%/}/".*; do 
+		[[ ${file##*/} == "." || ${file##*/} == ".." ]] && continue
+		echo "$file"
+	done
 
-	return $?
+	return 0
 }
 
 # func filepath.scandir <[dir]dir> => [str]
 #
-# Retorna uma lista iterável com o caminho completo dos arquivos em path e
-# sub-diretórios (recursivo).
-# Obs: arquivos ocultos não são listados.
+# Retorna uma lista iterável com o caminho completo de todos os arquivos em 'path'
+# e sub-diretórios (recursivo).
 #
 function filepath.scandir()
 {
 	getopt.parse "dir:dir:+:$1"
 	
-	local listdir=${1%/}
-	local file dir
+	local file
 
-	for dir in "${listdir[@]}"; do
-		for file in "$dir/"*; do
-			if [ -d "$file" ]; then
-				filepath.scandir "$file"
-			elif [ -f "$file" ]; then
-				echo "$file"
-			fi
-		done
+	for file in "${1%/}/"* "${1%/}/".*; do
+		if [[ -d "$file" && ! -L "$file" ]]; then
+			[[ ${file##*/} == "." || ${file##*/} == ".." ]] && continue
+			filepath.scandir "$file"
+		elif [[ -f "$file" ]]; then
+			echo "$file"
+		fi
 	done
 
 	return 0
@@ -341,26 +336,24 @@ function filepath.fnscandir()
 {
 	getopt.parse "dir:dir:+:$1" "funcname:func:+:$2"
 	
-	local listdir=${1%/}
-	local file dir
+	local file
 
-	for dir in "${listdir[@]}"; do
-		for file in "$dir/"*; do
-			if [ -d "$file" ]; then
-				filepath.fnscandir "$file" "$2" "${@:3}"
-			elif [ -f "$file" ]; then
-				$2 "$file" "${@:3}"	
-			fi
-		done
+	for file in "${1%/}/"* "${1%/}/".*; do
+		if [[ -d "$file" && ! -L "$file" ]]; then
+			[[ ${file##*/} == "." || ${file##*/} == ".." ]] && continue
+			filepath.fnscandir "$file" $2 "${@:3}"
+		elif [[ -f "$file" ]]; then
+			$2 "$file" "${@:3}"
+		fi
 	done
 
 	return 0
 }
 
-# func filepath.walk <[dir]dir> <[func]walkfunc> <[func]args> ...
+# func filepath.fnlistdir <[dir]dir> <[func]funcname> <[str]args> ...
 #
-# Chama 'walkfunc' a cada iteração em 'path' passando como argumento posicional '$1'
-# o caminho absoluto do arquivo com N'args' (opcional), 
+# Chama 'funcname' a cada iteração em 'path' passando como argumento posicional '$1'
+# o caminho absoluto do arquivo ou diretório com N'args' (opcional), 
 #
 # Exemplo 1:
 #
@@ -371,7 +364,7 @@ function filepath.fnscandir()
 #
 # source filepath.sh
 #
-# filepath.walk '/etc' filepath.fileinfo.perm
+# filepath.fnlistdir '/etc' filepath.fileinfo.perm
 #
 # Saida:
 #
@@ -408,7 +401,7 @@ function filepath.fnscandir()
 #    echo ---
 # }
 #
-# filepath.walk '/etc' exibir_tamanho
+# filepath.fnlistdir '/etc' exibir_tamanho
 #
 # Saida:
 #
@@ -427,14 +420,17 @@ function filepath.fnscandir()
 # arquivo: vtrgb
 # tamanho: 23 bytes
 #
-function filepath.walk()
+function filepath.fnlistdir()
 {
 	getopt.parse "dir:dir:+:$1" "walkfunc:func:+:$2"
 
 	local file
-
-	if [ -x "$1" ]; then
-		for file in "${1%/}/"*; do $2 "$file" "${@:3}"; done
+	
+	if [[ -x "$1" ]]; then
+		for file in "${1%/}/"* "${1%/}/".*; do 
+			[[ ${file##*/} == "." || ${file##*/} == ".." ]] && continue
+			$2 "$file" "${@:3}"
+		done
 	else
 		error.__exit 'path' 'dir' "$1" "$__FILEPATH_ERR_READ_DIR"
 	fi
@@ -489,28 +485,25 @@ function filepath.diff()
 {
 	getopt.parse "file1:file:+:$1" "file2:file:+:$2"
 	
-	local file1 file2 i diff l1 l2
+	local f1 f2 l1 l2 i df
 	
 	if [[ ! -r "$1" ]]; then
 		error.__exit 'file1' 'file' "$1" "$__FILEPATH_ERR_READ_DENIED"
 	elif [[ ! -r "$2" ]]; then
 		error.__exit 'file2' 'file' "$2" "$__FILEPATH_ERR_READ_DENIED"
 	else
-		mapfile -t file1 < "$1"
-		mapfile -t file2 < "$2"
+		mapfile -t f1 < "$1"
+		mapfile -t f2 < "$2"
 	
-		diff=0
-		i=0
-		l1=$file1
-		l2=$file2
+		df=0; i=0; l1=${f1[0]}; l2=${f2[0]}
 
 		while [[ $l1 || $l2 ]]; do
-			[[ "$l1" != "$l2" ]] && echo "$((i+1))|$l1|$l2" && diff=1
-			((i++)); l1=${file1[$i]}; l2=${file2[$i]}
+			[[ "$l1" != "$l2" ]] && echo "$((i+1))|$l1|$l2" && df=1
+			((i++)); l1=${f1[$i]}; l2=${f2[$i]}
 		done
 	fi
 
-	return $diff
+	return $df
 }
 
 # func filepath.equal <[file]file1> <[file]file2> => [bool]
@@ -703,7 +696,7 @@ readonly -f	filepath.ext \
 			filepath.listdir \
 			filepath.scandir \
 			filepath.fnscandir \
-			filepath.walk \
+			filepath.fnlistdir \
 			filepath.copy \
 			filepath.diff \
 			filepath.equal \
