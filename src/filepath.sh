@@ -503,7 +503,7 @@ function filepath.diff()
 		done
 	fi
 
-	return $df
+	return ${df:-$?}
 }
 
 # func filepath.equal <[file]file1> <[file]file2> => [bool]
