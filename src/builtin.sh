@@ -25,6 +25,8 @@ readonly __RUNTIME=$BASHSRC_PATH/.runtime
 readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando interno'
 readonly __BUILTIN_ERR_TYPE_REG='nomenclatura da variável é um tipo reservado'
 readonly __BUILTIN_ERR_ALREADY_INIT='a variável já foi inicializada'
+readonly __BUILTIN_ERR_TYPE_CONFLICT='foi detectado conflito de tipos: o tipo especificado já foi inicializado'
+readonly __BUILTIN_ERR_METHOD_NOT_FOUND='o método de implementação não existe'
 
 readonly NULL=0
 
@@ -1034,7 +1036,7 @@ function var()
 				ptr_func="^\s*${method//./\\.}\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
 
 				if ! struct_func=$(declare -fp $method 2>/dev/null); then
-					error.__exit "$var" "$type" "$method" "o método de implementação não existe" 1
+					error.__exit "$var" "$type" "$method" "$__BUILTIN_ERR_METHOD_NOT_FOUND" 1
 				else
 					[[ $struct_func =~ $ptr_func ]] && 
 					proto="%s(){ %s %s \"\$@\"; return \$?; }" || 
@@ -1051,11 +1053,11 @@ function var()
 	return $?
 }
 
-function builtin.loadtypes()
+function builtin.__INIT__()
 {
 	getopt.parse "-:null:-:$*"
 
-	local attr type reg_types
+	local attr type reg_types method
 
 	if read _ attr _ < <(declare -p SRC_TYPE_IMPLEMENTS 2>/dev/null); then
 
@@ -1069,8 +1071,14 @@ function builtin.loadtypes()
 
 			for type in ${!SRC_TYPE_IMPLEMENTS[@]}; do
 				if [[ $type =~ ^(${reg_types// /|})$ ]]; then
-					error.__exit '' "${BASH_SOURCE[-2]}" "$type" "foi detectado conflito de tipos: o tipo especificado já foi inicializado" 2
+					error.__exit '' "${BASH_SOURCE[-2]}" "$type" "$__BUILTIN_ERR_TYPE_CONFLICT" 2
 				else
+					for method in ${SRC_TYPE_IMPLEMENTS[$type]}; do
+						if ! readonly -f $method 2>/dev/null; then
+							error.__exit '' "$type" "$method" "$__BUILTIN_ERR_METHOD_NOT_FOUND" 1
+						fi
+					done
+
 					__INIT_TYPE_IMPLEMENTS[$type]=${SRC_TYPE_IMPLEMENTS[$type]}
 					unset SRC_TYPE_IMPLEMENTS[$type]
 				fi
@@ -1356,7 +1364,7 @@ readonly -f has \
 			count \
 			del \
 			var \
-			builtin.loadtypes \
+			builtin.__INIT__ \
 			builtin.__len__ \
 			builtin.__quote__ \
 			builtin.__typeval__ \
