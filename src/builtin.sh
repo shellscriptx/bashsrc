@@ -673,24 +673,22 @@ function enum()
 #
 function min()
 {
-	local __item __arr __obj
+	local __item __obj
+	local -i __arr
 
 	for __obj in $@; do
 		getopt.parse "name:var:+:$__obj"
 		
 		declare -n __obj_ref=$__obj
-		__arr+=${__obj_ref[@]}
+		__arr+=(${__obj_ref[@]})
 
 		declare +n __obj_ref
 		unset __obj_ref
 	done
-	
-	__arr=${__arr//[^0-9-]/ }
-	__arr=${__arr//- /}
-	__arr=($(printf '%s\n' $__arr | sort -n))
-	
-	echo "${__arr[0]}"
 
+	__arr=($(printf '%d\n' ${__arr[@]} | sort -n))
+	echo "${__arr[0]}"
+	
 	return 0
 }
 
@@ -703,23 +701,21 @@ function min()
 #
 function max()
 {
-	local __item __arr __obj
+	local __item __obj
+	local -i __arr
 
 	for __obj in $@; do
 		getopt.parse "name:var:+:$__obj"
 		
 		declare -n __obj_ref=$__obj
-		__arr+=${__obj_ref[@]}
+		__arr+=(${__obj_ref[@]})
 
 		declare +n __obj_ref
 		unset __obj_ref
 	done
-	
-	__arr=${__arr//[^0-9-]/ }
-	__arr=${__arr//- /}
-	__arr=($(printf '%s\n' $__arr | sort -n))
-	
-	echo "${__arr[$((${#__arr[@]}-1))]}"
+
+	__arr=($(printf '%d\n' ${__arr[@]} | sort -n))
+	echo "${__arr[-1]}"
 	
 	return 0
 }
@@ -978,6 +974,80 @@ function count()
 	mapfile -t arr <<< "$1"
 	echo ${#arr[@]}
 	return 0
+}
+
+
+function all()
+{
+	getopt.parse "iterable:str:-:$1" "cond:str:+:$2"
+	builtin.__iter_cond_any_all "$1" '&' "${@:2}"
+	return 0
+}
+
+function any()
+{
+	getopt.parse "iterable:str:-:$1" "cond:str:+:$2"
+	builtin.__iter_cond_any_all "$1" '|' "${@:2}"
+	return 0
+}
+
+function builtin.__iter_cond_any_all()
+{
+	local cond iv bit bits iter
+	local re="^\s*\[\s+((!)\s+)?(\!=|=[=~]|-(n|z|eq|ge|gt|le|lt|ne|ef|nt|ot|b|c|d|e|f|g|G|h|k|L|O|p|r|s|S|t|u|w|x))(\s+[\"']?([^\"']+)[\"']?)?\s+\]\s*$"
+
+	while read iter; do
+		for cond in "${@:3}"; do
+			if [[ $cond =~ $re ]]; then
+				iv=${BASH_REMATCH[2]}
+				case ${BASH_REMATCH[3]} in
+					=~) [[ "$iter" =~ ${BASH_REMATCH[6]} ]];;
+					==) [[ "$iter" == "${BASH_REMATCH[6]}" ]];;
+					!=) [[ "$iter" != "${BASH_REMATCH[6]}" ]];;
+					-eq) [[ "$iter" -eq "${BASH_REMATCH[6]}" ]];;
+					-ge) [[ "$iter" -ge "${BASH_REMATCH[6]}" ]];;
+					-gt) [[ "$iter" -gt "${BASH_REMATCH[6]}" ]];;
+					-le) [[ "$iter" -le "${BASH_REMATCH[6]}" ]];;
+					-lt) [[ "$iter" -lt "${BASH_REMATCH[6]}" ]];;
+					-ne) [[ "$iter" -ne "${BASH_REMATCH[6]}" ]];;
+					-ef) [[ "$iter" -ef "${BASH_REMATCH[6]}" ]];;
+					-nt) [[ "$iter" -nt "${BASH_REMATCH[6]}" ]];;
+					-ot) [[ "$iter" -ot "${BASH_REMATCH[6]}" ]];;
+					-n) [[ -n "$iter" ]];;
+					-z) [[ -z "$iter" ]];;
+					-b) [[ -b "$iter" ]];;
+					-c) [[ -c "$iter" ]];;
+					-d) [[ -d "$iter" ]];;
+					-e) [[ -e "$iter" ]];;
+					-f) [[ -f "$iter" ]];;
+					-g) [[ -g "$iter" ]];;
+					-G) [[ -G "$iter" ]];;
+					-h) [[ -h "$iter" ]];;
+					-k) [[ -k "$iter" ]];;
+					-L) [[ -L "$iter" ]];;
+					-O) [[ -O "$iter" ]];;
+					-p) [[ -p "$iter" ]];;
+					-r) [[ -r "$iter" ]];;
+					-s) [[ -s "$iter" ]];;
+					-S) [[ -S "$iter" ]];;
+					-t) [[ -t "$iter" ]];;
+					-u) [[ -u "$iter" ]];;
+					-w) [[ -w "$iter" ]];;
+					-x) [[ -x "$iter" ]];;
+				esac &>/dev/null
+				bit=$(($? ^ 1))
+				[[ $iv ]] && bit=$(($bit ^ 1))
+				bits+=" $bit $2"
+			else
+				error.__exit 'cond' 'str' "$cond" 'instrução condicional inválida'
+				return 1
+			fi
+		done
+		[[ $((${bits%$2})) -eq 1 ]] && echo "$iter"
+		unset bits
+	done <<< "$1"
+
+	return 0	
 }
 
 # func del <[var]varname> ...
