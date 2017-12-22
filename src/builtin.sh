@@ -994,7 +994,7 @@ function any()
 function builtin.__iter_cond_any_all()
 {
 	local cond iv bit bits iter
-	local re="^\s*\[\s+((!)\s+)?(\!=|=[=~]|-(eq|ge|gt|le|lt|ne|ef|nt|ot|n|z|b|c|d|e|f|g|G|h|k|L|O|p|r|s|S|t|u|w|x))(\s+[\"']?([^\"']+)[\"']?)?\s+\]\s*$"
+	local re="^\s*\[\s+((!)\s+)?(!=|=[=~]|-(eq|ge|gt|le|lt|ne|ef|nt|ot|n|z|b|c|d|e|f|g|G|h|k|L|O|p|r|s|S|t|u|w|x))(\s+[\"']?([^\"']+)[\"']?)?\s+\]\s*$"
 
 	while read iter; do
 		for cond in "${@:3}"; do
