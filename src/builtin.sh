@@ -1035,15 +1035,16 @@ function var()
 			
 				ptr_func="^\s*${method//./\\.}\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
 
-				if ! struct_func=$(declare -fp $method 2>/dev/null); then
-					error.__exit "$var" "$type" "$method" "$__BUILTIN_ERR_METHOD_NOT_FOUND" 1
-				else
-					[[ $struct_func =~ $ptr_func ]] && 
-					proto="%s(){ %s %s \"\$@\"; return \$?; }" || 
-					proto="%s(){ %s \"\$%s\" \"\$@\"; return \$?; }"
-	
+				if struct_func=$(declare -fp $method 2>/dev/null); then
+					if [[ $struct_func =~ $ptr_func ]]; then
+						proto="%s(){ %s %s \"\$@\"; return \$?; }"
+					else
+						proto="%s(){ %s \"\$%s\" \"\$@\"; return \$?; }"
+					fi
 					eval "$(printf "$proto\n" $var.${method##*.} $method $var)"
 					__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.${method##*.} "
+				else
+					error.__exit "$var" "$type" "$method" "$__BUILTIN_ERR_METHOD_NOT_FOUND" 1
 					
 				fi
 			done
