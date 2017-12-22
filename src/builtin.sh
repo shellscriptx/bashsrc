@@ -1076,6 +1076,7 @@ function builtin.__INIT__()
 					for method in ${SRC_TYPE_IMPLEMENTS[$type]}; do
 						if ! readonly -f $method 2>/dev/null; then
 							error.__exit '' "$type" "$method" "$__BUILTIN_ERR_METHOD_NOT_FOUND" 1
+							break 2
 						fi
 					done
 
