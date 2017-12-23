@@ -168,7 +168,7 @@ function has(){
 	case $__type in
 		*a*) __tmp=$(printf '%s|' "${__obj_ref[@]}"); [[ $1 =~ ^(${__tmp%|})$ ]];;
 		*A*) __tmp=$(printf '%s|' "${!__obj_ref[@]}"); [[ $1 =~ ^(${__tmp%|})$ ]];;
-		*) [[ $__obj_ref =~ ^$1$ ]];;
+		*) [[ $__obj_ref =~ $1 ]];;
 	esac
 
 	return $?
