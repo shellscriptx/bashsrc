@@ -212,15 +212,10 @@ function swap(){
 #
 function sum(){
 
-	local num res
-	
-	for num in $@; do
-		getopt.parse "num:int:+:$num"
-		res=$((res+num))
-	done
-
-	echo "$res"
-
+	local -i tmp
+	local nums
+	tmp=($*); nums=${tmp[@]}
+	echo $((${nums// /+}))
 	return 0
 }
 
@@ -657,10 +652,8 @@ function fndef()
 #
 function enum()
 {
-	local i arr
-
-	mapfile -t arr <<< "$1"
-	for i in ${!arr[@]}; do	echo "$((i+1))|${arr[$i]}"; done
+	local i iter
+	while read iter; do echo "$((++i))|$iter"; done <<< "$1"
 	return 0
 }
 
@@ -976,7 +969,11 @@ function count()
 	return 0
 }
 
-
+# func all <[str]iterable> <[str]condition> ... => [str]
+#
+# Retorna os elementos de 'iterable' que satisfazem a todos os critérios
+# condicionais estabelecidos em 'condition'.
+#
 function all()
 {
 	getopt.parse "iterable:str:-:$1" "cond:str:+:$2"
@@ -984,6 +981,11 @@ function all()
 	return 0
 }
 
+# func any <[str]iterable> <[str]condition> ... => [str]
+#
+# Retorna os elementos de 'iterable' que satisfazem a um ou mais critérios
+# condicionais estabelecidos em 'condition'.
+#
 function any()
 {
 	getopt.parse "iterable:str:-:$1" "cond:str:+:$2"
@@ -1436,6 +1438,8 @@ readonly -f has \
 			count \
 			del \
 			var \
+			all \
+			any \
 			builtin.__INIT__ \
 			builtin.__len__ \
 			builtin.__quote__ \
@@ -1461,6 +1465,7 @@ readonly -f has \
 			builtin.__swap__ \
 			builtin.__iter__ \
 			builtin.__extfncall \
-			builtin.__init
+			builtin.__init \
+			builtin.__iter_cond_any_all 
 
 # /* BUILTIN_SRC */
