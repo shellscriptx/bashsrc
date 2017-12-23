@@ -635,15 +635,13 @@ function fndef()
 {
 	getopt.parse "funcname:func:+:$1" "new:funcname:+:$2"
 
-	local line ins
-
 	if which $2 &>/dev/null || declare -fp $2 &>/dev/null; then
 		error.__exit "newtype" "funcname" "$2" "$__BUILTIN_ERR_FUNC_EXISTS"
+	elif [[ $(declare -fp $1) =~ \{.*\} ]]; then
+		eval "$2()$BASH_REMATCH"
 	fi
-	
-	[[ $(declare -fp $1) =~ \{.*\} ]] && 
-	eval "$2()$BASH_REMATCH"
-	return 0
+
+	return $?
 }
 
 # func enum <[str]iterable> => [str]
