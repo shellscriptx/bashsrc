@@ -14,9 +14,6 @@ readonly __BUILTIN_SH=1
 source types.sh
 source error.sh
 source getopt.sh
-source map.sh
-source array.sh
-source string.sh
 
 # runtime
 readonly __RUNTIME=$BASHSRC_PATH/.runtime
@@ -164,14 +161,14 @@ function has(){
 	getopt.parse "exp:str:+:$1" "on:keyword:+:$2" "name:var:+:$3"
 	
 	declare -n __obj_ref=$3
-	local __type
+	local __type __tmp
 
 	read _ __type _ < <(declare -p $3 2>/dev/null)
 
 	case $__type in
-		*a*) array.contains $3 "$1";;
-		*A*) map.contains $3 "$1";;
-		*) string.contains "$__obj_ref" "$1";;
+		*a*) __tmp=$(printf '%s|' "${__obj_ref[@]}"); [[ $1 =~ ^(${__tmp%|})$ ]];;
+		*A*) __tmp=$(printf '%s|' "${!__obj_ref[@]}"); [[ $1 =~ ^(${__tmp%|})$ ]];;
+		*) [[ $__obj_ref =~ ^$1$ ]];;
 	esac
 
 	return $?
@@ -761,8 +758,7 @@ function list()
 		read _ __type _ < <(declare -p $__item 2>/dev/null)
 
 		case $__type in
-			*a*) __obj_dest+=("$(array.items $__item)");;
-			*A*) __obj_dest+=("$(map.items $__item)");;
+			*a*|*A*) __obj_dest+=("${__obj_ref[@]}");;
 			*) __obj_dest+=("$__obj_ref");;
 		esac
 
@@ -811,8 +807,7 @@ function unique()
 		read _ __type _ < <(declare -p $__item 2>/dev/null)
 
 		case $__type in
-			*a*) array.items $__item;;
-			*A*) map.items $__item;;
+			*a*|*A*) printf '%s\n' "${__obj_ref[@]}";;
 			*) printf '%s\n' $__obj_ref;;
 		esac
 
@@ -1172,9 +1167,10 @@ function builtin.__len__()
 
 function builtin.__quote__()
 {
+	getopt.parse "var:var:+:$1"
 	if builtin.__extfncall; then
-		local arr; mapfile -t arr <<< "$1"
-		printf "%q\n" "${arr[@]}"
+		declare -n __byref=$1
+		printf "%q\n" "${__byref[@]}"
 	fi
 	return 0
 }
@@ -1305,14 +1301,21 @@ function builtin.__swap__()
 function builtin.__rev__()
 {
 	getopt.parse "var:var:+:$1"
-	builtin.__extfncall && declare -n __byref=$1 && __byref=$(string.reverse "$__byref")
+	if builtin.__extfncall; then
+		declare -n __byref=$1
+		local __i __tmp
+		for ((__i=${#__byref}-1; __i >= 0; __i--)); do
+			__tmp+=${__byref:$__i:1}
+		done
+		__byref=$__tmp
+	fi
 	return 0
 }
 
 function builtin.__repl__()
 {
-	getopt.parse "var:var:+:$1" "old:str:-:$2" "new:str:-:$3" "count:int:+:$4"
-	builtin.__extfncall && declare -n __byref=$1 && __byref=$(string.replace "$__byref" "$2" "$3" $4)
+	getopt.parse "var:var:+:$1" "old:str:-:$2" "new:str:-:$3"
+	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref//$2/$3}
 	return 0
 }
 
@@ -1330,11 +1333,9 @@ function builtin.__fnmap__()
 	if builtin.__extfncall; then
 		local __tmp __i
 		declare -n __byref=$1
-		
 		for ((__i=0; __i < ${#__byref}; __i++)); do
 			__tmp+=$($2 "${__byref:$__i:1}" "${@:3}")
 		done
-
 		__byref=$__tmp
 	fi
 
@@ -1356,8 +1357,7 @@ function builtin.__iter__()
 		declare -n __byref=$1
 		if read _ __attr _ < <(declare -p $1 2>/dev/null); then
 			case $__attr in
-				*a*)	array.items $1;;
-				*A*)	map.items $1;;
+				*a*|*A*)	printf '%s\n' "${__byref[@]}";;
 				*)		for ((__i=0; __i<${#__byref}; __i++)); do 
 							__ch[$__i]=${__byref:$__i:1}; done
 							printf "%s\n" "${__ch[@]}";;
