@@ -245,7 +245,7 @@ function fnmap(){
 	return 0
 }
 
-# func filter <[func]funcname> <[var]name> => [object]
+# func filter <[var]name> <[func]funcname> <[str]args> ... => [str]
 #
 # Filtra os elementos contidos em 'name' chamando 'funcname' e passa
 # como argumento o elemento atual a cada iteração. Se o retorno da função 
@@ -286,18 +286,18 @@ function fnmap(){
 #
 function filter()
 {
-	getopt.parse "funcname:func:+:$1" "name:var:+:$2"
+	getopt.parse "name:var:+:$1" "funcname:func:+:$2"
 	
-	declare -n __obj_ref=$2
+	declare -n __obj_ref=$1
 	local __item __key __ch __type
 	
-	read _ __type _ < <(declare -p $2 2>/dev/null)
+	read _ __type _ < <(declare -p $1 2>/dev/null)
 
 	case $__type in
-		*a*) for __item in "${__obj_ref[@]}"; do $1 "$__item" && echo "$__item"; done;;
-		*A*) for __key in "${!__obj_ref[@]}"; do $1 "$__key" && echo "$__key"; done;;
-		*) for ((__ch=0; __ch < ${#__obj_ref}; __ch++)); do $1 "${__obj_ref:$__ch:1}" && 
-			echo "${__obj_ref:$__ch:1}"; done;;
+		*a*) for __item in "${__obj_ref[@]}"; do $2 "$__item" "${@:3}" && echo "$__item"; done;;
+		*A*) for __key in "${!__obj_ref[@]}"; do $2 "$__key" "${@:3}" && echo "$__key"; done;;
+		*) for ((__ch=0; __ch < ${#__obj_ref}; __ch++)); do $2 "${__obj_ref:$__ch:1}" "${@:3}" && 
+			echo -n "${__obj_ref:$__ch:1}"; done; echo;;
 	esac
 
 	return 0
@@ -551,7 +551,6 @@ function range()
 #
 function fnrange()
 {
-	#getopt.parse "funcname:func:+:$1" "min:int:+:$2" "max:int:+:$3" "step:int:+:$4"
 	getopt.parse "min:int:+:$1" "max:int:+:$2" "step:int:+:$3" "funcname:func:+:$4"
 
 	local i op
