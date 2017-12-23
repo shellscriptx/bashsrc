@@ -247,10 +247,15 @@ function fnmap(){
 
 # func filter <[var]name> <[func]funcname> <[str]args> ... => [str]
 #
-# Filtra os elementos contidos em 'name' chamando 'funcname' e passa
-# como argumento o elemento atual a cada iteração. Se o retorno da função 
-# for igual '0' imprime o valor do elemento, caso contrário nenhum valor 
-# é retornado. Objeto 'name' pode ser do tipo var, array ou map.
+# Chama 'funcname' a cada iteração dos elementos contidos em 'name', passando
+# automaticamente o elemento atual como argumento posicional '$1' com 'N'args (opcional).
+# O elemento é retornado somente se o retorno de 'fucname' for igual à 0 (zero).
+#
+# O comportamento da iteração irá depender do tipo de objeto passado em 'var'.
+#
+# var - Lê cada caractere da expressão.
+# map - Lê as chaves de map.
+# array - Lê os elementos contidos no array.
 #
 # Exemplo 1:
 #
@@ -264,7 +269,7 @@ function fnmap(){
 #     return $(($1%2))
 # }
 #
-# $ filter par nums
+# $ filter nums par
 # 2
 # 4
 # 6
@@ -280,9 +285,8 @@ function fnmap(){
 # $ source string.sh
 #
 # $ letras='aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ'
-# $ maiusculas=$(filter string.isupper letras)
-# $ echo $maiusculas
-# A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+# $ filter letras string.isupper
+# ABCDEFGHIJKLMNOPQRSTUVWXYZ
 #
 function filter()
 {
