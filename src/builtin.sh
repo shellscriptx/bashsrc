@@ -749,13 +749,13 @@ function max()
 #
 function list()
 {
-	getopt.parse "name:var:+:$1"
+	getopt.parse "list:var:+:$1"
 	
 	declare -n __obj_dest=$1
 	local __item __type
 
 	for __item in ${@:2}; do
-		getopt.parse "name:var:+:$__item"
+		getopt.parse "source:var:+:$__item"
 		declare -n __obj_ref=$__item
 
 		read _ __type _ < <(declare -p $__item 2>/dev/null)
