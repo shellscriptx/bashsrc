@@ -200,9 +200,12 @@ filepath.fileinfo.user
 '
 
 __BUILTIN_TYPE_IMPLEMENTS[user]='
-user.groups
-user.gids
-user.id
+user.pass
+user.uid
+user.gid
+user.gecos
+user.home
+user.shell
 '
 
 __BUILTIN_TYPE_IMPLEMENTS[group]='
