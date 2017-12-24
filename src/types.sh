@@ -206,10 +206,9 @@ user.id
 '
 
 __BUILTIN_TYPE_IMPLEMENTS[group]='
-grp.passwd
-grp.members
-grp.gid
-grp.info
+grp.getgrgid
+grp.getgrusers
+grp.getgrpass
 '
 
 readonly __BUILTIN_TYPE_IMPLEMENTS
