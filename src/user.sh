@@ -1,102 +1,151 @@
 #!/bin/bash
 
-#----------------------------------------------#
-# Source:           user.sh
-# Data:             15 de outubro de 2017
-# Desenvolvido por: Juliano Santos [SHAMAN]
-# E-mail:           shellscriptx@gmail.com
-#----------------------------------------------#
-
-#* source: user.sh
-#*
-#* Tipos:
-#*
-#* [user] => .groups
-#*           .gids
-#*           .id
-#*
-
 [[ $__USER_SH ]] && return 0
 
 readonly __USER_SH=1
 
 source builtin.sh
 
-function user.groups()
+readonly __USER_PATH_PASSWD='/etc/passwd'
+readonly __USER_ERR_READ_PASS_FILE='falha ao ler o arquivo base'
+readonly __USER_ERR_USER_NOT_FOUND='usuário não encontrado'
+
+# type user
+#
+# Implementa 'S' com os métodos:
+#
+# S.pass => [str]
+# S.uid => [uint]
+# S.gid => [uint]
+# S.gecos => [str]
+# S.home => [str]
+# S.shell => [str]
+#
+
+# func user.pass <[str]username> => [str]
+#
+# Retorna a senha criptografada ou asteriscos de 'username'.
+#
+function user.pass()
 {
 	getopt.parse "username:str:+:$1"
-	user.__get_info groups "$1"
+	user.__get_info "$1" pass
 	return $?
 }
 
-function user.gids()
+# func user.uid <[str]username> = [uint]
+#
+# Retorna a identificação numérica de 'username'.
+#
+function user.uid()
 {
 	getopt.parse "username:str:+:$1"
-	user.__get_info gids "$1"
+	user.__get_info "$1" uid
 	return $?
 }
 
-function user.id()
+# func user.gid <[str]username> => [uint]
+#
+# Retorna a identificação do grupo primário de 'username'.
+#
+function user.gid()
 {
 	getopt.parse "username:str:+:$1"
-	user.__get_info id "$1"
-	return $?	
-}
-
-function user.getname()
-{
-	getopt.parse "uid:uint:+:$1"
-	user.__get_info user $1
+	user.__get_info "$1" gid
 	return $?
 }
 
-function user.current()
+# func user.gecos <[str]username> => [str]
+#
+# Retorna as informações complementares de 'username'.
+#
+function user.gecos()
+{
+	getopt.parse "username:str:+:$1"
+	user.__get_info "$1" gecos
+	return $?
+}
+
+# func user.home <[str]username> => [str]
+#
+# Retorna o diretório pessoal de 'username'. ($HOME)
+#
+function user.home()
+{
+	getopt.parse "username:str:+:$1"
+	user.__get_info "$1" home
+	return $?
+}
+
+# func user.shell <[str]username> => [str]
+#
+# Retorna o interpretador de comando usado por 'username'.
+#
+function user.shell()
+{
+	getopt.parse "username:str:+:$1"
+	user.__get_info "$1" shell
+	return $?
+}
+
+# func user.getallusers => [str]
+#
+# Retorna uma lista iterável com todos os usuários do sistema.
+#
+function user.getallusers
 {
 	getopt.parse "-:null:-:$*"
-	user.__get_info user $UID
-	return $?	
+	user.__get_info '' all
+	return $?
 }
 
-function user.__get_info()
+# func user.getuser <[uint]uid> => [str]
+#
+# Retorna o usuário associado a identificação 'uid'.
+#
+function user.getuser()
 {
-	local tmp id line info users
-	local flag=$1 user=$2
-	local filedb=/etc/group
+	getopt.parse "uid:uint:+:$1"
 	
-	if [ -r "$filedb" ]; then	
-		while read line; do
-			case $flag in
-				id) 	if [[ "$user" == "${line%%:*}" ]]; then
-							info=${line%:*}; info=${info##*:}
-							break
-						fi
-						;;
-				groups)	users=${line##*:}; users=${users//,/|}
-						if [[ $user =~ ^($users)$ ]]; then
-							info=($user ${info[@]:1} ${line%%:*})
-						fi
-						;;
-				gids)	users=${line##*:}; users=${users//,/|}
-						tmp=${line%:*}; tmp=${tmp##*:}
-						if [[ "$user" == "${line%%:*}" ]]; then
-							info=($tmp ${info[@]})
-						elif [[ $user =~ ^($users)$ ]]; then
-							info+=($tmp)
-						fi
-						;;
-				user)	id=${line%:*}; id=${id##*:}
-						if [[ "$2" == "$id" ]]; then
-							info=${line%%:*}
-							break
-						fi
-						;;
-			esac
-		done < $filedb
-	else
-		error.__exit '' '' '' "'$filedb' não foi possível ler o arquivo base"
-	fi
+	local username
+	while read username; do
+		[[ $(user.__get_info "$username" uid) -eq $1 ]] && echo "$username" && break
+	done < <(user.__get_info '' all)
+	return $?
+}
 
-	[[ $info ]] && printf '%s\n' "${info[@]}"
+user.__get_info()
+{
+	local account info fields flag=$2
+	declare -A entry
+	
+	if while read account; do
+		entry[${account%%:*}]=${account//:/ }
+	done < $__USER_PATH_PASSWD 2>/dev/null; then
+
+		if [[ $flag == all ]] ; then
+			printf '%s\n' ${!entry[@]}
+		elif [[ ${entry[$1]} ]]; then
+		
+			fields=(${entry[$1]})
+
+			case $flag in
+				pass) info=${fields[1]};;
+				uid) info=${fields[2]};;
+				gid) info=${fields[3]};;
+				gecos) info=${fields[@]:4}; info=${info%%/*};;
+				home) info=${fields[-2]};;
+				shell) info=${fields[-1]};;
+				*) return 1;;
+			esac
+			
+			printf '%s\n' "$info"
+		else
+			error.__exit 'user' 'str' "$1" "$__USER_ERR_USER_NOT_FOUND"
+		fi	
+	else
+		error.__exit '' '' "$__USER_PATH_PASSWD" "$__USER_ERR_READ_PASS_FILE"
+	fi
 
 	return $?
 }
