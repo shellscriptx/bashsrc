@@ -1371,7 +1371,6 @@ function builtin.__iter__()
 	return $?
 }
 
-
 function builtin.__init()
 {
 	error.resume off
@@ -1391,11 +1390,17 @@ function builtin.__init()
 		error.__exit '' '' "$__RUNTIME" 'não foi possível gerar os arquivos temporários'
 	fi
 
-	# conf
+	# CONFIGURAÇÕES DO AMBIENTE
+	
+	# Delimitador padrão (somente leitura)
+	unset IFS
+	declare -gxr IFS
+
+	# Opções do BASH
 	shopt -s extglob
 	shopt -u nocasematch
 
-	# definições
+	# Variáveis globais
 	declare -Ag __INIT_TYPE_IMPLEMENTS \
 				__REG_LIST_VAR \
 				SRC_TYPE_IMPLEMENTS
