@@ -13,15 +13,18 @@ source builtin.sh
 
 readonly __ERROR_SH=1
 
-# errors
-readonly __ERROR_VAR_READONLY='possui atributo somente leitura'
-
-function error.__exit()
+function error.__trace()
 {
+	# prototype 
+	# error.__trace flag "arg_name" "arg_type" "arg_value" "err_msg" "err_no"; return $?
 	local i l t fn
-	local stack 
-	local terr=$5
-	local err_msg=${4:-erro desconhecido}
+	local stack
+	local flag=$1
+	local arg_name=$2
+	local arg_type=$3
+	local arg_val=$4
+	local err_msg=${5:-erro desconhecido}
+	local errno=${6:-1}
 
 	[[ "${FUNCNAME[1]}" == "getopt.parse" ]] && fn=2 || fn=1
 
@@ -32,20 +35,20 @@ function error.__exit()
 		stack+="[${l[$i]}:${t[$i]}] "
 	done
 	
+	exec 1>&2
+	
 	case $__EXIT_TRACE_ERROR in
 		0)
-			declare -g __ERR__=1 \
+			declare -g __ERR__=$errno \
 						__ERR_STACK__=${stack% } \
-						__ERR_ARG__=$1 \
-						__ERR_TYPE__=$2 \
-						__ERR_VAL__=$3 \
+						__ERR_ARG__=$arg_name \
+						__ERR_TYPE__=$arg_type \
+						__ERR_VAL__=$arg_val \
 						__ERR_MSG__=$err_msg \
 						__ERR_FUNC__=${FUNCNAME[1]}
 
-			return 1
 			;;
 		*)
-			exec 1>&2
 			stack=${stack// / => }
 			echo "(Pilha de rastreamento)"
 			echo "Arquivo: $0"
@@ -55,31 +58,33 @@ function error.__exit()
 			echo
 			echo -e "Pilha: ${stack% => }"
 
-			case $terr in
-				1)
-					echo "Tipo: ${2:--}"
-					echo "Implementação: ${3:--}"
-					echo "Composição: ${1:+$1.${3##*.}}"
-					echo "Método: ${3:--}"
+			case $flag in
+				imp)
+					echo "Tipo: $arg_type"
+					echo "Implementação: $arg_val"
+					echo "Composição: ${arg_name:+$arg_name.${arg_val##*.}}"
+					echo "Método: $arg_val"
 					echo "Erro: $err_msg"
 					;;
-				2)
-					echo "Source: ${2:--}"
-					echo "Tipo: [${3:--}]"
+				src)
+					echo "Source: $arg_type"
+					echo "Tipo: [$arg_val]"
 					echo "Erro: $err_msg"
 					;;
-				*)
-					echo -e "Argumento: <${1:--}>"
-					echo -e "Tipo: [${2:--}]"
-					echo -e "Valor: '${3:--}'"
+				def)
+					echo -e "Argumento: <$arg_name>"
+					echo -e "Tipo: [$arg_type]"
+					echo -e "Valor: '$arg_val'"
 					echo -e "Erro: $err_msg"
 					;;
 			esac
 			echo "------------------------"
 			exec 1<&-
-			exit 1
+			exit $errno
 			;;
 	esac
+
+	return $errno
 }
 
 function error.__clear()
@@ -180,14 +185,14 @@ function error.resume()
 	case $1 in
 		on)		exec 2<&-; declare -g __EXIT_TRACE_ERROR=0;;
 		off)	exec 2>/dev/tty; declare -g __EXIT_TRACE_ERROR=1;;
-		*)		error.__exit 'flag' 'str' "$1" "flag inválida";;
+		*)		error.__trace def 'flag' 'str' "$1" "flag inválida"; return $?;;
 	esac
 
 	return 0
 }
 
 readonly -f error.resume \
-			error.__exit \
+			error.__trace \
 			error.__depends 
 
 # /* __ERROR_SRC */
