@@ -19,12 +19,11 @@ source getopt.sh
 readonly __RUNTIME=$BASHSRC_PATH/.runtime
 
 # erros
-readonly __BUILTIN_ERR_FUNC_EXISTS='a função já existe ou é um comando interno'
-readonly __BUILTIN_ERR_TYPE_REG='nomenclatura da variável é um tipo reservado'
-readonly __BUILTIN_ERR_ALREADY_INIT='a variável já foi inicializada'
-readonly __BUILTIN_ERR_TYPE_CONFLICT='foi detectado conflito de tipos: o tipo especificado já foi inicializado'
-readonly __BUILTIN_ERR_METHOD_NOT_FOUND='o método de implementação não existe'
-
+readonly __ERR_BUILTIN_FUNC_EXISTS='a função já existe ou é um comando interno'
+readonly __ERR_BUILTIN_ALREADY_INIT='a variável já foi inicializada'
+readonly __ERR_BUILTIN_TYPE_CONFLICT='conflito de tipos: o tipo especificado já foi inicializado'
+readonly __ERR_BUILTIN_METHOD_NOT_FOUND='o método de implementação não existe'
+readonly __ERR_BUILTIN_METHOD_CONFLICT='conflito de métodos: o método já foi implementado ou é uma função reservada'
 readonly NULL=0
 
 # func has <[str]exp> on <[var]name> => [bool]
@@ -636,7 +635,7 @@ function fndef()
 	getopt.parse "funcname:func:+:$1" "new:funcname:+:$2"
 
 	if which $2 &>/dev/null || declare -fp $2 &>/dev/null; then
-		error.__exit "newtype" "funcname" "$2" "$__BUILTIN_ERR_FUNC_EXISTS"
+		error.__trace def "newtype" "funcname" "$2" "$__ERR_BUILTIN_FUNC_EXISTS"; return $?
 	elif [[ $(declare -fp $1) =~ \{.*\} ]]; then
 		eval "$2()$BASH_REMATCH"
 	fi
@@ -1037,7 +1036,7 @@ function builtin.__iter_cond_any_all()
 				[[ $iv ]] && bit=$(($bit ^ 1))
 				bits+=" $bit $2"
 			else
-				error.__exit 'cond' 'str' "$cond" 'instrução condicional inválida'
+				error.__trace def 'cond' 'str' "$cond" 'instrução condicional inválida'; return $?
 				return 1
 			fi
 		done
@@ -1077,75 +1076,73 @@ function var()
 {
 	getopt.parse "varname:var:+:$1" "type:type:+:${@: -1}"
 
-	local type regtypes method proto ptr_func struct_func var attr err builtin_method
+	local type method proto ptr_func struct_func var attr err builtin_method regmethods
 	type=${@: -1}
 
-	regtypes="${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__INIT_TYPE_IMPLEMENTS[@]:+ ${!__INIT_TYPE_IMPLEMENTS[@]}}"
-			
+	printf -v regmethods '%s|' ${__BUILTIN_TYPE_IMPLEMENTS[@]}${__INIT_TYPE_IMPLEMENTS[@]:+ ${__INIT_TYPE_IMPLEMENTS[@]}}
+
 	for var in ${@:1:$((${#@}-1))}; do
 		getopt.parse "varname:var:+:$var"
-
-		if [[ $var =~ ^(${regtypes// /|})$ ]]; then
-			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_TYPE_REG"
-		elif [[ ${__REG_LIST_VAR[${FUNCNAME[1]}.$var]} ]]; then
-			error.__exit 'varname' 'var' "$var" "$__BUILTIN_ERR_ALREADY_INIT"
-		else
-	
+		
+		if ! [[ ${__REG_LIST_VAR[${FUNCNAME[1]}.$var]} ]]; then
 			[[ "$type" == "map" ]] && declare -Ag $var
 			[[ "$type" != "builtin" ]] && builtin_method=${__BUILTIN_TYPE_IMPLEMENTS[builtin]}
-				
-			eval "$var.__type__(){ echo $type; return 0; }"
-			__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.__type__ "
 			
-			for method in 	${__BUILTIN_TYPE_IMPLEMENTS[$type]} \
+			for method in	${__BUILTIN_TYPE_IMPLEMENTS[$type]} \
 							${__INIT_TYPE_IMPLEMENTS[$type]} \
 							$builtin_method; do
-			
-				ptr_func="^\s*${method//./\\.}\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
 
-				if struct_func=$(declare -fp $method 2>/dev/null); then
-					if [[ $struct_func =~ $ptr_func ]]; then
-						proto="%s(){ %s %s \"\$@\"; return \$?; }"
+				if ! [[ $var.${method##*.} =~ ^(${regmethods%|})$ ]]; then
+					ptr_func="^\s*${method//./\\.}\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
+
+					if struct_func=$(declare -fp $method 2>/dev/null); then
+						if [[ $struct_func =~ $ptr_func ]]; then
+							proto="%s(){ %s %s \"\$@\"; return \$?; }"
+						else
+							proto="%s(){ %s \"\$%s\" \"\$@\"; return \$?; }"
+						fi
+						eval "$(printf "$proto\n" $var.${method##*.} $method $var)"
+						__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.${method##*.} "
 					else
-						proto="%s(){ %s \"\$%s\" \"\$@\"; return \$?; }"
+						error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"; return $?
 					fi
-					eval "$(printf "$proto\n" $var.${method##*.} $method $var)"
-					__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.${method##*.} "
 				else
-					error.__exit "$var" "$type" "$method" "$__BUILTIN_ERR_METHOD_NOT_FOUND" 1
-					
+					error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"; return $?
 				fi
 			done
+			eval "$var.__type__(){ echo $type; return 0; }"
+			__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.__type__ "
+		else
+			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"; return $?
 		fi
 	done
 
-	return $?
+	return 0
 }
 
 function builtin.__INIT__()
 {
 	getopt.parse "-:null:-:$*"
 
-	local attr type reg_types method
+	local attr type regtypes method
 
 	if read _ attr _ < <(declare -p SRC_TYPE_IMPLEMENTS 2>/dev/null); then
 
 		if [[ "$attr" =~ r ]]; then
-			error.__exit '' "$__IMPORT_SOURCE" '' "'SRC_TYPE_IMPLEMENTS' o array possui atributo somente leitura" 2
+			error.__trace src '' "$__IMPORT_SOURCE" '' "'SRC_TYPE_IMPLEMENTS' o array possui atributo somente leitura"; return $?
 		elif [[ ! "$attr" =~ A ]]; then
-			error.__exit '' "$__IMPORT_SOURCE" '' "'SRC_TYPE_IMPLEMENTS' não é um array associativo" 2
+			error.__trace src '' "$__IMPORT_SOURCE" '' "'SRC_TYPE_IMPLEMENTS' não é um array associativo"; return $?
 		elif [[ ${SRC_TYPE_IMPLEMENTS[@]} ]]; then
 				
-			reg_types="${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__INIT_TYPE_IMPLEMENTS[@]:+ ${!__INIT_TYPE_IMPLEMENTS[@]}}"
+			printf -v regtypes '%s|' ${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__INIT_TYPE_IMPLEMENTS[@]:+ ${!__INIT_TYPE_IMPLEMENTS[@]}}
 
 			for type in ${!SRC_TYPE_IMPLEMENTS[@]}; do
-				if [[ $type =~ ^(${reg_types// /|})$ ]]; then
-					error.__exit '' "${BASH_SOURCE[-2]}" "$type" "$__BUILTIN_ERR_TYPE_CONFLICT" 2
+				if [[ $type =~ ^(${regtypes%|})$ ]]; then
+					error.__trace src '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE_CONFLICT"; return $?
 				else
 					for method in ${SRC_TYPE_IMPLEMENTS[$type]}; do
 						if ! readonly -f $method 2>/dev/null; then
-							error.__exit '' "$type" "$method" "$__BUILTIN_ERR_METHOD_NOT_FOUND" 1
-							break 2
+							error.__trace imp '' "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"; return $?
 						fi
 					done
 
@@ -1387,7 +1384,7 @@ function builtin.__init()
     [[ $deps ]] && error.__depends $FUNCNAME ${BASH_SOURCE##*/} "${deps[*]}"
 	
 	if ! mkdir -p "$__RUNTIME" &>/dev/null; then
-		error.__exit '' '' "$__RUNTIME" 'não foi possível gerar os arquivos temporários'
+		error.__trace def '' '' "$__RUNTIME" 'não foi possível gerar os arquivos temporários'; return $?
 	fi
 
 	# CONFIGURAÇÕES DO AMBIENTE
