@@ -21,9 +21,9 @@ readonly __GRP_ERR_GROUP_NOT_FOUND='grupo não encontrado'
 #
 # Implementa 'S' com os métodos:
 #
-# S.getgrgid
-# S.getgrusers
-# S.getgrpass
+# S.getgrgid => [uint]
+# S.getgrusers => [str]
+# S.getgrpass => [str]
 #
 
 # func grp.getgrgid <[str]grpname> => [uint]
@@ -69,7 +69,7 @@ function grp.getgrnam()
 	
 	local grpname
 	while read grpname; do
-		[[ $(grp.__get_info $grpname gid) -eq $1 ]] && echo "$grpname" && break
+		[[ $(grp.__get_info "$grpname" gid) -eq $1 ]] && echo "$grpname" && break
 	done < <(grp.__get_info '' all)
 	
 	return $?
@@ -88,23 +88,20 @@ grp.getgrall()
 
 grp.__get_info()
 {
-	local group info fields
+	local group info fields flag=$2
 	declare -A entry
 	
 	if while read group; do
 		entry[${group%%:*}]=${group//:/ }
 	done < $__GRP_PATH 2>/dev/null; then
 		
-		if [[ $2 == all ]]; then 
+		if [[ $flag == all ]]; then 
 			printf '%s\n' ${!entry[@]}
-			return 0
-		fi
-
-		if [[ ${entry[$1]} ]]; then
+		elif [[ ${entry[$1]} ]]; then
 
 			fields=(${entry[$1]})
 
-			case $2 in
+			case $flag in
 				pass) info=${fields[1]};;
 				gid) info=${fields[2]};;
 				users) info=${fields[@]:3}; info=${info//,/ };;
