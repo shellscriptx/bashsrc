@@ -114,7 +114,7 @@ function user.getuser()
 	return $?
 }
 
-user.__get_info()
+function user.__get_info()
 {
 	local account info fields flag=$2
 	declare -A entry
@@ -149,5 +149,15 @@ user.__get_info()
 
 	return $?
 }
+
+readonly -f user.pass \
+			user.uid \
+			user.gid \
+			user.gecos \
+			user.home \
+			user.shell \
+			user.getallusers \
+			user.getuser \
+			user.__get_info
 
 # /* __USER_SH */

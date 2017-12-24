@@ -30,7 +30,7 @@ readonly __ERR_GRP_GROUP_NOT_FOUND='grupo não encontrado'
 #
 # Retorna o id associado a 'grpname'.
 #
-grp.getgrgid()
+function grp.getgrgid()
 {
 	getopt.parse "grpname:str:+:$1"
 	grp.__get_info "$1" gid
@@ -41,7 +41,7 @@ grp.getgrgid()
 #
 # Retorna uma lista iterável com os usuários de 'grpname'.
 #
-grp.getgrusers()
+function grp.getgrusers()
 {
 	getopt.parse "grpname:str:+:$1"
 	grp.__get_info "$1" users
@@ -52,7 +52,7 @@ grp.getgrusers()
 #
 # Retorna a flag de sinalização de senha
 #
-grp.getgrpass()
+function grp.getgrpass()
 {
 	getopt.parse "grpname:str:+:$1"
 	grp.__get_info "$1" pass
@@ -79,14 +79,14 @@ function grp.getgrnam()
 #
 # Retorna uma lista iterável com todos os grupos do sistema.
 #
-grp.getgrall()
+function grp.getgrall()
 {
 	getopt.parse "-:null:-:$*"
 	grp.__get_info '' all
 	return $?
 }
 
-grp.__get_info()
+function grp.__get_info()
 {
 	local group info fields flag=$2
 	declare -A entry
@@ -119,4 +119,12 @@ grp.__get_info()
 
 	return $?
 }
+
+readonly -f grp.getgrgid \
+			grp.getgrusers \
+			grp.getgrpass \
+			grp.getgrnam \
+			grp.getgrall \
+			grp.__get_info
+
 # /* __GRP_SH */
