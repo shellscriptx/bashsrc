@@ -14,10 +14,10 @@ readonly __FILEPATH_SH=1
 source builtin.sh
 
 # Erros
-readonly __FILEPATH_ERR_READ_DIR='acesso negado: não foi possível ler o diretório'
-readonly __FILEPATH_ERR_COPY_PATH='não foi possível copiar o arquivo ou diretório'
-readonly __FILEPATH_ERR_WRITE_DENIED='acesso negado: não foi possível criar o arquivo'
-readonly __FILEPATH_ERR_READ_DENIED='acesso negado: não foi possível ler o arquivo'
+readonly __ERR_FILEPATH_READ_DIR='acesso negado: não foi possível ler o diretório'
+readonly __ERR_FILEPATH_COPY_PATH='não foi possível copiar o arquivo ou diretório'
+readonly __ERR_FILEPATH_WRITE_DENIED='acesso negado: não foi possível criar o arquivo'
+readonly __ERR_FILEPATH_READ_DENIED='acesso negado: não foi possível ler o arquivo'
 
 # type filepath
 #
@@ -270,7 +270,7 @@ function filepath.glob()
 			echo "$file"
 		done
 	else
-		error.__exit 'path' 'dir' "${1%/*}" "$__FILEPATH_ERR_READ_DIR"
+		error.__trace def 'path' 'dir' "${1%/*}" "$__ERR_FILEPATH_READ_DIR"; return $?
 	fi
 	
 	return $?
@@ -432,7 +432,7 @@ function filepath.fnlistdir()
 			$2 "$file" "${@:3}"
 		done
 	else
-		error.__exit 'path' 'dir' "$1" "$__FILEPATH_ERR_READ_DIR"
+		error.__trace def 'path' 'dir' "$1" "$__ERR_FILEPATH_READ_DIR"; return $?
 	fi
 
 	return $?
@@ -457,7 +457,7 @@ function filepath.copy()
 		case $3 in
 			0) return 0;;
 			1) ;;
-			*) err=1; error.__exit 'override' 'uint' "$3" 'flag inválida';;
+			*) err=1; error.__trace def 'override' 'uint' "$3" 'flag inválida'; return $?;;
 		esac
 		
 		if [ ! "$err" ]; then
@@ -465,10 +465,10 @@ function filepath.copy()
 			[ -d "$1" ] && flag='r'
 
 			cp -${flag}f "$1" "$2" &>/dev/null ||
-			error.__exit 'dest' 'dir' "$1" "$__FILEPATH_ERR_COPY_PATH"
+			error.__trace def 'dest' 'dir' "$1" "$__ERR_FILEPATH_COPY_PATH"; return $?
 		fi
 	else	
-		error.__exit 'dest' 'dir' "$2" "$__FILEPATH_ERR_WRITE_DENIED"
+		error.__trace def 'dest' 'dir' "$2" "$__ERR_FILEPATH_WRITE_DENIED"; return $?
 	fi
 		
 	return $?
@@ -488,9 +488,9 @@ function filepath.diff()
 	local f1 f2 l1 l2 i df
 	
 	if [[ ! -r "$1" ]]; then
-		error.__exit 'file1' 'file' "$1" "$__FILEPATH_ERR_READ_DENIED"
+		error.__trace def 'file1' 'file' "$1" "$__ERR_FILEPATH_READ_DENIED"; return $?
 	elif [[ ! -r "$2" ]]; then
-		error.__exit 'file2' 'file' "$2" "$__FILEPATH_ERR_READ_DENIED"
+		error.__trace def 'file2' 'file' "$2" "$__ERR_FILEPATH_READ_DENIED"; return $?
 	else
 		mapfile -t f1 < "$1"
 		mapfile -t f2 < "$2"
