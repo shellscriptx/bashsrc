@@ -33,7 +33,7 @@ readonly __GRP_ERR_GROUP_NOT_FOUND='grupo não encontrado'
 grp.getgrgid()
 {
 	getopt.parse "grpname:str:+:$1"
-	grp.___get_info "$1" gid
+	grp.__get_info "$1" gid
 	return $?
 }
 
@@ -44,7 +44,7 @@ grp.getgrgid()
 grp.getgrusers()
 {
 	getopt.parse "grpname:str:+:$1"
-	grp.___get_info "$1" users
+	grp.__get_info "$1" users
 	return $?
 }
 
@@ -55,7 +55,23 @@ grp.getgrusers()
 grp.getgrpass()
 {
 	getopt.parse "grpname:str:+:$1"
-	grp.___get_info "$1" pass
+	grp.__get_info "$1" pass
+	return $?
+}
+
+# func grp.getgrpnam <[uint]gid> => [str]
+#
+# Retorna o nome do grupo associado ao 'gid'.
+#
+function grp.getgrnam()
+{
+	getopt.parse "gid:uint:+:$1"
+	
+	local grpname
+	while read grpname; do
+		[[ $(grp.__get_info $grpname gid) -eq $1 ]] && echo "$grpname" && break
+	done < <(grp.__get_info '' all)
+	
 	return $?
 }
 
@@ -66,11 +82,11 @@ grp.getgrpass()
 grp.getgrall()
 {
 	getopt.parse "-:null:-:$*"
-	grp.___get_info '' all
+	grp.__get_info '' all
 	return $?
 }
 
-grp.___get_info()
+grp.__get_info()
 {
 	local group info fields
 	declare -A entry
