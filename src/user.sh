@@ -7,8 +7,8 @@ readonly __USER_SH=1
 source builtin.sh
 
 readonly __USER_PATH_PASSWD='/etc/passwd'
-readonly __USER_ERR_READ_PASS_FILE='falha ao ler o arquivo base'
-readonly __USER_ERR_USER_NOT_FOUND='usuário não encontrado'
+readonly __ERR_USER_READ_PASS_FILE='falha ao ler o arquivo base'
+readonly __ERR_USER_USER_NOT_FOUND='usuário não encontrado'
 
 # type user
 #
@@ -141,10 +141,10 @@ user.__get_info()
 			
 			printf '%s\n' "$info"
 		else
-			error.__exit 'user' 'str' "$1" "$__USER_ERR_USER_NOT_FOUND"
+			error.__trace def 'user' 'str' "$1" "$__ERR_USER_USER_NOT_FOUND"; return $?
 		fi	
 	else
-		error.__exit '' '' "$__USER_PATH_PASSWD" "$__USER_ERR_READ_PASS_FILE"
+		error.__trace def '' '' "$__USER_PATH_PASSWD" "$__ERR_USER_READ_PASS_FILE"; return $?
 	fi
 
 	return $?

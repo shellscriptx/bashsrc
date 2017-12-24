@@ -14,8 +14,8 @@ readonly __GRP_SH=1
 source builtin.sh
 
 readonly __GRP_PATH='/etc/group'
-readonly __GRP_ERR_READ_GROUP_FILE='falha ao ler o arquivo base'
-readonly __GRP_ERR_GROUP_NOT_FOUND='grupo não encontrado'
+readonly __ERR_GRP_READ_GROUP_FILE='falha ao ler o arquivo base'
+readonly __ERR_GRP_GROUP_NOT_FOUND='grupo não encontrado'
 
 # type group
 #
@@ -111,10 +111,10 @@ grp.__get_info()
 			printf '%s\n' $info
 
 		else
-			error.__exit 'group' 'str' "$1" "$__GRP_ERR_GROUP_NOT_FOUND"
+			error.__trace def 'group' 'str' "$1" "$__ERR_GRP_GROUP_NOT_FOUND"; return $?
 		fi	
 	else
-		error.__exit '' '' "$__GRP_PATH" "$__GRP_ERR_READ_GROUP_FILE"
+		error.__trace def '' '' "$__GRP_PATH" "$__ERR_GRP_READ_GROUP_FILE"; return $?
 	fi
 
 	return $?
