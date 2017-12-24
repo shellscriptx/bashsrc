@@ -214,6 +214,11 @@ grp.getgrusers
 grp.getgrpass
 '
 
+__BUILTIN_TYPE_IMPLEMENTS[struct]='
+struct.
+struct.add
+'
+
 readonly __BUILTIN_TYPE_IMPLEMENTS
 
 # /* __TYPES_SH */

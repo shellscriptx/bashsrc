@@ -15,8 +15,8 @@ source builtin.sh
 source string.sh
 
 # errors
-readonly __REGEX_ERR_FLAG_INVALID='a flag especificada é inválida'
-readonly __REGEX_ERR_GROUP_REF='referência do grupo inválida'
+readonly __ERR_REGEX_FLAG_INVALID='a flag especificada é inválida'
+readonly __ERR_REGEX_GROUP_REF='referência do grupo inválida'
 
 # const REG_ICASE=2
 #
@@ -69,7 +69,7 @@ function regex.findall()
 	case $flag in
 		0) def='u';;
 		2) def='s';;
-		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
+		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -104,7 +104,7 @@ function regex.fullmatch()
 	case $flag in
 		0) def='u';;
 		2) def='s';;
-		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
+		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -136,7 +136,7 @@ function regex.match()
 	case $flag in
 		0) def='u';;
 		2) def='s';;
-		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
+		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
@@ -170,7 +170,7 @@ function regex.search()
 	case $flag in
 		0) def='u';;
 		2) def='s';;
-		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
+		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -208,7 +208,7 @@ function regex.split()
 	case $flag in
 		0) def='u';;
 		2) def='s';;
-		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
+		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -242,7 +242,7 @@ function regex.ismatch()
 	case $flag in
 		0) def='u';;
 		2) def='s';;
-		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
+		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -272,7 +272,7 @@ function regex.groups()
 	case $flag in
 		0) def='u';;
 		2) def='s';;
-		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
+		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -347,7 +347,7 @@ function regex.savegroups()
 	case $__flag in
 		0) __def='u';;
 		2) __def='s';;
-		*) error.__exit "flag" "uint" "$__flag" "$__REGEX_ERR_FLAG_INVALID";;
+		*) error.__trace def "flag" "uint" "$__flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${__def} nocasematch
@@ -415,7 +415,7 @@ function regex.replace()
 	case $flag in
 		0) def='u';;
 		2) def='s';;
-		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
+		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
@@ -502,7 +502,7 @@ function regex.nreplace()
 	case $flag in
 		0) def='u';;
 		2) def='s';;
-		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
+		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -615,7 +615,7 @@ function regex.fnreplace()
 	case $flag in
 		0) def='u';;
 		2) def='s';;
-		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
+		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
@@ -725,7 +725,7 @@ function regex.fnnreplace()
 	case $flag in
 		0) def='u';;
 		2) def='s';;
-		*) error.__exit "flag" "uint" "$flag" "$__REGEX_ERR_FLAG_INVALID";;
+		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch

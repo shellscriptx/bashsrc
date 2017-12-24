@@ -19,9 +19,9 @@ readonly __TIME_TZFILE=/usr/share/zoneinfo/zone.tab
 readonly __TIME_CTZFILE=/etc/timezone
 
 # erros
-readonly __TIME_ERR_TZNAME='nome do fuso horário inválido'
-readonly __TIME_ERR_TZFILE="não foi possível localizar o arquivo"
-readonly __TIME_ERR_DATETIME='data/hora inválida'
+readonly __ERR_TIME_TZNAME='nome do fuso horário inválido'
+readonly __ERR_TIME_TZFILE="não foi possível localizar o arquivo"
+readonly __ERR_TIME_DATETIME='data/hora inválida'
 
 # meses
 readonly JANUARY=1 
@@ -278,7 +278,7 @@ function time.tzinfo()
 		echo "${tzname}|${__timezones[$tzname]}|${utc}"
 		unset TZ
 	else	
-		error.__exit "tzname" "str" "$tzname" "$__TIME_ERR_TZNAME"
+		error.__trace def "tzname" "str" "$tzname" "$__ERR_TIME_TZNAME"; return $?
 	fi
 
 	return 0
@@ -528,7 +528,7 @@ function time.asctime()
 							${__asctime_map[tm_year]} \
 							${__asctime_map[tm_yday]}); then
 		
-		error.__exit 'datetime' 'map' "\n$(map.list $1)" "$__TIME_ERR_DATETIME"
+		error.__trace def 'datetime' 'map' "\n$(map.list $1)" "$__ERR_TIME_DATETIME"; return $?
 	fi
 	
 	printf "%s %s %d %02d:%02d:%02d %d %s\n" \
@@ -561,7 +561,7 @@ function time.strftime()
 							${__dt_ref[tm_year]} \
 							${__dt_ref[tm_yday]}); then
 		
-		error.__exit 'datetime' 'map' "\n$(map.list $2)" "$__TIME_ERR_DATETIME"
+		error.__trace def 'datetime' 'map' "\n$(map.list $2)" "$__ERR_TIME_DATETIME"; return $?
 	fi
 	
 	for ((__i=0; __i < ${#__fmt}; __i++)); do
@@ -643,8 +643,11 @@ function time.__check_time()
 
 function time.__init()
 {
-	[[ -e $__TIME_TZFILE ]] || error.__exit '' '' '' "$__TIME_ERR_TZFILE '$__TIME_TZFILE'"
-	[[ -e $__TIME_CTZFILE ]] || error.__exit '' '' '' "$__TIME_ERR_TZFILE '$__TIME_CTZFILE'"	
+	if [[ ! -e $__TIME_TZFILE ]]; then
+		error.__trace def '' '' '' "$__ERR_TIME_TZFILE '$__TIME_TZFILE'"; return $?
+	elif [[ ! -e $__TIME_CTZFILE ]]; then
+		error.__trace def '' '' '' "$__ERR_TIME_TZFILE '$__TIME_CTZFILE'"; return $?
+	fi
 
 	declare -Ag __timezones
 

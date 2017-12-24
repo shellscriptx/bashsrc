@@ -19,17 +19,17 @@ source string.sh
 readonly __FD_MAX=1024
 
 # errors
-readonly __OS_ERR_MODE_PERM='modo de permissão inválido'
-readonly __OS_ERR_FILE_NOT_FOUND='arquivo não encontrado'
-readonly __OS_ERR_FD_OPEN_MAX='limite máximo de arquivos abertos alcançado'
-readonly __OS_ERR_FD_READ='erro de leitura no descritor'
-readonly __OS_ERR_FD_WRITE='erro de escrita no descritor'
-readonly __OS_ERR_FD_CREATE='erro ao criar o descritor'
-readonly __OS_ERR_OPEN_FLAG='open flag de acesso inválida'
-readonly __OS_ERR_SEEK_FLAG='seek flag de fluxo inválida'
-readonly __OS_ERR_FILE_NOT_WRITE='não é permitido gravar no arquivo'
-readonly __OS_ERR_FILE_NOT_READ='não é permitido ler o arquivo'
-readonly __OS_ERR_FILE_NOT_RW='não é permitido ler/gravar no arquivo'
+readonly __ERR_OS_MODE_PERM='modo de permissão inválido'
+readonly __ERR_OS_FILE_NOT_FOUND='arquivo não encontrado'
+readonly __ERR_OS_FD_OPEN_MAX='limite máximo de arquivos abertos alcançado'
+readonly __ERR_OS_FD_READ='erro de leitura no descritor'
+readonly __ERR_OS_FD_WRITE='erro de escrita no descritor'
+readonly __ERR_OS_FD_CREATE='erro ao criar o descritor'
+readonly __ERR_OS_OPEN_FLAG='open flag de acesso inválida'
+readonly __ERR_OS_SEEK_FLAG='seek flag de fluxo inválida'
+readonly __ERR_OS_FILE_NOT_WRITE='não é permitido gravar no arquivo'
+readonly __ERR_OS_FILE_NOT_READ='não é permitido ler o arquivo'
+readonly __ERR_OS_FILE_NOT_RW='não é permitido ler/gravar no arquivo'
 
 # constantes
 readonly STDIN=/dev/stdin
@@ -93,7 +93,9 @@ function os.chmod()
 {
 	getopt.parse "path:path:+:$1" "mode:uint:+:$2"
 	
-	[[ $2 =~ ^[0-7]{3,4}$ ]] || error.__exit 'mode' 'uint' "$2" "$__OS_ERR_MODE_PERM"
+	if ! [[ $2 =~ ^[0-7]{3,4}$ ]]; then
+		error.__trace def 'mode' 'uint' "$2" "$__ERR_OS_MODE_PERM"; return $?
+	fi
 	chmod "$2" "$1" &>/dev/null
 	return $?
 }
@@ -109,7 +111,10 @@ function os.stackdir()
 	declare -n __stack_dir=$1
 	local __dir=$2
 	
-	[ ! -d "$__dir" ] && error.__exit 'dir' 'str' "$__dir" "$__OS_ERR_DIR_NOT_FOUND"
+	if [ ! -d "$__dir" ]; then
+		error.__trace def 'dir' 'str' "$__dir" "$__ERR_OS_DIR_NOT_FOUND"
+		return $?
+	fi
 	__stack_dir+=("$__dir")
 	
 	return 0
@@ -318,7 +323,7 @@ function os.__chtime()
                             ${__map_ref[tm_year]} \
                             ${__map_ref[tm_yday]}); then
         
-        error.__exit 'time' 'map' "\n$(map.list $3)" "$__TIME_ERR_DATETIME"
+        error.__trace def 'time' 'map' "\n$(map.list $3)" "$__ERR_TIME_DATETIME"; return $?
     fi
 
 	touch $__flag \
@@ -343,7 +348,9 @@ function os.mkdir()
 {
 	getopt.parse "dir:str:+:$1" "mode:uint:+:$2"
 	
-	[[ $2 =~ ^[0-7]{3,4}$ ]] || error.__exit 'mode' 'uint' "$2" "$__OS_ERR_MODE_PERM"
+	if ! [[ $2 =~ ^[0-7]{3,4}$ ]]; then
+		error.__trace def 'mode' 'uint' "$2" "$__ERR_OS_MODE_PERM"; return $?
+	fi
 	mkdir --parents --mode=$2 "$1" &>/dev/null
 	return $?
 }
@@ -483,9 +490,9 @@ function os.open()
 	declare -n __fdref=$1
 
 	if [ ! -d /dev/fd ]; then
-		error.__exit '' '' '' "'/dev/fd' diretório FIFOs para método I/O não encontrado"
+		error.__trace def '' '' '' "'/dev/fd' diretório FIFOs para método I/O não encontrado"; return $?
 	elif [ -d "$__file" ]; then
-		error.__exit 'filename' 'str' "$__file" 'é um diretório'
+		error.__trace def 'filename' 'str' "$__file" 'é um diretório'; return $?
 	fi
 
 	for ((__fd=3; __fd <= __FD_MAX; __fd++)); do
@@ -493,37 +500,39 @@ function os.open()
 	done
 
 	if [ $__av -eq 0 ]; then
-		error.__exit 'file' 'fd' "$__file" "$__OS_ERR_FD_OPEN_MAX"
+		error.__trace def 'file' 'fd' "$__file" "$__ERR_OS_FD_OPEN_MAX"; return $?
 	fi
 	
 	case $__mode in
 		0)
 			if [[ ! -e "$__file" ]]; then
-				error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_FOUND"
+				error.__trace def 'file' 'str' "$__file" "$__ERR_OS_FILE_NOT_FOUND"; return $?
 			elif [[ ! -r "$__file" ]]; then
-				error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_READ"
+				error.__trace def 'file' 'str' "$__file" "$__ERR_OS_FILE_NOT_READ"; return $?
 			fi
 			__parse="$__fd<$__file"
 			;;
 
 		1)
 			if [[ -e "$__file" && ! -w "$__file" ]]; then
-				error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_WRITE"
+				error.__trace def 'file' 'str' "$__file" "$__ERR_OS_FILE_NOT_WRITE"; return $?
 			fi
 			__parse="$__fd>>$__file"
 			;;
 
 		2) 
 			if [[ -e "$__file" ]] && [[ ! -w "$__file" || ! -r "$__file" ]]; then
-				error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_RW"
+				error.__trace def 'file' 'str' "$__file" "$__ERR_OS_FILE_NOT_RW"; return $?
 			fi
 			__parse="$__fd<>$__file"
 			;;
-		*) error.__exit 'flag' 'uint' "$__mode" "$__OS_ERR_OPEN_FLAG";;
+		*) error.__trace def 'flag' 'uint' "$__mode" "$__ERR_OS_OPEN_FLAG"; return $?;;
 	esac
 
-	eval exec "$__parse" 2>/dev/null || \
-	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_CREATE '$__fd'"
+	if ! eval exec "$__parse" 2>/dev/null; then
+		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_CREATE '$__fd'"
+		return $?
+	fi
 
 	mkdir -p "$__RUNTIME/$$/fd"
 	echo "$__file|$__mode|$__fd|0" > "$__RUNTIME/$$/fd/$__fd"
@@ -652,11 +661,13 @@ function os.file.readlines()
 	local attr cur
 	local bytes=0
 
-	while read line; do
+	if ! while read line; do
 		bytes=$((bytes+${#line}))
 		echo "$line"
-	done <&$1 2>/dev/null || \
-	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$1'"
+	done <&$1 2>/dev/null; then
+		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$1'"
+		return $?
+	fi
 	
 	attr=$(< "$__RUNTIME/$$/fd/$1")
 	cur=${attr##*|}
@@ -692,8 +703,10 @@ function os.file.readline()
 	
 	local seek len attr line cur
 
-	read line <&$1 2>/dev/null || \
-	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$1'"
+	if ! read line <&$1 2>/dev/null; then
+		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$1'"
+		return $?
+	fi
 
 	len=${#line}
 	attr=$(< "$__RUNTIME/$$/fd/$1")
@@ -732,11 +745,14 @@ function os.file.read()
 
 	(($2 == 0)) && return 0	
 
-	while read -N1 ch; do
+	if ! while read -N1 ch; do
 		echo -n "${ch:- }"
 		(($((++bytes)) == $2)) && break
-	done <&$1 2>/dev/null || \
-	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$1'"
+	done <&$1 2>/dev/null; then
+		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$1'"
+		return $?
+	fi
+
 	echo
 	
 	attr=$(< "$__RUNTIME/$$/fd/$1")
@@ -744,7 +760,7 @@ function os.file.read()
 	seek=$((cur+bytes))
 
 	echo "${attr%|*}|$seek" > "$__RUNTIME/$$/fd/$1"
-	return $?
+	return 0
 }
 
 # func os.file.writeline <[uint]fd> <[str]exp> => [bool]
@@ -756,10 +772,12 @@ function os.file.writeline()
 {
 	getopt.parse "descriptor:fd:+:$1" "exp:str:-:$2"
 	
-	echo "$2" >&$1 2>/dev/null || \
-	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_WRITE '$1'"
+	if ! echo "$2" >&$1 2>/dev/null; then
+		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_WRITE '$1'"
+		return $?
+	fi
 	
-	return $?
+	return 0
 }
 
 # func os.file.write <[uint]fd> <[str]exp> <[uint]bytes> => [bool]
@@ -789,10 +807,12 @@ function os.file.write()
 	
 	(($3 == 0)) && return 0
 
-	echo "${2:0:$3}" >&$1 2>/dev/null || \
-	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_WRITE '$1'"
+	if ! echo "${2:0:$3}" >&$1 2>/dev/null; then
+		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_WRITE '$1'"
+		return $?
+	fi
 	
-	return $?
+	return 0
 }
 
 # func os.file.close <[uint]fd> => [bool]
@@ -888,16 +908,16 @@ function os.file.seek()
 		0) 	parse="$fd<$file";;
 		1) 	parse="$fd>>$file";;
 		2)	parse="$fd<>$file";;
-		*) 	error.__exit 'flag' 'uint' "$mode" "$__OS_ERR_OPEN_FLAG";;
+		*) 	error.__trace def 'flag' 'uint' "$mode" "$__ERR_OS_OPEN_FLAG"; return $?;;
 	esac
 	
-	eval exec "$parse" 2>/dev/null || error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$fd'"
+	eval exec "$parse" 2>/dev/null || error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$fd'"; return $?
 
 	case $whence in
 		0)	os.file.read $fd $offset 1>/dev/null;;
 		1) 	os.file.read $fd $((cur+offset)) 1>/dev/null;;
 		2)	os.file.read $fd $end 1>/dev/null;;
-		*) 	error.__exit 'whence' 'uint' "$whence" "$__OS_ERR_SEEK_FLAG";;
+		*) 	error.__trace def 'whence' 'uint' "$whence" "$__ERR_OS_SEEK_FLAG"; return $?;;
 	esac
 
 	return $?

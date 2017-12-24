@@ -15,8 +15,8 @@ readonly __STRING_SH=1
 source builtin.sh
 
 # erros
-readonly __STR_ERR_SLICE='intervalo do slice inválido'
-readonly __STR_ERR_FLAG_CHAR_INVALID='flag de cadeia de caracteres inválida'
+readonly __ERR_STR_SLICE='intervalo do slice inválido'
+readonly __ERR_STR_FLAG_CHAR_INVALID='flag de cadeia de caracteres inválida'
 
 # constantes
 readonly STR_LOWERCASE='abcdefghijklmnopqrstuvwxyz'
@@ -952,7 +952,7 @@ function string.filter()
 	for flag in ${@:2}; do	
 		case $flag in
 			alnum|alpha|cntrl|digit|graph|lower|print|punct|upper|xdigit|space) flags+="[:$flag:]";;
-			*) error.__exit "flag" "str" "$flag" "$__STR_ERR_FLAG_CHAR_INVALID";;
+			*) error.__trace def "flag" "str" "$flag" "$__ERR_STR_FLAG_CHAR_INVALID"; return $?;;
 		esac
 	done
 	
