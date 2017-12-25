@@ -35,7 +35,6 @@ function error.__trace()
 		stack+="[${l[$i]}:${t[$i]}] "
 	done
 	
-	exec 1>&2
 	
 	case $__EXIT_TRACE_ERROR in
 		0)
@@ -49,6 +48,7 @@ function error.__trace()
 
 			;;
 		*)
+			exec 1>&2
 			stack=${stack// / => }
 			echo "(Pilha de rastreamento)"
 			echo "Arquivo: $0"
