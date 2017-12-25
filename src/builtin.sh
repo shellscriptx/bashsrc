@@ -1053,15 +1053,25 @@ function builtin.__iter_cond_any_all()
 #
 function del()
 {
-	local obj func init
-	
+	local obj func init member
+	local parent=${FUNCNAME[1]}
+
 	for obj in $@; do
 		getopt.parse "varname:var:+:$obj"
-		for func in ${__REG_LIST_VAR[${FUNCNAME[1]}.${obj}]}; do
+		
+		if [[ $($obj.__type__) == struct ]]; then
+			for member in ${__STRUCT_REG_LIST[$parent.$obj]}; do
+				unset $obj[$member]
+			done
+		fi	
+		for func in ${__VAR_REG_LIST[$parent.$obj]}; do
 			unset -f $func
 			init=1
 		done
-		[[ $init ]] && unset __REG_LIST_VAR[${FUNCNAME[1]}.${obj}] $obj init
+		if [[ $init ]]; then
+			unset __VAR_REG_LIST[$parent.$obj] $obj init
+			unset -f $obj.__type__
+		fi
 	done
 
 	return 0
@@ -1084,37 +1094,44 @@ function var()
 	for var in ${@:1:$((${#@}-1))}; do
 		getopt.parse "varname:var:+:$var"
 		
-		if ! [[ ${__REG_LIST_VAR[${FUNCNAME[1]}.$var]} ]]; then
-			[[ "$type" == "map" ]] && declare -Ag $var
-			[[ "$type" != "builtin" ]] && builtin_method=${__BUILTIN_TYPE_IMPLEMENTS[builtin]}
-			
-			for method in	${__BUILTIN_TYPE_IMPLEMENTS[$type]} \
-							${__INIT_TYPE_IMPLEMENTS[$type]} \
-							$builtin_method; do
-
-				if ! [[ $var.${method##*.} =~ ^(${regmethods%|})$ ]]; then
-					ptr_func="^\s*${method//./\\.}\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
-
-					if struct_func=$(declare -fp $method 2>/dev/null); then
-						if [[ $struct_func =~ $ptr_func ]]; then
-							proto="%s(){ %s %s \"\$@\"; return \$?; }"
-						else
-							proto="%s(){ %s \"\$%s\" \"\$@\"; return \$?; }"
-						fi
-						eval "$(printf "$proto\n" $var.${method##*.} $method $var)"
-						__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.${method##*.} "
-					else
-						error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"; return $?
-					fi
-				else
-					error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"; return $?
-				fi
-			done
-			eval "$var.__type__(){ echo $type; return 0; }"
-			__REG_LIST_VAR[${FUNCNAME[1]}.$var]+="$var.__type__ "
-		else
-			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"; return $?
+		if [[ ${__VAR_REG_LIST[${FUNCNAME[1]}.$var]} ]]; then
+			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"
+			return $?
 		fi
+			
+		[[ $type =~ ^(map|struct)$ ]] && declare -Ag $var
+		[[ $type =~ ^(builtin|struct)$ ]] || builtin_method=${__BUILTIN_TYPE_IMPLEMENTS[builtin]}
+			
+		for method in	${__BUILTIN_TYPE_IMPLEMENTS[$type]} \
+						${__INIT_TYPE_IMPLEMENTS[$type]} \
+						$builtin_method; do
+
+			if [[ $var.${method##*.} =~ ^(${regmethods%|})$ ]]; then
+				error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
+				return $?
+			fi
+				
+			ptr_func="^\s*${method//./\\.}\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
+
+			if ! struct_func=$(declare -fp $method 2>/dev/null); then
+				error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
+				return $?
+			fi
+			
+			if [[ $struct_func =~ $ptr_func ]]; then
+				proto="%s(){ %s %s \"\$@\"; return \$?; }"
+			else
+				proto="%s(){ %s \"\$%s\" \"\$@\"; return \$?; }"
+			fi
+				
+			eval "$(printf "$proto\n" $var.${method##*.} $method $var)"
+			__VAR_REG_LIST[${FUNCNAME[1]}.$var]+="$var.${method##*.} "
+
+		done
+
+		eval "$var.__type__(){ echo $type; return 0; }"
+		__VAR_REG_LIST[${FUNCNAME[1]}.$var]+="$var.__type__ "
+
 	done
 
 	return 0
@@ -1129,26 +1146,30 @@ function builtin.__INIT__()
 	if read _ attr _ < <(declare -p SRC_TYPE_IMPLEMENTS 2>/dev/null); then
 
 		if [[ "$attr" =~ r ]]; then
-			error.__trace src '' "$__IMPORT_SOURCE" '' "'SRC_TYPE_IMPLEMENTS' o array possui atributo somente leitura"; return $?
+			error.__trace src '' "$__IMPORT_SOURCE" '' "'SRC_TYPE_IMPLEMENTS' o array possui atributo somente leitura"
+			return $?
 		elif [[ ! "$attr" =~ A ]]; then
-			error.__trace src '' "$__IMPORT_SOURCE" '' "'SRC_TYPE_IMPLEMENTS' não é um array associativo"; return $?
+			error.__trace src '' "$__IMPORT_SOURCE" '' "'SRC_TYPE_IMPLEMENTS' não é um array associativo"
+			return $?
 		elif [[ ${SRC_TYPE_IMPLEMENTS[@]} ]]; then
 				
 			printf -v regtypes '%s|' ${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__INIT_TYPE_IMPLEMENTS[@]:+ ${!__INIT_TYPE_IMPLEMENTS[@]}}
 
 			for type in ${!SRC_TYPE_IMPLEMENTS[@]}; do
 				if [[ $type =~ ^(${regtypes%|})$ ]]; then
-					error.__trace src '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE_CONFLICT"; return $?
-				else
-					for method in ${SRC_TYPE_IMPLEMENTS[$type]}; do
-						if ! readonly -f $method 2>/dev/null; then
-							error.__trace imp '' "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"; return $?
-						fi
-					done
-
-					__INIT_TYPE_IMPLEMENTS[$type]=${SRC_TYPE_IMPLEMENTS[$type]}
-					unset SRC_TYPE_IMPLEMENTS[$type]
+					error.__trace src '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE_CONFLICT"
+					return $?
 				fi
+				
+				for method in ${SRC_TYPE_IMPLEMENTS[$type]}; do
+					if ! readonly -f $method 2>/dev/null; then
+						error.__trace imp '' "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
+						return $?
+					fi
+				done
+
+				__INIT_TYPE_IMPLEMENTS[$type]=${SRC_TYPE_IMPLEMENTS[$type]}
+				unset SRC_TYPE_IMPLEMENTS[$type]
 			done
 		fi
 	fi
@@ -1399,7 +1420,8 @@ function builtin.__init()
 
 	# Variáveis globais
 	declare -Ag __INIT_TYPE_IMPLEMENTS \
-				__REG_LIST_VAR \
+				__VAR_REG_LIST \
+				__STRUCT_REG_LIST \
 				SRC_TYPE_IMPLEMENTS
 
 	trap "rm -rf $__RUNTIME/$$ &>/dev/null" INT QUIT ABRT KILL TERM 
