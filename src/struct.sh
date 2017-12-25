@@ -4,7 +4,7 @@
 
 #----------------------------------------------#
 # Source:           struct.sh
-# Data:             25 de outubro de 2017
+# Data:             25 de dezembro de 2017
 # Desenvolvido por: Juliano Santos [SHAMAN]
 # E-mail:           shellscriptx@gmail.com
 #----------------------------------------------#
@@ -16,7 +16,7 @@ readonly __STRUCT_SH=1
 source builtin.sh
 
 readonly __ERR_STRUCT_ALREADY_INIT='a estrutura já foi inicializada'
-readonly __ERR_STRUCT_ELEM_NOT_MEMBER='o elemento não é um membro da estrutura'
+readonly __ERR_STRUCT_NOT_MEMBER='o elemento não é um membro da estrutura'
 readonly __ERR_STRUCT_MEMBER_NAME='nomenclatura do membro da estrutura é inválida'
 
 # type struct
@@ -52,7 +52,7 @@ struct.add()
 	done
 	
 	__byref[$__parent]=1
-	__STRUCT_REG_LIST[$__parent.$1]+="$__parent"
+	__STRUCT_REG_LIST[$__parent.$1]+=$__parent
 
 	return 0
 }
@@ -73,7 +73,7 @@ struct.(){
 	else
 		for __member in ${@:2}; do
 			if ! [[ ${__byref[$__parent.$__member]} ]]; then
-				error.__trace def 'elem' 'str' "$__member" "$__ERR_STRUCT_ELEM_NOT_MEMBER"
+				error.__trace def 'elem' 'str' "$__member" "$__ERR_STRUCT_NOT_MEMBER"
 				return $?
 			fi
 			echo "${__byref[$__parent.$__member]}"
