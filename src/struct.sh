@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#!/bin/bash
-
 #----------------------------------------------#
 # Source:           struct.sh
 # Data:             25 de dezembro de 2017
