@@ -911,7 +911,10 @@ function os.file.seek()
 		*) 	error.__trace def 'flag' 'uint' "$mode" "$__ERR_OS_OPEN_FLAG"; return $?;;
 	esac
 	
-	eval exec "$parse" 2>/dev/null || error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$fd'"; return $?
+	if ! eval exec "$parse" 2>/dev/null; then
+		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$fd'"
+		return $?
+	fi
 
 	case $whence in
 		0)	os.file.read $fd $offset 1>/dev/null;;
@@ -920,7 +923,7 @@ function os.file.seek()
 		*) 	error.__trace def 'whence' 'uint' "$whence" "$__ERR_OS_SEEK_FLAG"; return $?;;
 	esac
 
-	return $?
+	return 0
 }
 
 readonly -f os.chdir \
