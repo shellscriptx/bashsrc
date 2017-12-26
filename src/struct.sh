@@ -14,15 +14,17 @@ readonly __STRUCT_SH=1
 source builtin.sh
 
 readonly __ERR_STRUCT_ALREADY_INIT='a estrutura já foi inicializada'
-readonly __ERR_STRUCT_NOT_MEMBER='o elemento não é um membro da estrutura'
+readonly __ERR_STRUCT_NOT_MEMBER='não é um membro da estrutura'
 readonly __ERR_STRUCT_MEMBER_NAME='nomenclatura do membro da estrutura é inválida'
+readonly __ERR_STRUCT_MEMBER_CONFLICT='conflito de membros na estrutura'
 
 # type struct
 #
 # Implementa 'S' com os métodos:
 #
-# S.add
-# S.
+# S.add <[str]member> ...
+# S.members => [str]
+# S. <[str]member> => [str]
 #
 struct.add()
 {
@@ -36,13 +38,16 @@ struct.add()
 	declare -n __byref=$1
 
 	if [[ ${__byref[$__parent]} ]]; then
-		error.__trace def 'elem' 'str' "$2" "$__ERR_STRUCT_ALREADY_INIT"
+		error.__trace def 'member' 'str' "$2" "$__ERR_STRUCT_ALREADY_INIT"
 		return $?
 	fi
 	
 	for __member in ${@:2}; do
 		if ! [[ $__member =~ ^[a-zA-Z0-9_.]+$ ]]; then
-			error.__trace def 'elem' 'str' "$__member" "$__ERR_STRUCT_MEMBER_NAME"
+			error.__trace def 'member' 'str' "$__member" "$__ERR_STRUCT_MEMBER_NAME"
+			return $?
+		elif [[ ${__byref[$__parent.$__member]} ]]; then
+			error.__trace def 'member' 'str' "$__member" "$__ERR_STRUCT_MEMBER_CONFLICT"
 			return $?
 		fi
 		__byref[$__parent.$__member]=' '
@@ -52,6 +57,22 @@ struct.add()
 	__byref[$__parent]=1
 	__STRUCT_REG_LIST[$__parent.$1]+=$__parent
 
+	return 0
+}
+
+struct.members()
+{
+	getopt.parse "var:map:+:$1"
+
+	builtin.__extfncall || return 1
+
+	local parent=${FUNCNAME[2]}
+	local member
+
+	for member in ${__STRUCT_REG_LIST[$parent.$1]}; do
+		[[ $member != $parent ]] && echo "${member#$parent.}"
+	done
+	
 	return 0
 }
 
@@ -71,7 +92,7 @@ struct.(){
 	else
 		for __member in ${@:2}; do
 			if ! [[ ${__byref[$__parent.$__member]} ]]; then
-				error.__trace def 'elem' 'str' "$__member" "$__ERR_STRUCT_NOT_MEMBER"
+				error.__trace def 'member' 'str' "$__member" "$__ERR_STRUCT_NOT_MEMBER"
 				return $?
 			fi
 			echo "${__byref[$__parent.$__member]}"
@@ -82,6 +103,7 @@ struct.(){
 }
 
 readonly -f struct.add \
+			struct.members \
 			struct.
 
 # /* __STRUCT_SH */
