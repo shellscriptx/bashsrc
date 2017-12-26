@@ -995,16 +995,17 @@ function string.field()
 	for num in ${@:3}; do
 		getopt.parse "num:int:+:$num"
 
-		[[ $num -eq 0 ]] && continue
-		[[ $num -eq -1 ]] && { field+=(${1##*$2}); continue; }
-
-		exp=$1
-		
-		for ((i=1; i < ${num#-}; i++)); do
-			[[ $num -gt 0 ]] && exp=${exp#*$2} || exp=${exp%$2*}
-		done
-
-		[[ $num -gt 0 ]] && field+=(${exp%%$2*}) || field+=(${exp##*$2})
+		if [[ $num -eq 0 ]]; then
+			continue
+		elif [[ $num -eq -1 ]]; then
+			field+=(${1##*$2})
+		else
+			exp=$1
+			for ((i=1; i < ${num#-}; i++)); do
+				[[ $num -gt 0 ]] && exp=${exp#*$2} || exp=${exp%$2*}
+			done
+			[[ $num -gt 0 ]] && field+=(${exp%%$2*}) || field+=(${exp##*$2})
+		fi
 	done
 
 	echo "${field[@]}"
