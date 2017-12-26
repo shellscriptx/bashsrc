@@ -86,6 +86,11 @@ struct.(){
 
 	declare -n __byref=$1
 	
+	if ! [[ ${__byref[$__parent.$2]} ]]; then
+		error.__trace def 'member' 'str' "$2" "$__ERR_STRUCT_NOT_MEMBER"
+		return $?
+	fi
+
 	if [[ $3 == = ]]; then
 		__data=${*:4}
 		__byref[$__parent.$2]=${__data:- }
