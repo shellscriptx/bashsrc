@@ -1036,8 +1036,8 @@ function builtin.__iter_cond_any_all()
 				[[ $iv ]] && bit=$(($bit ^ 1))
 				bits+=" $bit $2"
 			else
-				error.__trace def 'cond' 'str' "$cond" 'instrução condicional inválida'; return $?
-				return 1
+				error.__trace def 'cond' 'str' "$cond" 'instrução condicional inválida'
+				return $?
 			fi
 		done
 		[[ $((${bits%$2})) -eq 1 ]] && echo "$iter"
@@ -1143,7 +1143,7 @@ function builtin.__INIT__()
 {
 	getopt.parse "-:null:-:$*"
 
-	local attr type regtypes method
+	local attr type method regtype
 
 	if read _ attr _ < <(declare -p SRC_TYPE_IMPLEMENTS 2>/dev/null); then
 
@@ -1155,13 +1155,15 @@ function builtin.__INIT__()
 			return $?
 		elif [[ ${SRC_TYPE_IMPLEMENTS[@]} ]]; then
 				
-			printf -v regtypes '%s|' ${!__BUILTIN_TYPE_IMPLEMENTS[@]}${__INIT_TYPE_IMPLEMENTS[@]:+ ${!__INIT_TYPE_IMPLEMENTS[@]}}
-
 			for type in ${!SRC_TYPE_IMPLEMENTS[@]}; do
-				if [[ $type =~ ^(${regtypes%|})$ ]]; then
-					error.__trace src '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE_CONFLICT"
-					return $?
-				fi
+				for regtype in	${!__BUILTIN_TYPE_IMPLEMENTS[@]} \
+								${!__INIT_TYPE_IMPLEMENTS[@]}; do
+				
+					if [[ $type == $regtype ]]; then
+						error.__trace src '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE_CONFLICT"
+						return $?
+					fi
+				done
 				
 				for method in ${SRC_TYPE_IMPLEMENTS[$type]}; do
 					if ! readonly -f $method 2>/dev/null; then
@@ -1176,7 +1178,7 @@ function builtin.__INIT__()
 		fi
 	fi
 
-	return $?
+	return 0
 }
 
 function builtin.__extfncall(){ [[ "${FUNCNAME[-2]}" != "${FUNCNAME[1]}" ]]; return $?; }
