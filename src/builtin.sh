@@ -1086,10 +1086,8 @@ function var()
 {
 	getopt.parse "varname:var:+:$1" "type:type:+:${@: -1}"
 
-	local type method proto ptr_func struct_func var attr err builtin_method regmethods
+	local type method proto ptr_func struct_func var attr err builtin_method
 	type=${@: -1}
-
-	printf -v regmethods '%s|' ${__BUILTIN_TYPE_IMPLEMENTS[@]}${__INIT_TYPE_IMPLEMENTS[@]:+ ${__INIT_TYPE_IMPLEMENTS[@]}}
 
 	for var in ${@:1:$((${#@}-1))}; do
 		getopt.parse "varname:var:+:$var"
@@ -1098,19 +1096,23 @@ function var()
 			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"
 			return $?
 		fi
+		
+		for method in 	${__BUILTIN_TYPE_IMPLEMENTS[@]} \
+						${__INIT_TYPE_IMPLEMENTS[@]}; do
 			
-		[[ $type =~ ^(map|struct)$ ]] && declare -Ag $var
-		[[ $type =~ ^(builtin|struct)$ ]] || builtin_method=${__BUILTIN_TYPE_IMPLEMENTS[builtin]}
+			if [[ "$var.${method##*.}" == "$method" ]]; then
+				error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
+				return $?
+			fi
+		done
+		
+		[[ "$type" == "map" || "$type" == "struct" ]] && declare -Ag $var
+		[[ "$type" != "builtin" && "$type" != "struct" ]] && builtin_method=${__BUILTIN_TYPE_IMPLEMENTS[builtin]}
 			
 		for method in	${__BUILTIN_TYPE_IMPLEMENTS[$type]} \
 						${__INIT_TYPE_IMPLEMENTS[$type]} \
 						$builtin_method; do
-
-			if [[ $var.${method##*.} =~ ^(${regmethods%|})$ ]]; then
-				error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
-				return $?
-			fi
-				
+		
 			ptr_func="^\s*${method//./\\.}\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
 
 			if ! struct_func=$(declare -fp $method 2>/dev/null); then
