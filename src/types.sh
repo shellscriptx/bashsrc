@@ -217,6 +217,7 @@ grp.getgrpass
 __BUILTIN_TYPE_IMPLEMENTS[struct]='
 struct.
 struct.add
+struct.members
 '
 
 readonly __BUILTIN_TYPE_IMPLEMENTS
