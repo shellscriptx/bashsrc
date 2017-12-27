@@ -32,7 +32,7 @@ readonly __ERR_GRP_GROUP_NOT_FOUND='grupo não encontrado'
 #
 function grp.getgrgid()
 {
-	getopt.parse "grpname:str:+:$1"
+	getopt.parse 1 "grpname:str:+:$1" ${@:2}
 	grp.__get_info "$1" gid
 	return $?
 }
@@ -43,7 +43,7 @@ function grp.getgrgid()
 #
 function grp.getgrusers()
 {
-	getopt.parse "grpname:str:+:$1"
+	getopt.parse 1 "grpname:str:+:$1" ${@:2}
 	grp.__get_info "$1" users
 	return $?
 }
@@ -54,7 +54,7 @@ function grp.getgrusers()
 #
 function grp.getgrpass()
 {
-	getopt.parse "grpname:str:+:$1"
+	getopt.parse 1 "grpname:str:+:$1" ${@:2}
 	grp.__get_info "$1" pass
 	return $?
 }
@@ -65,7 +65,7 @@ function grp.getgrpass()
 #
 function grp.getgrnam()
 {
-	getopt.parse "gid:uint:+:$1"
+	getopt.parse 1 "gid:uint:+:$1" ${@:2}
 	
 	local grpname
 	while read grpname; do
@@ -81,7 +81,7 @@ function grp.getgrnam()
 #
 function grp.getgrall()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	grp.__get_info '' all
 	return $?
 }

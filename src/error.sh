@@ -35,7 +35,6 @@ function error.__trace()
 		stack+="[${l[$i]}:${t[$i]}] "
 	done
 	
-	
 	case $__EXIT_TRACE_ERROR in
 		0)
 			declare -g __ERR__=$errno \
@@ -44,7 +43,7 @@ function error.__trace()
 						__ERR_TYPE__=$arg_type \
 						__ERR_VAL__=$arg_val \
 						__ERR_MSG__=$err_msg \
-						__ERR_FUNC__=${FUNCNAME[1]}
+						__ERR_FUNC__=${FUNCNAME[$fn]}
 
 			;;
 		*)
@@ -64,20 +63,21 @@ function error.__trace()
 					echo "Implementação: $arg_val"
 					echo "Composição: ${arg_name:+$arg_name.${arg_val##*.}}"
 					echo "Método: $arg_val"
-					echo "Erro: $err_msg"
 					;;
 				src)
 					echo "Source: $arg_type"
 					echo "Tipo: [$arg_val]"
-					echo "Erro: $err_msg"
 					;;
 				def)
-					echo -e "Argumento: <$arg_name>"
-					echo -e "Tipo: [$arg_type]"
-					echo -e "Valor: '$arg_val'"
-					echo -e "Erro: $err_msg"
+					echo "Argumento: <$arg_name>"
+					echo "Tipo: [$arg_type]"
+					echo "Valor: '$arg_val'"
+					;;
+				exa)
+					echo "Argumento(s): '$arg_val'"
 					;;
 			esac
+			echo "Erro: $err_msg"
 			echo "------------------------"
 			exec 1<&-
 			exit $errno
@@ -180,7 +180,7 @@ function error.__depends()
 #
 function error.resume()
 {
-	getopt.parse "flag:str:+:$1"
+	getopt.parse 1 "flag:str:+:$1" ${@:2}
 	
 	case $1 in
 		on)		exec 2<&-; declare -g __EXIT_TRACE_ERROR=0;;

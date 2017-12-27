@@ -42,7 +42,7 @@ source builtin.sh
 #
 function map.clear()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1" ${@:2}
 
 	declare -n __map=$1
 	local __key
@@ -61,7 +61,7 @@ function map.clear()
 #
 function map.clone()
 {
-	getopt.parse "src:map:+:$1" "dest:map:+:$2"
+	getopt.parse 2 "src:map:+:$1" "dest:map:+:$2" ${@:3}
 	
 	declare -n __map1=$1 __map2=$2
 	local __key
@@ -82,7 +82,7 @@ function map.clone()
 #
 function map.copy()
 {
-	getopt.parse "src:map:+:$1" "dest:map:+:$2"
+	getopt.parse 2 "src:map:+:$1" "dest:map:+:$2" ${@:3}
 	
 	declare -n __map1=$1 __map2=$2
 	local __key
@@ -100,7 +100,7 @@ function map.copy()
 #
 function map.fromkeys()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1"
 
 	declare -n __map=$1
 	local __key
@@ -118,7 +118,7 @@ function map.fromkeys()
 #
 function map.get()
 {
-	getopt.parse "name:map:+:$1" "key:str:+:$2"
+	getopt.parse 2 "name:map:+:$1" "key:str:+:$2" ${@:3}
 
 	declare -n __map=$1
 	echo "${__map[$2]}"
@@ -131,7 +131,7 @@ function map.get()
 #
 function map.keys()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1" ${@:2}
 	
 	declare -n __map=$1
 	printf "%s\n" "${!__map[@]}"
@@ -144,7 +144,7 @@ function map.keys()
 #
 function map.items()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1" ${@:2}
 	
 	declare -n __map=$1
 	printf "%s\n" "${__map[@]}"
@@ -158,7 +158,7 @@ function map.items()
 #
 function map.list()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1" ${@:2}
 
 	declare -n __map=$1
 	local __key
@@ -176,7 +176,7 @@ function map.list()
 #
 function map.remove()
 {
-	getopt.parse "name:map:+:$1" "key:str:+:$2"
+	getopt.parse 2 "name:map:+:$1" "key:str:+:$2" ${@:3}
 	
 	declare -n __map=$1
 	unset __map[$2]
@@ -190,7 +190,7 @@ function map.remove()
 #
 function map.add()
 {
-	getopt.parse "name:map:+:$1" "key:str:+:$2" "object:str:-:$3"
+	getopt.parse 3 "name:map:+:$1" "key:str:+:$2" "object:str:-:$3" ${@:4}
 	
 	declare -n __map=$1
 	__map[$2]=$3
@@ -203,7 +203,7 @@ function map.add()
 #
 function map.contains()
 {
-	getopt.parse "name:map:+:$1" "key:str:+:$2"
+	getopt.parse 2 "name:map:+:$1" "key:str:+:$2" ${@:3}
 	
 	declare -n __map=$1
 	local __key
@@ -222,7 +222,7 @@ function map.contains()
 #
 function map.pop()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1" ${@:2}
 	
 	declare -n __map=$1
 	local __key

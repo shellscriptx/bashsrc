@@ -155,9 +155,9 @@ readonly NULL=0
 # Digite a chave: Linux [enter]
 # aviso: 'Linux': a chave solicitada não existe.
 #
-function has(){
-	
-	getopt.parse "exp:str:+:$1" "on:keyword:+:$2" "name:var:+:$3"
+function has()
+{	
+	getopt.parse 3 "exp:str:+:$1" "on:keyword:+:$2" "name:var:+:$3" ${@:4}
 	
 	declare -n __obj_ref=$3
 	local __type __tmp
@@ -190,7 +190,7 @@ function has(){
 #
 function swap(){
 	
-	getopt.parse "varname1:str:+:$1" "varname2:str:+:$2"
+	getopt.parse 2 "varname1:str:+:$1" "varname2:str:+:$2" ${@:3}
 
 	declare -n __ref1=$1 __ref2=$2
 	local __tmp
@@ -206,11 +206,10 @@ function swap(){
 # 
 # Retorna o resultado da soma de todos os elementos.
 #
-function sum(){
-
-	local -i tmp
-	local nums
-	tmp=($*); nums=${tmp[@]}
+function sum()
+{
+	local -i tmp=($*)
+	local nums=${tmp[@]}
 	echo $((${nums// /+}))
 	return 0
 }
@@ -228,7 +227,7 @@ function sum(){
 #
 function fnmap(){
 	
-	getopt.parse "name:var:+:$1" "funcname:func:+:$2"
+	getopt.parse 2 "name:var:+:$1" "funcname:func:+:$2"
 	
 	declare -n __obj_ref=$1
 	local __item __key __ch __type
@@ -289,7 +288,7 @@ function fnmap(){
 #
 function filter()
 {
-	getopt.parse "name:var:+:$1" "funcname:func:+:$2"
+	getopt.parse 2 "name:var:+:$1" "funcname:func:+:$2"
 	
 	declare -n __obj_ref=$1
 	local __item __key __ch __type
@@ -312,7 +311,7 @@ function filter()
 #
 function chr()
 {
-	getopt.parse "code:uint:+:$1"
+	getopt.parse 1 "code:uint:+:$1" ${@:2}
 	printf \\$(printf "%03o" $1)'\n'
 	return 0
 }
@@ -323,7 +322,7 @@ function chr()
 #
 function ord()
 {
-	getopt.parse "char:char:-:$1"
+	getopt.parse 1 "char:char:-:$1" ${@:2}
 	printf '%d\n' "'$1"
 	return 0
 }
@@ -334,7 +333,7 @@ function ord()
 #
 function hex()
 {
-	getopt.parse "num:int:+:$1"
+	getopt.parse 1 "num:int:+:$1" ${@:2}
 	printf '0x%x\n' $1
 	return 0
 }
@@ -345,7 +344,7 @@ function hex()
 #
 function bin()
 {
-	getopt.parse "num:int:+:$1"
+	getopt.parse 1 "num:int:+:$1" ${@:2}
 	
 	local bit i
 
@@ -364,7 +363,7 @@ function bin()
 #
 function oct()
 {
-	getopt.parse "num:int:+:$1"
+	getopt.parse 1 "num:int:+:$1" ${@:2}
 	printf '0%o\n' $1
 	return 0
 }
@@ -381,7 +380,7 @@ function oct()
 #
 function htoi()
 {
-	getopt.parse "base:hex:+:$1"
+	getopt.parse 1 "base:hex:+:$1" ${@:2}
 	echo $((16#${1#0x}))
 	return 0
 }
@@ -392,7 +391,7 @@ function htoi()
 #
 function btoi()
 {
-	getopt.parse "num:bin:+:$1"
+	getopt.parse 1 "num:bin:+:$1" ${@:2}
 	echo $((2#$1))
 	return 0
 }
@@ -403,7 +402,7 @@ function btoi()
 #
 function otoi()
 {
-	getopt.parse "num:oct:+:$1"
+	getopt.parse 1 "num:oct:+:$1" ${@:2}
 	echo $((8#$1))
 	return 0
 }
@@ -430,7 +429,7 @@ function otoi()
 #
 function len()
 {
-	getopt.parse "name:var:+:$1"
+	getopt.parse 1 "name:var:+:$1" ${@:2}
 	
 	declare -n __obj_ref=$1
 	local __type
@@ -476,7 +475,7 @@ function len()
 #
 function range()
 {
-	getopt.parse "min:int:+:$1" "max:int:+:$2" "step:int:+:$3"
+	getopt.parse 3 "min:int:+:$1" "max:int:+:$2" "step:int:+:$3" ${@:4}
 
 	local i op
 	
@@ -554,7 +553,7 @@ function range()
 #
 function fnrange()
 {
-	getopt.parse "min:int:+:$1" "max:int:+:$2" "step:int:+:$3" "funcname:func:+:$4"
+	getopt.parse 4 "min:int:+:$1" "max:int:+:$2" "step:int:+:$3" "funcname:func:+:$4"
 
 	local i op
 	
@@ -570,7 +569,7 @@ function fnrange()
 #
 function isobj()
 {
-	getopt.parse "name:var:+:$1"
+	getopt.parse 1 "name:var:+:$1" ${@:2}
 	[[ -v $1 ]]
 	return $?
 }
@@ -592,7 +591,7 @@ function sorted()
 	local __item __type
 	
 	for __item in $@; do
-		getopt.parse "name:var:+:$__item"
+		getopt.parse 1 "name:var:+:$__item"
 		declare -n __obj_ref=$__item
 
 		read _ __type _ < <(declare -p $__item 2>/dev/null)
@@ -632,7 +631,7 @@ function sorted()
 #
 function fndef()
 {
-	getopt.parse "funcname:func:+:$1" "new:funcname:+:$2"
+	getopt.parse 2 "funcname:func:+:$1" "new:funcname:+:$2" ${@:3}
 
 	if which $2 &>/dev/null || declare -fp $2 &>/dev/null; then
 		error.__trace def "newtype" "funcname" "$2" "$__ERR_BUILTIN_FUNC_EXISTS"; return $?
@@ -667,7 +666,7 @@ function min()
 	local -i __arr
 
 	for __obj in $@; do
-		getopt.parse "name:var:+:$__obj"
+		getopt.parse 1 "name:var:+:$__obj"
 		
 		declare -n __obj_ref=$__obj
 		__arr+=(${__obj_ref[@]})
@@ -695,7 +694,7 @@ function max()
 	local -i __arr
 
 	for __obj in $@; do
-		getopt.parse "name:var:+:$__obj"
+		getopt.parse 1 "name:var:+:$__obj"
 		
 		declare -n __obj_ref=$__obj
 		__arr+=(${__obj_ref[@]})
@@ -748,13 +747,13 @@ function max()
 #
 function list()
 {
-	getopt.parse "list:var:+:$1"
+	getopt.parse 1 "list:var:+:$1"
 	
 	declare -n __obj_dest=$1
 	local __item __type
 
 	for __item in ${@:2}; do
-		getopt.parse "source:var:+:$__item"
+		getopt.parse 1 "source:var:+:$__item"
 		declare -n __obj_ref=$__item
 
 		read _ __type _ < <(declare -p $__item 2>/dev/null)
@@ -803,7 +802,7 @@ function unique()
 	local __item __type
 
 	for __item in $@; do
-		getopt.parse "source:var:+:$__item"
+		getopt.parse 1 "source:var:+:$__item"
 		declare -n __obj_ref=$__item
 
 		read _ __type _ < <(declare -p $__item 2>/dev/null)
@@ -826,7 +825,7 @@ function unique()
 #
 function reversed()
 {
-	getopt.parse "iterable:str:-:$1"
+	getopt.parse 1 "iterable:str:-:$1" ${@:2}
 
 	local arr
 	mapfile -t arr <<< "$1"
@@ -897,7 +896,7 @@ function reversed()
 #
 function iter()
 {
-	getopt.parse "start:int:+:$2" "count:int:+:$3"
+	getopt.parse 3 "iterable:str:-:$1" "start:int:+:$2" "count:int:+:$3" ${@:4}
 
 	local arr
 	mapfile -t arr <<< "$1"
@@ -912,7 +911,7 @@ function iter()
 #
 function fniter()
 {
-	getopt.parse "funcname:func:+:$2"
+	getopt.parse 2 "iterable:str:-:$1" "funcname:func:+:$2"
 	local item; while read item; do $2 "$item" "${@:3}"; done <<< "$1"
 	return 0
 }
@@ -925,7 +924,7 @@ function fniter()
 #
 function niter()
 {
-	getopt.parse "pos:int:+:$2"
+	getopt.parse 2 "iterable:str:-:$1" "pos:int:+:$2" ${@:3}
 
 	local arr
 	mapfile -t arr <<< "$1"
@@ -945,7 +944,7 @@ function niter()
 #
 function mod()
 {
-	getopt.parse "x:int:+:$1" "y:int:+:$2"
+	getopt.parse 2 "x:int:+:$1" "y:int:+:$2" ${@:3}
 	echo "$(($1/$2))|$(($1%$2))"
 	return 0
 }
@@ -956,7 +955,7 @@ function mod()
 #
 function count()
 {
-	getopt.parse "iterable:str:-:$1"
+	getopt.parse 1 "iterable:str:-:$1" ${@:2}
 
 	local arr
 	mapfile -t arr <<< "$1"
@@ -971,7 +970,7 @@ function count()
 #
 function all()
 {
-	getopt.parse "iterable:str:-:$1" "cond:str:+:$2"
+	getopt.parse 2 "iterable:str:-:$1" "cond:str:+:$2"
 	builtin.__iter_cond_any_all "$1" '&' "${@:2}"
 	return 0
 }
@@ -983,7 +982,7 @@ function all()
 #
 function any()
 {
-	getopt.parse "iterable:str:-:$1" "cond:str:+:$2"
+	getopt.parse 2 "iterable:str:-:$1" "cond:str:+:$2"
 	builtin.__iter_cond_any_all "$1" '|' "${@:2}"
 	return 0
 }
@@ -1057,7 +1056,7 @@ function del()
 	local parent=${FUNCNAME[1]}
 
 	for obj in $@; do
-		getopt.parse "varname:var:+:$obj"
+		getopt.parse 1 "varname:var:+:$obj"
 		
 		if [[ $($obj.__type__) == struct ]]; then
 			for member in ${__STRUCT_REG_LIST[$parent.$obj]}; do
@@ -1084,13 +1083,13 @@ function del()
 # 
 function var()
 {
-	getopt.parse "varname:var:+:$1" "type:type:+:${@: -1}"
+	getopt.parse 2 "varname:var:+:$1" "type:type:+:${@: -1}"
 
 	local type method proto ptr_func struct_func var attr err builtin_method
 	type=${@: -1}
 
 	for var in ${@:1:$((${#@}-1))}; do
-		getopt.parse "varname:var:+:$var"
+		getopt.parse 1 "varname:var:+:$var"
 		
 		if [[ ${__VAR_REG_LIST[${FUNCNAME[1]}.$var]} ]]; then
 			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"
@@ -1113,7 +1112,7 @@ function var()
 						${__INIT_TYPE_IMPLEMENTS[$type]} \
 						$builtin_method; do
 		
-			ptr_func="^\s*${method//./\\.}\s*\(\)\s*\{\s*getopt\.parse\s+[\"'][a-zA-Z_]+:(var|map|array|func):[+-]:[^\"']+[\"']"
+			ptr_func="^\s*${method//./\\.}\s*\(\)\s*\{\s*getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|struct):[+-]:[^\"']+[\"']"
 
 			if ! struct_func=$(declare -fp $method 2>/dev/null); then
 				error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
@@ -1141,7 +1140,7 @@ function var()
 
 function builtin.__INIT__()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 
 	local attr type method regtype
 
@@ -1185,14 +1184,14 @@ function builtin.__extfncall(){ [[ "${FUNCNAME[-2]}" != "${FUNCNAME[1]}" ]]; ret
 
 function builtin.__len__()
 {
-	getopt.parse "var:var:+:$1"
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	builtin.__extfncall && len "$1"
 	return 0
 }
 
 function builtin.__quote__()
 {
-	getopt.parse "var:var:+:$1"
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	if builtin.__extfncall; then
 		declare -n __byref=$1
 		printf "%q\n" "${__byref[@]}"
@@ -1202,6 +1201,7 @@ function builtin.__quote__()
 
 function builtin.__typeval__()
 {
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	if builtin.__extfncall; then
 		local t
 		if [[ ! $1 ]]; then	t='null'
@@ -1216,19 +1216,21 @@ function builtin.__typeval__()
 
 function builtin.__isnum__()
 {
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	builtin.__extfncall && [[ $1 == ?(-|+)+([0-9]) ]]
 	return $?
 }
 
 function builtin.__isnull__()
 {
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	builtin.__extfncall && [[ ! $1 ]]
 	return $?
 }
 
 function builtin.__in__()
 {
-	getopt.parse "var:var:+:$1"
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	if builtin.__extfncall; then
 		declare -n __byref=$1
 		[[ $__byref == ?(-|+)+([0-9]) ]] && ((__byref++))
@@ -1238,7 +1240,7 @@ function builtin.__in__()
 
 function builtin.__dec__()
 {
-	getopt.parse "var:var:+:$1"
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	if builtin.__extfncall; then
 		declare -n __byref=$1
 		[[ $__byref == ?(-|+)+([0-9]) ]] && ((__byref--))
@@ -1248,6 +1250,7 @@ function builtin.__dec__()
 
 function builtin.__eq__()
 {
+	getopt.parse 2 "var:var:+:$1" "exp:str:+:$2" ${@:3}
 	if builtin.__extfncall; then
 		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -eq $2 ]] || [[ "$1" == "$2" ]]
 	fi
@@ -1256,6 +1259,7 @@ function builtin.__eq__()
 
 function builtin.__ne__()
 {
+	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
 	if builtin.__extfncall; then
 		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -ne $2 ]] || [[ "$1" != "$2" ]]
 	fi
@@ -1264,6 +1268,7 @@ function builtin.__ne__()
 
 function builtin.__gt__()
 {
+	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
 	if builtin.__extfncall; then
 		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -gt $2 ]] || [[ "$1" > "$2" ]]
 	fi
@@ -1272,6 +1277,7 @@ function builtin.__gt__()
 
 function builtin.__ge__()
 {
+	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
 	if builtin.__extfncall; then
 		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -ge $2 ]]
 	fi
@@ -1280,6 +1286,7 @@ function builtin.__ge__()
 
 function builtin.__lt__()
 {
+	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
 	if builtin.__extfncall; then
 		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -lt $2 ]] || [[ "$1" < "$2" ]]
 	fi
@@ -1288,6 +1295,7 @@ function builtin.__lt__()
 
 function builtin.__le__()
 {
+	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
 	if builtin.__extfncall; then
 		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -le $2 ]]
 	fi
@@ -1296,6 +1304,7 @@ function builtin.__le__()
 
 function builtin.__float__()
 {
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	if builtin.__extfncall; then
 		[[ $1 == ?(-|+)+([0-9]) ]] && printf "%0.2f\n" "$1"
 	fi
@@ -1304,28 +1313,28 @@ function builtin.__float__()
 
 function builtin.__upper__()
 {
-	getopt.parse "var:var:+:$1"
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref^^}
 	return 0
 }
 
 function builtin.__lower__()
 {
-	getopt.parse "var:var:+:$1"
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref,,}
 	return 0
 }
 
 function builtin.__swap__()
 {
-	getopt.parse "var:var:+:$1"
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref~~}
 	return 0
 }
 
 function builtin.__rev__()
 {
-	getopt.parse "var:var:+:$1"
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	if builtin.__extfncall; then
 		declare -n __byref=$1
 		local __i __tmp
@@ -1339,21 +1348,21 @@ function builtin.__rev__()
 
 function builtin.__repl__()
 {
-	getopt.parse "var:var:+:$1" "old:str:-:$2" "new:str:-:$3"
+	getopt.parse 3 "var:var:+:$1" "old:str:-:$2" "new:str:-:$3" ${@:4}
 	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref//$2/$3}
 	return 0
 }
 
 function builtin.__rm__()
 {
-	getopt.parse "var:var:+:$1"
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref//$2/}
 	return 0
 }
 
 function builtin.__fnmap__()
 {
-	getopt.parse "var:var:+:$1" "funcname:func:+:$2"
+	getopt.parse 2 "var:var:+:$1" "funcname:func:+:$2"
 	
 	if builtin.__extfncall; then
 		local __tmp __i
@@ -1369,14 +1378,14 @@ function builtin.__fnmap__()
 
 function builtin.__fn__()
 {
-	getopt.parse "var:var:+:$1" "funcname:func:+:$2"
+	getopt.parse 2 "var:var:+:$1" "funcname:func:+:$2"
 	builtin.__extfncall && declare -n __byref=$1 && __byref=$($2 "$__byref" "${@:3}")
 	return 0
 }
 
 function builtin.__iter__()
 {
-	getopt.parse "var:var:+:$1"
+	getopt.parse 1 "var:var:+:$1" ${@:2}
 	if builtin.__extfncall; then
 		local __attr __ch __i
 		declare -n __byref=$1

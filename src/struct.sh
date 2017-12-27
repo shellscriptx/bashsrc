@@ -28,7 +28,7 @@ readonly __ERR_STRUCT_MEMBER_CONFLICT='conflito de membros na estrutura'
 #
 struct.add()
 {
-	getopt.parse "var:map:+:$1" "member:str:+:$2"
+	getopt.parse 2 "var:map:+:$1" "member:str:+:$2"
 	
 	builtin.__extfncall || return 1
 
@@ -37,7 +37,7 @@ struct.add()
 	
 	declare -n __byref=$1
 
-	if [[ ${__byref[$__parent]} ]]; then
+	if [[ -v "$1[$__parent]" ]]; then
 		error.__trace def 'member' 'str' "$2" "$__ERR_STRUCT_ALREADY_INIT"
 		return $?
 	fi
@@ -53,16 +53,15 @@ struct.add()
 		__byref[$__parent.$__member]=' '
 		__STRUCT_REG_LIST[$__parent.$1]+="$__parent.$__member "
 	done
-	
-	__byref[$__parent]=1
-	__STRUCT_REG_LIST[$__parent.$1]+=$__parent
 
+	__byref[$__parent]=''
+	
 	return 0
 }
 
 struct.members()
 {
-	getopt.parse "var:map:+:$1"
+	getopt.parse 1 "var:map:+:$1" ${@:2}
 
 	builtin.__extfncall || return 1
 
@@ -76,39 +75,49 @@ struct.members()
 	return 0
 }
 
-struct.(){
-	getopt.parse "var:map:+:$1" "member:str:+:$2"
-
+struct.set(){
+	getopt.parse 3 "var:map:+:$1" "member:str:+:$2" "value:str:-:$3" ${@:4}
+	
 	builtin.__extfncall || return 1
-
+	
 	local __parent=${FUNCNAME[2]}
-	local __data
-
 	declare -n __byref=$1
 	
-	if ! [[ ${__byref[$__parent.$2]} ]]; then
+	if ! [[ -v "$1[$__parent.$2]" ]]; then
 		error.__trace def 'member' 'str' "$2" "$__ERR_STRUCT_NOT_MEMBER"
 		return $?
 	fi
+	
+	__byref[$__parent.$2]=$3
 
-	if [[ $3 == = ]]; then
-		__data=${*:4}
-		__byref[$__parent.$2]=${__data:- }
-	else
-		for __member in ${@:2}; do
-			if ! [[ ${__byref[$__parent.$__member]} ]]; then
-				error.__trace def 'member' 'str' "$__member" "$__ERR_STRUCT_NOT_MEMBER"
-				return $?
-			fi
-			echo "${__byref[$__parent.$__member]}"
-		done
-	fi
+	return 0
+}
+
+struct.(){
+
+	getopt.parse 2 "var:map:+:$1" "member:str:+:$2"
+ 
+	builtin.__extfncall || return 1
+
+	local __parent=${FUNCNAME[2]}
+	local __data __member
+
+	declare -n __byref=$1
+	
+	for __member in ${@:2}; do
+		if ! [[ -v "$1[$__parent.$__member]" ]]; then
+			error.__trace def 'member' 'str' "$__member" "$__ERR_STRUCT_NOT_MEMBER"
+			return $?
+		fi
+		echo "${__byref[$__parent.$__member]}"
+	done
 			
 	return 0	
 }
 
 readonly -f struct.add \
 			struct.members \
+			struct.set \
 			struct.
 
 # /* __STRUCT_SH */

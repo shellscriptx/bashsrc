@@ -18,7 +18,7 @@ readonly __SORT_SH=1
 #
 function sort.int()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
 	printf "%d\n" "${__arr[@]}" | sort -n
@@ -32,7 +32,7 @@ function sort.int()
 #
 function sort.str()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -d
@@ -46,7 +46,7 @@ function sort.str()
 #
 function sort.intsorted()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -nC
@@ -60,7 +60,7 @@ function sort.intsorted()
 #
 function sort.strsorted()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -dC
@@ -74,7 +74,7 @@ function sort.strsorted()
 #
 function sort.intrev()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -nr
@@ -88,7 +88,7 @@ function sort.intrev()
 #
 function sort.strrev()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -dr
@@ -104,7 +104,7 @@ function sort.strrev()
 #
 function sort.size()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 
 	declare -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -h
@@ -118,7 +118,7 @@ function sort.size()
 #
 function sort.sizerev()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 
 	declare -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -hr
@@ -134,7 +134,7 @@ function sort.sizerev()
 #
 function sort.sizesorted()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 
 	declare -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -hr
@@ -147,7 +147,7 @@ function sort.sizesorted()
 #
 function sort.expstr()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo $(printf "%s\n" $1 | sort -d)
 	return 0
 }
@@ -158,7 +158,7 @@ function sort.expstr()
 #
 function sort.expstrrev()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo $(printf "%s\n" $1 | sort -dr)
 	return 0
 }
@@ -169,7 +169,7 @@ function sort.expstrrev()
 #
 function sort.expint()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo $(printf "%s\n" $1 | sort -n)
 	return 0
 }
@@ -180,7 +180,7 @@ function sort.expint()
 #
 function sort.expintrev()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo $(printf "%s\n" $1 | sort -nr)
 	return 0
 }

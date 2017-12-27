@@ -58,7 +58,7 @@ readonly REG_ICASE=2
 #
 function regex.findall()
 {
-	getopt.parse "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3"
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 	
 	local exp=$2
 	local flag=$3
@@ -93,7 +93,7 @@ function regex.findall()
 #
 function regex.fullmatch()
 {
-	getopt.parse "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3"
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 
 	local flag=$3
 	local exp=$2
@@ -125,7 +125,7 @@ function regex.fullmatch()
 #
 function regex.match()
 {
-	getopt.parse "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3"
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 	
 	local flag=$3
 	local exp=$2
@@ -158,7 +158,7 @@ function regex.match()
 #
 function regex.search()
 {
-	getopt.parse "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3"
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 
 	local match s e
 	local flag=$3
@@ -196,7 +196,7 @@ function regex.search()
 #
 function regex.split()
 {
-	getopt.parse "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3"
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 		
 	local exp=$2
 	local sub=$2
@@ -231,7 +231,7 @@ function regex.split()
 #
 function regex.ismatch()
 {
-	getopt.parse "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3"
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 
 	local flag=$3
 	local exp=$2
@@ -261,7 +261,7 @@ function regex.ismatch()
 #
 function regex.groups()
 {
-	getopt.parse "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3"
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 
 	local exp=$2
 	local flag=$3
@@ -334,7 +334,7 @@ function regex.groups()
 #
 function regex.savegroups()
 {
-	getopt.parse "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" "dest:array:+:$4"
+	getopt.parse 4 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" "dest:array:+:$4" ${@:5}
 	
 	declare -n __ref=$4
 	local __exp=$2
@@ -402,7 +402,7 @@ function regex.savegroups()
 #
 function regex.replace()
 {
-	getopt.parse "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:int:+:$4" "flag:uint:+:$5"
+	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:int:+:$4" "flag:uint:+:$5" ${@:6}
 
 	local pattern=$1
 	local exp=$2
@@ -490,7 +490,7 @@ function regex.replace()
 #
 function regex.nreplace()
 {
-	getopt.parse "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "match:uint:+:$4" "flag:uint:+:$5"
+	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "match:uint:+:$4" "flag:uint:+:$5" ${@:6}
 
 	local pattern=$1
 	local exp=$2
@@ -602,7 +602,7 @@ function regex.nreplace()
 #
 function regex.fnreplace()
 {
-	getopt.parse "pattern:str:+:$1" "exp:str:-:$2" "count:int:+:$3" "flag:uint:+:$4" "funcname:func:+:$5"
+	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "count:int:+:$3" "flag:uint:+:$4" "funcname:func:+:$5"
 
 	local pattern=$1
 	local func=$5
@@ -712,7 +712,7 @@ function regex.fnreplace()
 #
 function regex.fnnreplace()
 {
-	getopt.parse "pattern:str:+:$1" "exp:str:-:$2" "match:uint:+:$3" "flag:uint:+:$4" "funcname:func:+:$5"
+	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "match:uint:+:$3" "flag:uint:+:$4" "funcname:func:+:$5"
 
 	local pattern=$1
 	local func=$5

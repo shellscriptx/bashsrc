@@ -15,14 +15,14 @@ source builtin.sh
 
 socket.gethostname()
 {
-	getopt.parse "-:null:-$*"
+	getopt.parse 0 ${@:1}
 	echo "$HOSTNAME"
 	return 0
 }
 
 socket.getfqdn()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 
 	local ip hosts host name
 

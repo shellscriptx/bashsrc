@@ -217,6 +217,7 @@ grp.getgrpass
 __BUILTIN_TYPE_IMPLEMENTS[struct]='
 struct.
 struct.add
+struct.set
 struct.members
 '
 

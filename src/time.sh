@@ -86,7 +86,7 @@ readonly -a __weekdays=(
 #
 function time.today()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%a %b %d %H:%M:%S %Y %z)T\n"
 	return 0	
 }
@@ -137,7 +137,7 @@ function time.today()
 #
 function time.gmtime()
 {
-	getopt.parse "name:map:+:$1" "seconds:uint:+:$2"
+	getopt.parse 2 "name:map:+:$1" "seconds:uint:+:$2" ${@:3}
 	
 	declare -n  __map_ref=$1
 	local __info
@@ -163,7 +163,7 @@ function time.gmtime()
 #
 function time.mtime()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1" ${@:2}
 	
 	declare -n __map_ref=$1
 	local __info
@@ -224,7 +224,7 @@ function time.mtime()
 #
 function time.localtime()
 {
-	getopt.parse "name:map:+:$1" "seconds:uint:+:$2"	
+	getopt.parse 2 "name:map:+:$1" "seconds:uint:+:$2" ${@:3}
 	
 	declare -n __map_ref=$1
 	local __info=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
@@ -249,7 +249,7 @@ function time.localtime()
 #
 function time.tznames()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%s\n" ${!__timezones[@]}
 	return 0
 }
@@ -267,7 +267,7 @@ function time.tznames()
 #
 function time.tzinfo()
 {
-	getopt.parse "tzname:str:+:$1"
+	getopt.parse 1 "tzname:str:+:$1" ${@:2}
 	
 	local tzname=$1
 
@@ -290,7 +290,7 @@ function time.tzinfo()
 #
 function time.tzname()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	
 	[[ $TZ ]] && tzname=$TZ || tzname=$(< $__TIME_CTZFILE)
 	echo "$tzname"
@@ -304,7 +304,7 @@ function time.tzname()
 #
 function time.tzgmtime()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1" ${@:2}
 
 	time.tzinfo $2 1>/dev/null
 	export TZ=$2
@@ -319,7 +319,7 @@ function time.tzgmtime()
 #
 function time.tztoday()
 {
-	getopt.parse "tzname:str:+:$1"
+	getopt.parse 1 "tzname:str:+:$1" ${@:2}
 	time.tzinfo "$1" 1>/dev/null
 	export TZ=$1
 	time.today
@@ -333,7 +333,7 @@ function time.tztoday()
 #
 function time.now()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%H:%M:%S)T\n"
 	return 0
 }
@@ -344,7 +344,7 @@ function time.now()
 #
 function time.date()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%d/%m/%Y)T\n"
 	return 0
 }
@@ -355,7 +355,7 @@ function time.date()
 #
 function time.hour()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%_H)T\n"
 	return 0
 }
@@ -366,7 +366,7 @@ function time.hour()
 #
 function time.minute()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%_M)T\n"
 	return 0
 }
@@ -377,7 +377,7 @@ function time.minute()
 #
 function time.second()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%_S)T\n"
 	return 0
 }
@@ -389,7 +389,7 @@ function time.second()
 #
 function time.month()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%_m)T\n"
 	return 0
 }
@@ -400,7 +400,7 @@ function time.month()
 #
 function time.month.str
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo "${__months[$(printf "%(%_m)T")]}"
 	return 0
 }
@@ -412,7 +412,7 @@ function time.month.str
 #
 function time.weekday()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%w)T\n"
 	return 0
 }
@@ -423,7 +423,7 @@ function time.weekday()
 #
 function time.weekday.str()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo "${__weekdays[$(time.weekday)]}"
 	return 0
 }
@@ -434,7 +434,7 @@ function time.weekday.str()
 #
 function time.year()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%Y)T\n"
 	return 0
 }
@@ -446,7 +446,7 @@ function time.year()
 #
 function time.yearday()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%_j)T\n"
 	return 0
 }
@@ -458,7 +458,7 @@ function time.yearday()
 #
 function time.day()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%_d)T\n"
 	return 0
 }
@@ -470,7 +470,7 @@ function time.day()
 #
 function time.time()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf '%(%s)T\n'
 	return 0
 }
@@ -481,7 +481,7 @@ function time.time()
 #
 function time.ctime()
 {
-	getopt.parse "seconds:uint:+:$1"
+	getopt.parse 1 "seconds:uint:+:$1" ${@:2}
 	printf "%(%a %b %d %H:%M:%S %Y %z)T\n" $1
 	return 0
 }
@@ -492,7 +492,7 @@ function time.ctime()
 #
 function time.tzset()
 {
-	getopt.parse "tzname:str:+:$1"
+	getopt.parse 1 "tzname:str:+:$1" ${@:2}
 	time.tzinfo "$1" 1>/dev/null
 	export TZ=$1
 	return 0
@@ -504,7 +504,7 @@ function time.tzset()
 #
 function time.tzreset()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	unset TZ
 	return 0
 }
@@ -515,7 +515,7 @@ function time.tzreset()
 #
 function time.asctime()
 {
-	getopt.parse "datetime:map:+:$1"
+	getopt.parse 1 "datetime:map:+:$1" ${@:2}
 
 	declare -n __asctime_map=$1
 	
@@ -547,7 +547,7 @@ function time.asctime()
 # func time.strftime <[str]format> <[map]datetime> => [str]
 function time.strftime()
 {
-	getopt.parse "format:str:+:$1" "datetime:map:+:$2"
+	getopt.parse 2 "format:str:+:$1" "datetime:map:+:$2" ${@:3}
 
 	declare -n __dt_ref=$2
 	local __fmt=$1

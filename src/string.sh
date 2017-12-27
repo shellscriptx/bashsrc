@@ -93,7 +93,7 @@ readonly STR_PRINTABLE="${STR_DIGITS}${STR_LETTERS}${STR_PUNCTUATION}${STR_WHITE
 #
 function string.len()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo ${#1}
 	return 0
 }
@@ -104,7 +104,7 @@ function string.len()
 #
 function string.capitalize()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo "${1^}"
 	return 0
 }
@@ -116,7 +116,7 @@ function string.capitalize()
 #
 function string.center()
 {
-	getopt.parse "exp:str:-:$1" "width:uint:+:$2" "fillchar:char:-:$3"
+	getopt.parse 3 "exp:str:-:$1" "width:uint:+:$2" "fillchar:char:-:$3" ${@:4}
 
 	local cr ch
 	local len=$(($2-${#1}))
@@ -136,7 +136,7 @@ function string.center()
 #
 function string.count()
 {
-	getopt.parse "exp:str:-:$1" "sub:str:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" ${@:3}
 
 	local i c=0
 
@@ -158,7 +158,7 @@ function string.count()
 #
 function string.hassuffix()
 {
-	getopt.parse "exp:str:-:$1" "suffix:str:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "suffix:str:-:$2" ${@:3}
 	[[ "${1: -${#2}}" == "$2" ]]
 	return $?
 }
@@ -170,7 +170,7 @@ function string.hassuffix()
 #
 function string.hasprefix()
 {
-	getopt.parse "exp:str:-:$1" "suffix:str:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "suffix:str:-:$2" ${@:3}
 	[[ "${1:0:${#2}}" == "$2" ]]
 	return $?
 }
@@ -182,7 +182,7 @@ function string.hasprefix()
 #
 function string.expandtabs()
 {
-	getopt.parse "exp:str:-:$1" "tabsize:uint:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "tabsize:uint:-:$2" ${@:3}
 	
 	local t
 	
@@ -199,7 +199,7 @@ function string.expandtabs()
 #
 function string.find()
 {
-	getopt.parse "exp:str:-:$1" "sub:str:+:$2"
+	getopt.parse 2 "exp:str:-:$1" "sub:str:+:$2" ${@:3}
 	
 	local ind i
 	
@@ -221,7 +221,7 @@ function string.find()
 #
 function string.rfind()
 {
-	getopt.parse "exp:str:-:$1" "sub:str:+:$2"
+	getopt.parse 2 "exp:str:-:$1" "sub:str:+:$2" ${@:3}
 	
 	local ind i
 	
@@ -240,7 +240,7 @@ function string.rfind()
 # Caso contrário 'false'.
 #
 function string.isalnum(){
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	[[ $1 =~ ^[[:alnum:]]+$ ]]
 	return $?
 }
@@ -252,7 +252,7 @@ function string.isalnum(){
 #
 function string.isalpha()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	[[ $1 =~ ^[[:alpha:]]+$ ]]
 	return $?
 }
@@ -264,7 +264,7 @@ function string.isalpha()
 #
 function string.isdecimal()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	[[ $1 =~ ^[[:digit:]]+$ ]]
 	return $?
 }
@@ -275,7 +275,7 @@ function string.isdecimal()
 #
 function string.isdigit()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	[[ $1 =~ ^[[:digit:]]+$ ]]
 	return $?
 }
@@ -287,7 +287,7 @@ function string.isdigit()
 #
 function string.isspace()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	[[ $1 =~ ^[[:space:]]+$ ]]
 	return $?
 }
@@ -299,7 +299,7 @@ function string.isspace()
 #
 function string.isprintable()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	[[ $1 =~ ^[[:print:]]+$ ]]
 	return $?
 }
@@ -311,7 +311,7 @@ function string.isprintable()
 #
 function string.islower()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	[[ $1 =~ ^[[:lower:]]+$ ]]
 	return $?
 }
@@ -323,7 +323,7 @@ function string.islower()
 #
 function string.isupper()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	[[ $1 =~ ^[[:upper:]]+$ ]]
 	return $?
 }
@@ -335,7 +335,7 @@ function string.isupper()
 #
 function string.istitle()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	[[ $1 =~ ^([A-Z][a-zA-Z]*[^a-zA-Z]*)+$ ]]
 	return $?
 }
@@ -347,7 +347,7 @@ function string.istitle()
 #
 function string.join()
 {
-	getopt.parse "iterable:str:-:$1" "elem:str:-:$2"
+	getopt.parse 2 "iterable:str:-:$1" "elem:str:-:$2" ${@:3}
 
 	local exp
 
@@ -366,7 +366,7 @@ function string.join()
 #
 function string.ljust()
 {
-	getopt.parse "exp:str:-:$1" "width:uint:+:$2" "fillchar:char:-:$3"
+	getopt.parse 3 "exp:str:-:$1" "width:uint:+:$2" "fillchar:char:-:$3" ${@:4}
 	
 	local  ch
 	local len=$(($2-${#1}))
@@ -385,7 +385,7 @@ function string.ljust()
 #
 function string.rjust()
 {
-	getopt.parse "exp:str:-:$1" "width:uint:+:$2" "fillchar:char:-:$3"
+	getopt.parse 3 "exp:str:-:$1" "width:uint:+:$2" "fillchar:char:-:$3" ${@:4}
 	
 	local  ch
 	local len=$(($2-${#1}))
@@ -402,7 +402,7 @@ function string.rjust()
 #
 function string.tolower()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo "${1,,}"
 	return 0
 }
@@ -413,7 +413,7 @@ function string.tolower()
 #
 function string.toupper()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo "${1^^}"
 	return 0
 }
@@ -425,7 +425,7 @@ function string.toupper()
 #
 function string.trim()
 {
-	getopt.parse "exp:str:-:$1" "sub:str:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" ${@:3}
 	shopt -s extglob
 	local exp="${1##+($2)}"
 	echo "${exp%%+($2)}"
@@ -439,7 +439,7 @@ function string.trim()
 #
 function string.ltrim()
 {
-	getopt.parse "exp:str:-:$1" "sub:str:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" ${@:3}
 	shopt -s extglob
 	echo "${1##+($2)}"
 	shopt -u extglob
@@ -452,7 +452,7 @@ function string.ltrim()
 #
 function string.rtrim()
 {
-	getopt.parse "exp:str:-:$1" "sub:str:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" ${@:3}
 	shopt -s extglob
 	echo "${1%%+($2)}"
 	shopt -u extglob
@@ -465,7 +465,7 @@ function string.rtrim()
 #
 function string.remove()
 {
-	getopt.parse "exp:str:-:$1" "sub:str:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" ${@:3}
 	echo "${1//$2/}"
 	return 0
 }
@@ -477,7 +477,7 @@ function string.remove()
 #
 function string.rmprefix()
 {
-	getopt.parse "exp:str:-:$1" "sub:str:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" ${@:3}
 	echo "${1#$2}"
 	return 0	
 }
@@ -489,7 +489,7 @@ function string.rmprefix()
 #
 function string.rmsuffix()
 {
-	getopt.parse "exp:str:-:$1" "sub:str:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" ${@:3}
 	echo "${1%$2}"
 	return 0	
 }
@@ -501,7 +501,7 @@ function string.rmsuffix()
 #
 function string.replace()
 {
-	getopt.parse "exp:str:-:$1" "old:str:-:$2" "new:str:-:$3" "count:int:+:$4"
+	getopt.parse 4 "exp:str:-:$1" "old:str:-:$2" "new:str:-:$3" "count:int:+:$4" ${@:5}
 	
 	local exp=$1
 	local old=$2
@@ -561,7 +561,7 @@ function string.replace()
 #
 function string.fnreplace()
 {
-	getopt.parse "exp:str:-:$1" "old:str:-:$2" "count:int:+:$3" "funcname:func:+:$4"
+	getopt.parse 4 "exp:str:-:$1" "old:str:-:$2" "count:int:+:$3" "funcname:func:+:$4"
 	
 	local exp=$1
 	local func=$4
@@ -592,7 +592,7 @@ function string.fnreplace()
 #
 function string.nreplace()
 {
-	getopt.parse "exp:str:-:$1" "old:str:-:$2" "new:str:-:$3" "match:int:+:$4"
+	getopt.parse 4 "exp:str:-:$1" "old:str:-:$2" "new:str:-:$3" "match:int:+:$4" ${@:5}
 	
 	local exp=$1
 	local old=$2
@@ -658,7 +658,7 @@ function string.nreplace()
 #
 function string.fnnreplace()
 {
-	getopt.parse "exp:str:-:$1" "old:str:-:$2" "match:int:+:$3" "funcname:func:+:$4"
+	getopt.parse 4 "exp:str:-:$1" "old:str:-:$2" "match:int:+:$3" "funcname:func:+:$4"
 	
 	local exp=$1
 	local old=$2
@@ -695,7 +695,7 @@ function string.fnnreplace()
 #
 function string.split()
 {
-	getopt.parse "exp:str:-:$1" "sep:str:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "sep:str:-:$2" ${@:3}
 	echo -e "${1//$2/\\n}"
 	return 0
 }
@@ -706,7 +706,7 @@ function string.split()
 #
 function string.swapcase()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo "${1~~}"
 	return 0
 }
@@ -718,7 +718,7 @@ function string.swapcase()
 #
 function string.totitle()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 
 	local exp=${1,,}
 	local nch=1 ch i
@@ -746,7 +746,7 @@ function string.totitle()
 #
 function string.reverse()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 
 	local i
 
@@ -762,7 +762,7 @@ function string.reverse()
 #
 function string.repeat()
 {
-	getopt.parse "exp:str:-:$1" "count:uint:+:$2"
+	getopt.parse 2 "exp:str:-:$1" "count:uint:+:$2" ${@:3}
 	
 	local tmp
 	printf -v tmp "%$2s"
@@ -776,7 +776,7 @@ function string.repeat()
 #
 function string.zfill()
 {
-	getopt.parse "num:uint:-:$1" "width:uint:+:$2"
+	getopt.parse 2 "num:uint:-:$1" "width:uint:+:$2" ${@:3}
 	
 	local ch
 	local len=$(($2-${#1}))
@@ -793,7 +793,7 @@ function string.zfill()
 #
 function string.compare()
 {
-	getopt.parse "exp1:str:-:$1" "exp2:str:-:$2"
+	getopt.parse 2 "exp1:str:-:$1" "exp2:str:-:$2" ${@:3}
 	[[ "$1" == "$2" ]]
 	return $?
 }
@@ -804,7 +804,7 @@ function string.compare()
 #
 function string.nocasecompare()
 {
-	getopt.parse "exp1:str:-:$1" "exp2:str:-:$2"
+	getopt.parse 2 "exp1:str:-:$1" "exp2:str:-:$2" ${@:3}
 	[[ "${1,,}" == "${2,,}" ]]
 	return $?
 }
@@ -816,7 +816,7 @@ function string.nocasecompare()
 #
 function string.contains()
 {
-	getopt.parse "exp:str:-:$1" "sub:str:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" ${@:3}
 	[[ $1 =~ $2 ]]
 	return $?
 }
@@ -845,7 +845,7 @@ function string.contains()
 #
 function string.fnmap()
 {
-	getopt.parse "exp:str:-:$1" "funcname:func:+:$2"
+	getopt.parse 2 "exp:str:-:$1" "funcname:func:+:$2"
 	
 	local i
 	
@@ -885,7 +885,7 @@ function string.fnmap()
 #
 function string.slice()
 {
-	getopt.parse "exp:str:-:$1" "slice:slice:+:$2"
+	getopt.parse 2 "exp:str:-:$1" "slice:slice:+:$2"
 
     local exp=$1
     local slice=$2
@@ -945,7 +945,7 @@ function string.slice()
 #
 function string.filter()
 {
-	getopt.parse "flag:str:-:$2"
+	getopt.parse 2 "exp:str:-:$1" "flag:str:-:$2"
 
 	local flag flags
 
@@ -988,12 +988,12 @@ function string.filter()
 #
 function string.field()
 {
-    getopt.parse "exp:str:-:$1" "sub:str:-:$2"
+    getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2"
 
     local field num exp i
 
 	for num in ${@:3}; do
-		getopt.parse "num:int:+:$num"
+		getopt.parse 1 "num:int:+:$num"
 
 		if [[ $num -eq 0 ]]; then
 			continue
@@ -1019,7 +1019,7 @@ function string.field()
 #
 function string.trimspace()
 {
-	getopt.parse "exp:str:-:$1"
+	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo $1
 	return 0
 }

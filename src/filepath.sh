@@ -66,7 +66,7 @@ readonly __ERR_FILEPATH_READ_DENIED='acesso negado: não foi possível ler o arq
 #
 function filepath.ext()
 {
-    getopt.parse "path:str:+:$1"
+    getopt.parse 1 "path:str:+:$1" ${@:2}
     [[ $1 =~ \.[a-zA-Z0-9_-]+$ ]]
     echo "${BASH_REMATCH[0]}"
     return 0
@@ -78,7 +78,7 @@ function filepath.ext()
 #
 function filepath.basename()
 {
-    getopt.parse "path:str:+:$1"
+    getopt.parse 1 "path:str:+:$1" ${@:2}
     echo "${1##*/}"
     return 0
 }
@@ -89,7 +89,7 @@ function filepath.basename()
 #
 function filepath.dirname()
 {
-    getopt.parse "path:str:+:$1"
+    getopt.parse 1 "path:str:+:$1" ${@:2}
     echo "${1%/*}"
     return 0
 }
@@ -100,7 +100,7 @@ function filepath.dirname()
 #
 function filepath.relpath()
 {
-    getopt.parse "path:str:+:$1"
+    getopt.parse 1 "path:str:+:$1" ${@:2}
 
     local IFSbkp cur path relpath slash item i
 
@@ -131,7 +131,7 @@ function filepath.relpath()
 #
 function filepath.split()
 {
-	getopt.parse "path:str:+:$1"
+	getopt.parse 1 "path:str:+:$1" ${@:2}
 	echo "$(filepath.dirname "$1")|$(filepath.basename "$1")"
 	return 0
 }
@@ -146,7 +146,7 @@ function filepath.split()
 #
 function filepath.splitlist()
 {
-	getopt.parse "path:str:+:$1"
+	getopt.parse 1 "path:str:+:$1" ${@:2}
 	filepath.dirname "$1"
 	filepath.basename "$1"
 	return 0
@@ -158,7 +158,7 @@ function filepath.splitlist()
 #
 function filepath.slash()
 {
-	getopt.parse "path:str:+:$1"
+	getopt.parse 1 "path:str:+:$1" ${@:2}
 
 	local path
 	path=$(string.ltrim "$1" "/")
@@ -177,7 +177,7 @@ function filepath.join()
 	local slash path
 
 	for slash in "$@"; do
-		getopt.parse "elem:str:+:$slash"
+		getopt.parse 1 "elem:str:+:$slash"
 		slash=$(string.ltrim "$slash" '/')
 		slash=$(string.rtrim "$slash" '/')
 		path+='/'$slash	
@@ -226,7 +226,7 @@ function filepath.join()
 #
 function filepath.ismatch()
 {
-	getopt.parse "path:path:+:$1" "pattern:str:+:$2"
+	getopt.parse 2 "path:path:+:$1" "pattern:str:+:$2" ${@:3}
 	[[ $1 =~ $2 ]]
 	return $?
 }
@@ -237,7 +237,7 @@ function filepath.ismatch()
 #
 function filepath.match()
 {
-	getopt.parse "path:path:+:$1" "pattern:str:+:$2"
+	getopt.parse 2 "path:path:+:$1" "pattern:str:+:$2" ${@:3}
 	[[ $1 =~ $2 ]] && echo ${BASH_REMATCH[0]}
 	return $?
 }
@@ -248,7 +248,7 @@ function filepath.match()
 #
 function filepath.exists()
 {
-	getopt.parse "path:str:+:$1"
+	getopt.parse 1 "path:str:+:$1" ${@:2}
 	[[ -e "$1" ]]
 	return $?
 }
@@ -260,7 +260,7 @@ function filepath.exists()
 #
 function filepath.glob()
 {
-	getopt.parse "pattern:str:+:$1"
+	getopt.parse 1 "pattern:str:+:$1" ${@:2}
 	
 	local file
 
@@ -282,7 +282,7 @@ function filepath.glob()
 #
 function filepath.listdir()
 {
-	getopt.parse "dir:dir:+:$1"
+	getopt.parse 1 "dir:dir:+:$1" ${@:2}
 
 	local file
 
@@ -301,7 +301,7 @@ function filepath.listdir()
 #
 function filepath.scandir()
 {
-	getopt.parse "dir:dir:+:$1"
+	getopt.parse 1 "dir:dir:+:$1" ${@:2}
 	
 	local file
 
@@ -334,7 +334,7 @@ function filepath.scandir()
 #
 function filepath.fnscandir()
 {
-	getopt.parse "dir:dir:+:$1" "funcname:func:+:$2"
+	getopt.parse 2 "dir:dir:+:$1" "funcname:func:+:$2"
 	
 	local file
 
@@ -422,7 +422,7 @@ function filepath.fnscandir()
 #
 function filepath.fnlistdir()
 {
-	getopt.parse "dir:dir:+:$1" "walkfunc:func:+:$2"
+	getopt.parse 2 "dir:dir:+:$1" "walkfunc:func:+:$2"
 
 	local file
 	
@@ -449,7 +449,7 @@ function filepath.fnlistdir()
 #
 function filepath.copy()
 {
-	getopt.parse "src:path:+:$1" "dest:dir:+:$2" "override:uint:+:$3"
+	getopt.parse 3 "src:path:+:$1" "dest:dir:+:$2" "override:uint:+:$3" ${@:4}
 	
 	local flag err
 
@@ -483,7 +483,7 @@ function filepath.copy()
 #
 function filepath.diff()
 {
-	getopt.parse "file1:file:+:$1" "file2:file:+:$2"
+	getopt.parse 2 "file1:file:+:$1" "file2:file:+:$2" ${@:3}
 	
 	local f1 f2 l1 l2 i df
 	
@@ -512,7 +512,7 @@ function filepath.diff()
 #
 function filepath.equal()
 {
-	getopt.parse "file1:file:+:$1" "file2:file:+:$2"
+	getopt.parse 2 "file1:file:+:$1" "file2:file:+:$2" ${@:3}
 	filepath.diff "$1" "$2" 1>/dev/null
 	return $?
 }
@@ -523,7 +523,7 @@ function filepath.equal()
 #
 function filepath.fileinfo.name()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	filepath.basename "$1"
 	return 0
 }
@@ -534,7 +534,7 @@ function filepath.fileinfo.name()
 #
 function filepath.fileinfo.size()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	stat --format "%s" "$1"
 	return 0
 }
@@ -545,7 +545,7 @@ function filepath.fileinfo.size()
 #
 function filepath.fileinfo.mode()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	stat --format "%a" "$1"
 	return $?
 }
@@ -556,7 +556,7 @@ function filepath.fileinfo.mode()
 #
 function filepath.fileinfo.modtime()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	stat --format "%z" "$1"
 	return $?
 }
@@ -566,7 +566,7 @@ function filepath.fileinfo.modtime()
 # Retorna a data em segundos da última modificação de 'path'
 function filepath.fileinfo.modstime()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	stat --format "%Z" "$1"
 	return $?
 }
@@ -577,7 +577,7 @@ function filepath.fileinfo.modstime()
 #
 function filepath.fileinfo.isdir()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	[[ -d "$1" ]]
 	return $?
 }
@@ -588,7 +588,7 @@ function filepath.fileinfo.isdir()
 #
 function filepath.fileinfo.perm()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	stat --format "%A" "$1"
 	return $?
 }
@@ -599,7 +599,7 @@ function filepath.fileinfo.perm()
 #
 function filepath.fileinfo.ext()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	filepath.ext "$1"
 	return $?
 }
@@ -610,7 +610,7 @@ function filepath.fileinfo.ext()
 #
 function filepath.fileinfo.type()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	stat --format "%F" "$1"
 	return $?
 }
@@ -621,7 +621,7 @@ function filepath.fileinfo.type()
 #
 function filepath.fileinfo.inode()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	stat --format "%i" "$1"
 	return $?
 }
@@ -632,7 +632,7 @@ function filepath.fileinfo.inode()
 #
 function filepath.fileinfo.path()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	filepath.dirname "$1"
 	return $?
 }
@@ -643,7 +643,7 @@ function filepath.fileinfo.path()
 #
 function filepath.fileinfo.gid()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	stat --format "%g" "$1"
 	return $?
 }
@@ -654,7 +654,7 @@ function filepath.fileinfo.gid()
 #
 function filepath.fileinfo.group()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	stat --format "%G" "$1"
 	return $?
 }
@@ -665,7 +665,7 @@ function filepath.fileinfo.group()
 #
 function filepath.fileinfo.uid()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	stat --format "%u" "$1"
 	return $?
 }
@@ -676,7 +676,7 @@ function filepath.fileinfo.uid()
 #
 function filepath.fileinfo.user()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	stat --format "%U" "$1"
 	return $?
 }

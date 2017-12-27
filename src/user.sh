@@ -28,7 +28,7 @@ readonly __ERR_USER_USER_NOT_FOUND='usuário não encontrado'
 #
 function user.pass()
 {
-	getopt.parse "username:str:+:$1"
+	getopt.parse 1 "username:str:+:$1" ${@:2}
 	user.__get_info "$1" pass
 	return $?
 }
@@ -39,7 +39,7 @@ function user.pass()
 #
 function user.uid()
 {
-	getopt.parse "username:str:+:$1"
+	getopt.parse 1 "username:str:+:$1" ${@:2}
 	user.__get_info "$1" uid
 	return $?
 }
@@ -50,7 +50,7 @@ function user.uid()
 #
 function user.gid()
 {
-	getopt.parse "username:str:+:$1"
+	getopt.parse 1 "username:str:+:$1" ${@:2}
 	user.__get_info "$1" gid
 	return $?
 }
@@ -61,7 +61,7 @@ function user.gid()
 #
 function user.gecos()
 {
-	getopt.parse "username:str:+:$1"
+	getopt.parse 1 "username:str:+:$1" ${@:2}
 	user.__get_info "$1" gecos
 	return $?
 }
@@ -72,7 +72,7 @@ function user.gecos()
 #
 function user.home()
 {
-	getopt.parse "username:str:+:$1"
+	getopt.parse 1 "username:str:+:$1" ${@:2}
 	user.__get_info "$1" home
 	return $?
 }
@@ -83,7 +83,7 @@ function user.home()
 #
 function user.shell()
 {
-	getopt.parse "username:str:+:$1"
+	getopt.parse 1 "username:str:+:$1" ${@:2}
 	user.__get_info "$1" shell
 	return $?
 }
@@ -94,7 +94,7 @@ function user.shell()
 #
 function user.getallusers
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	user.__get_info '' all
 	return $?
 }
@@ -105,7 +105,7 @@ function user.getallusers
 #
 function user.getuser()
 {
-	getopt.parse "uid:uint:+:$1"
+	getopt.parse 1 "uid:uint:+:$1" ${@:2}
 	
 	local username
 	while read username; do

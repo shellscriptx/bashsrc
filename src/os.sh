@@ -79,7 +79,7 @@ readonly SEEK_END=2
 #
 function os.chdir()
 {
-	getopt.parse "dir:dir:+:$1"
+	getopt.parse 1 "dir:dir:+:$1" ${@:2}
 	cd "$dir" &>/dev/null
 	return $?
 }
@@ -91,7 +91,7 @@ function os.chdir()
 #
 function os.chmod()
 {
-	getopt.parse "path:path:+:$1" "mode:uint:+:$2"
+	getopt.parse 2 "path:path:+:$1" "mode:uint:+:$2" ${@:3}
 	
 	if ! [[ $2 =~ ^[0-7]{3,4}$ ]]; then
 		error.__trace def 'mode' 'uint' "$2" "$__ERR_OS_MODE_PERM"; return $?
@@ -106,7 +106,7 @@ function os.chmod()
 #
 function os.stackdir()
 {
-	getopt.parse "stack:array:+:$1" "dir:str:+:$1"
+	getopt.parse 1 "stack:array:+:$1" "dir:str:+:$1" ${@:2}
 
 	declare -n __stack_dir=$1
 	local __dir=$2
@@ -127,7 +127,7 @@ function os.stackdir()
 #
 function os.exists()
 {
-	getopt.parse "filepath:str:+:$1"
+	getopt.parse 1 "filepath:str:+:$1" ${@:2}
 	[[ -e "$1" ]]
 	return $?
 }
@@ -138,7 +138,7 @@ function os.exists()
 #
 function os.environ()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 
 	while read _ _ env; do
 		echo "${env%%=*}"
@@ -153,7 +153,7 @@ function os.environ()
 #
 function os.getenv()
 {
-	getopt.parse "varname:var:+:$1"
+	getopt.parse 1 "varname:var:+:$1" ${@:2}
 			
 	declare -n __env_var=$1
 	echo "$__env_var"
@@ -167,7 +167,7 @@ function os.getenv()
 #
 function os.setenv()
 {
-	getopt.parse "varname:var:+:$1" "value:str:-:$2"
+	getopt.parse 2 "varname:var:+:$1" "value:str:-:$2" ${@:3}
 	
 	export $1="$2"		
 	return 0
@@ -179,7 +179,7 @@ function os.setenv()
 #
 function os.geteuid()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo $UID
 	return 0
 }
@@ -191,7 +191,7 @@ function os.geteuid()
 #
 function os.argv()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo "${0##*/} ${BASH_ARGV[@]}"
 	return 0
 }
@@ -203,7 +203,7 @@ function os.argv()
 #
 function os.argc()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo $(($BASH_ARGC+1))
 	return 0
 }
@@ -214,7 +214,7 @@ function os.argc()
 #
 function os.getgid()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo ${GROUPS[0]}
 	return 0
 }
@@ -225,7 +225,7 @@ function os.getgid()
 #
 function os.getgroups()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo ${GROUPS[@]}
 	return 0
 }
@@ -236,7 +236,7 @@ function os.getgroups()
 #
 function os.getpid()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo $BASHPID
 	return 0
 }
@@ -247,7 +247,7 @@ function os.getpid()
 #
 function os.getppid()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo $PPID
 	return 0
 }
@@ -258,7 +258,7 @@ function os.getppid()
 #
 function os.getwd()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo "$PWD"; return 0
 }
 
@@ -268,7 +268,7 @@ function os.getwd()
 #
 function os.hostname()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	[[ -e /etc/hostname ]] && echo $(< /etc/hostname) || return 1
 	return 0
 }
@@ -299,7 +299,7 @@ function os.chtime(){ os.__chtime '' "$1" "$2"; return $?; }
 
 function os.__chtime()
 {
-	getopt.parse "pathname:path:+:$2" "time:map:+:$3"
+	getopt.parse 3 "flag:str:-:$1" "pathname:path:+:$2" "time:map:+:$3" ${@:4}
 
 	declare -n __map_ref=$3
 	local __flag=$1
@@ -346,7 +346,7 @@ function os.__chtime()
 #
 function os.mkdir()
 {
-	getopt.parse "dir:str:+:$1" "mode:uint:+:$2"
+	getopt.parse 2 "dir:str:+:$1" "mode:uint:+:$2" ${@:3}
 	
 	if ! [[ $2 =~ ^[0-7]{3,4}$ ]]; then
 		error.__trace def 'mode' 'uint' "$2" "$__ERR_OS_MODE_PERM"; return $?
@@ -362,7 +362,7 @@ function os.mkdir()
 #
 function os.remove()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	rm -rf "$1" &>/dev/null
 	return $?
 }
@@ -374,7 +374,7 @@ function os.remove()
 #
 function os.rename()
 {
-	getopt.parse "path:path:+:$1" "newname:str:+:$2"
+	getopt.parse 2 "path:path:+:$1" "newname:str:+:$2" ${@:3}
 	mv -f "$1" "$2" &>/dev/null
 	return $?
 }
@@ -385,7 +385,7 @@ function os.rename()
 #
 function os.tempdir()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	local tmpdir=$(mktemp --dry-run)
 	echo "${tmpdir%/*}"
 	return 0
@@ -399,7 +399,7 @@ function os.tempdir()
 
 function os.create()
 {
-	getopt.parse "filename:str:+:$1"
+	getopt.parse 1 "filename:str:+:$1" ${@:2}
 	> "$1"
 	return $?
 }
@@ -425,7 +425,7 @@ function os.create()
 #
 function os.stat()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	
 	[[ -d "$1" ]]
 	stat --format="%A|%a|%G|%U|%g|%u|%s|%y|%Y|$?" "$1"
@@ -480,7 +480,7 @@ function os.stat()
 #
 function os.open()
 {
-	getopt.parse "fd:var:+:$1" "filename:str:+:$2" "flag:uint:+:$3"
+	getopt.parse 3 "fd:var:+:$1" "filename:str:+:$2" "flag:uint:+:$3" ${@:4}
 	
 	local __file=$2
 	local __mode=$3
@@ -549,7 +549,7 @@ function os.open()
 #
 function os.file.isatty()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	[ -t /dev/fd/$1 ]
 	return $?
 }
@@ -560,7 +560,7 @@ function os.file.isatty()
 #
 function os.file.writable()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	[ -w /dev/fd/$1 ]
 	return $?
 }
@@ -571,7 +571,7 @@ function os.file.writable()
 #
 function os.file.readable()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	[ -r /dev/fd/$1 ]
 	return $?
 }
@@ -582,7 +582,7 @@ function os.file.readable()
 #
 function os.file.size()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	string.field "$(os.file.stat $1)" '|' 7
 	return $?
 }
@@ -593,7 +593,7 @@ function os.file.size()
 #
 function os.file.name()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	string.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 1
 	return $?
 }
@@ -608,7 +608,7 @@ function os.file.name()
 #
 function os.file.mode()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	string.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 2
 	return $?
 }
@@ -634,7 +634,7 @@ function os.file.mode()
 #
 function os.file.stat()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	os.stat "$(os.file.name $1)"
 	return $?
 }
@@ -645,7 +645,7 @@ function os.file.stat()
 #
 function os.file.fd()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	string.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 3
 	return 0
 }
@@ -656,7 +656,7 @@ function os.file.fd()
 #
 function os.file.readlines()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	
 	local attr cur
 	local bytes=0
@@ -699,7 +699,7 @@ function os.file.readlines()
 #
 function os.file.readline()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	
 	local seek len attr line cur
 
@@ -738,7 +738,7 @@ function os.file.readline()
 # 
 function os.file.read()
 {
-	getopt.parse "descriptor:fd:+:$1" "bytes:uint:+:$2"
+	getopt.parse 2 "descriptor:fd:+:$1" "bytes:uint:+:$2" ${@:3}
 		
 	local attr cur seek ch
 	local bytes=0
@@ -770,7 +770,7 @@ function os.file.read()
 #
 function os.file.writeline()
 {
-	getopt.parse "descriptor:fd:+:$1" "exp:str:-:$2"
+	getopt.parse 2 "descriptor:fd:+:$1" "exp:str:-:$2" ${@:3}
 	
 	if ! echo "$2" >&$1 2>/dev/null; then
 		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_WRITE '$1'"
@@ -803,7 +803,7 @@ function os.file.writeline()
 #
 function os.file.write()
 {
-	getopt.parse "descriptor:fd:+:$1" "exp:str:-:$2" "bytes:uint:+:$3"
+	getopt.parse 3 "descriptor:fd:+:$1" "exp:str:-:$2" "bytes:uint:+:$3" ${@:4}
 	
 	(($3 == 0)) && return 0
 
@@ -821,7 +821,7 @@ function os.file.write()
 #
 function os.file.close()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	
 	local fd=$(os.file.fd $1)
 	
@@ -840,7 +840,7 @@ function os.file.close()
 #
 function os.file.tell()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	string.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 4
 	return 0
 }
@@ -853,7 +853,7 @@ function os.file.tell()
 # 
 function os.file.rewind()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "descriptor:fd:+:$1" ${@:2}
 	os.file.seek $1 0 $SEEK_SET
 	return $?
 }
@@ -892,7 +892,7 @@ function os.file.rewind()
 #
 function os.file.seek()
 {
-	getopt.parse "descriptor:fd:+:$1" "offset:uint:+:$2" "whence:uint:+:$3"
+	getopt.parse 3 "descriptor:fd:+:$1" "offset:uint:+:$2" "whence:uint:+:$3" ${@:4}
 	
 	local fd=$1
 	local offset=$2
