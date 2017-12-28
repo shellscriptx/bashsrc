@@ -25,6 +25,7 @@ readonly __ERR_GETOPT_PATH_NOT_FOUND='arquivo ou diretório não encontrado'
 readonly __ERR_GETOPT_FD_NOT_EXISTS='o descritor do arquivo não existe'
 readonly __ERR_GETOPT_VAR_TYPE='tipo da variável inválida'
 readonly __ERR_GETOPT_TOO_MANY_ARGS='excesso de argumentos'
+readonly __ERR_GETOPT_PARSE_NARGS='requer o número de argumentos'
 
 # func getopt.parse <[str]name:type:flag:value> ... -> [bool]
 #
@@ -75,13 +76,15 @@ readonly __ERR_GETOPT_TOO_MANY_ARGS='excesso de argumentos'
 function getopt.parse()
 {
 	# getopt.parse <[uint]max_args> <[str]args> ...
-	local name ctype flag value ref flags attr obj_types args param type i
-	local -i nargs=$1
+	local name ctype flag value ref flags attr obj_types args param i
 	
 	error.__clear
 	
-	if [[ $((${#@}-1)) -gt $nargs ]]; then
-		error.__trace exa '' '' "${*:$(($nargs+2))}" "$__ERR_GETOPT_TOO_MANY_ARGS"
+	if ! [[ $1 == +([0-9]) ]]; then
+		error.__trace def 'nargs' 'uint' "$1" "$__ERR_GETOPT_PARSE_NARGS"
+		return $?
+	elif [[ $((${#@}-1)) -gt $1 ]]; then
+		error.__trace exa '' '' "${*:$(($1+2))}" "$__ERR_GETOPT_TOO_MANY_ARGS"
 		return $?
 	fi
 
@@ -100,9 +103,9 @@ function getopt.parse()
 		value=${args[3]}
 		
 		case $flag in
-			+)	[[ $value ]] || error.__trace def "$name" "$ctype" '<null>' "$__ERR_GETOPT_ARG_REQUIRED";;
+			+)	[[ $value ]] || { error.__trace def "$name" "$ctype" '<null>' "$__ERR_GETOPT_ARG_REQUIRED"; return $?; };;
 			-)	[[ $value ]] || continue;;
-			*)	error.__trace def "$name" '' "${flag:-<null>}" "$__ERR_GETOPT_FLAG";;
+			*)	error.__trace def "$name" '' "${flag:-<null>}" "$__ERR_GETOPT_FLAG"; return $?;;
 		esac
 		
 		case $ctype in
@@ -162,15 +165,15 @@ function getopt.parse()
 			mac)		[[ $value =~ ^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$ ]];;
 			slice)		[[ ${value// /} =~ \[[^]][0-9]*:?(-[0-9]+|[0-9]*)\] ]];;
 			keyword) 	[[ $value == $name ]];;
-			null) 		error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_NOT_ARG";;
-			dir) 		[[ -d $value ]] || error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_DIR_NOT_FOUND";;
-			file) 		[[ -f $value ]] || error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND";;
-			path) 		[[ -e $value ]] || error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND";;
+			null) 		error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_NOT_ARG"; return $?;;
+			dir) 		[[ -d $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_DIR_NOT_FOUND"; return $?; };;
+			file) 		[[ -f $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
+			path) 		[[ -e $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
 			fd) 		([[ $value =~ ^(0|[1-9][0-9]*)$ ]]; [[ -e /dev/fd/$value ]]) || \
-						error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS";;
+						{ error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
 			type)		printf -v obj_types '%s|' ${!__BUILTIN_TYPE_IMPLEMENTS[@]} ${!__INIT_TYPE_IMPLEMENTS[@]}
 						[[ $value =~ ^(${obj_types%|})$ ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_VAR_TYPE"; return $?; };;
-			*)			error.__trace def "$name" "$ctype" '' "$__ERR_GETOPT_TYPE_PARAM '$ctype'";;
+			*)			error.__trace def "$name" "$ctype" '' "$__ERR_GETOPT_TYPE_PARAM '$ctype'"; return $?;;
        	esac
 
 		(($?)) && error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG $ctype"
