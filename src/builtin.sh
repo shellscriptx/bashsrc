@@ -24,6 +24,7 @@ readonly __ERR_BUILTIN_ALREADY_INIT='a variável já foi inicializada'
 readonly __ERR_BUILTIN_TYPE_CONFLICT='conflito de tipos: o tipo especificado já foi inicializado'
 readonly __ERR_BUILTIN_METHOD_NOT_FOUND='o método de implementação não existe'
 readonly __ERR_BUILTIN_METHOD_CONFLICT='conflito de métodos: o método já foi implementado ou é uma função reservada'
+
 readonly NULL=0
 
 # func has <[str]exp> on <[var]name> => [bool]
@@ -1182,55 +1183,135 @@ function builtin.__INIT__()
 
 function builtin.__extfncall(){ [[ "${FUNCNAME[-2]}" != "${FUNCNAME[1]}" ]]; return $?; }
 
+# type builtin
+#
+# Implementa 'S' com os métodos:
+#
+# S.__len__ => [uint]
+# S.__quote__ => [str]
+# S.__typeval__ => [str]
+# S.__isnum__ => [bool]
+# S.__isnull__ => [bool]
+# S.__in__
+# S.__dec__
+# S.__eq__ <[str]exp> => [bool]
+# S.__ne__ <[str]exp> => [bool]
+# S.__gt__ <[str]exp> => [bool]
+# S.__ge__ <[str]exp> => [bool]
+# S.__lt__ <[str]exp> => [bool]
+# S.__le__ <[str]exp> => [bool]
+# S.__float__ => [int]
+# S.__upper__ 
+# S.__lower__
+# S.__swapcase__
+# S.__rev__
+# S.__repl__
+# S.__rm__
+# S.__fnmap__ <[func]funcname>
+# S.__iter__ => [str]
+#
+# Por padrão todos os tipos com excessão de 'map' e 'struct' são implementados por 'builtin'.
+#
+
+# func __len__ => [uint]
+#
+# Retorna o comprimento do objeto
+#
 function builtin.__len__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
-	builtin.__extfncall && len "$1"
-	return 0
+	
+	if builtin.__extfncall; then
+		declare -n __byref=$1
+		echo ${#__byref}	
+	fi
+	return $?
 }
 
+# func __quote__ => [str]
+#
+# Retorna o contéudo da variável escapando os caracteres especiais e não 
+# imprimíveis com '\'.
+#
 function builtin.__quote__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
+	
 	if builtin.__extfncall; then
 		declare -n __byref=$1
 		printf "%q\n" "${__byref[@]}"
 	fi
-	return 0
+	return $?
 }
 
+# func __typeval__ => [str]
+#
+# Retorna o tipo de dado armazenado na variável:
+#
+# string - cadeia de caracteres
+# int    - número inteiro
+# float  - número de ponto flutuante (precisão)
+# null   - vazio
+#
 function builtin.__typeval__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
+	
 	if builtin.__extfncall; then
-		local t
-		if [[ ! $1 ]]; then	t='null'
-		elif [[ $1 == ?(-|+)+([0-9]) ]]; then t='int'
-		else t='string'; fi
+
+		declare -n __byref=$1
+		local tn
+
+		if [[ ! $__byref ]]; then tn='null'
+		elif [[ $__byref == ?(-|+)+([0-9]) ]]; then tn='int'
+		elif [[ $__byref == ?(-|+)+([0-9])@(.+([0-9])) ]]; then tn='float'
+		else tn='string'
+		fi	
+	
+		echo "$tn"
 	fi
 
-	echo "$t"
-
-	return 0
+	return $?
 }
 
+# func __isnum__ => [bool]
+#
+# Retorna 'true' se o valor da variável for um inteiro.
+#
 function builtin.__isnum__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
-	builtin.__extfncall && [[ $1 == ?(-|+)+([0-9]) ]]
+	
+	if builtin.__extfncall; then
+		declare -n __byref=$1
+		[[ $__byref == ?(-|+)+([0-9])?(.+([0-9])) ]]
+	fi
 	return $?
 }
 
+# func __isnull__ => [bool]
+#
+# Retorna 'true' se a variável for nulo.
+#
 function builtin.__isnull__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
-	builtin.__extfncall && [[ ! $1 ]]
+	
+	if builtin.__extfncall; then
+		declare -n __byref=$1
+		[[ ! $__byref ]]
+	fi
 	return $?
 }
 
+# func __in__
+#
+# Incrementa o valor atual da variável.
+#
 function builtin.__in__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
+	
 	if builtin.__extfncall; then
 		declare -n __byref=$1
 		[[ $__byref == ?(-|+)+([0-9]) ]] && ((__byref++))
@@ -1238,9 +1319,14 @@ function builtin.__in__()
 	return $?
 }
 
+# func __dec__
+#
+# Decrementa o valor atual da variável.
+#
 function builtin.__dec__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
+	
 	if builtin.__extfncall; then
 		declare -n __byref=$1
 		[[ $__byref == ?(-|+)+([0-9]) ]] && ((__byref--))
@@ -1248,118 +1334,212 @@ function builtin.__dec__()
 	return $?
 }
 
+# func __eq__ <[str]exp> => [bool]
+#
+# Retorna 'true' se o valor da variável for igual a 'exp'. Caso contrário retorna 'false'.
+#
 function builtin.__eq__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:+:$2" ${@:3}
+	
 	if builtin.__extfncall; then
-		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -eq $2 ]] || [[ "$1" == "$2" ]]
+		declare -n __byref=$1
+		[[ $__byref == ?(-|+)+([0-9]) ]] && [[ $__byref -eq $2 ]] || [[ "$__byref" == "$2" ]]
 	fi
 	return $?
 }
 
+# func __ne__ <[str]exp> => [bool]
+#
+# Retorna 'true' se o valor da variável for diferente de 'exp'. Caso contrário retorna 'false'.
+#
 function builtin.__ne__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
+
 	if builtin.__extfncall; then
-		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -ne $2 ]] || [[ "$1" != "$2" ]]
+		declare -n __byref=$1
+		[[ $__byref == ?(-|+)+([0-9]) ]] && [[ $__byref -ne $2 ]] || [[ "$__byref" != "$2" ]]
 	fi
 	return $?
 }
 
+# func __gt__ <[str]exp> => [bool]
+#
+# Retorna 'true' se o valor da variável for maior que 'exp'. Caso contrário retorna 'false'.
+#
 function builtin.__gt__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
+
 	if builtin.__extfncall; then
-		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -gt $2 ]] || [[ "$1" > "$2" ]]
+		declare -n __byref=$1
+		[[ $__byref == ?(-|+)+([0-9]) ]] && [[ $__byref -gt $2 ]] || [[ "$__byref" > "$2" ]]
 	fi
 	return $?
 }
 
+# func __ge__ <[str]exp> => [bool]
+#
+# Retorna 'true' se o valor da variável for maior ou igual a 'exp'. Caso contrário retorna 'false'.
+#
 function builtin.__ge__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
+	
 	if builtin.__extfncall; then
-		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -ge $2 ]]
+		declare -n __byref=$1
+		[[ $__byref == ?(-|+)+([0-9]) ]] && [[ $__byref -ge $2 ]]
 	fi
 	return $?
 }
 
+# func __lt__ <[str]exp> => [bool]
+#
+# Retorna 'true' se o valor da variável for menor que 'exp'. Caso contrário retorna 'false'.
+#
 function builtin.__lt__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
+
 	if builtin.__extfncall; then
-		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -lt $2 ]] || [[ "$1" < "$2" ]]
+		declare -n __byref=$1
+		[[ $__byref == ?(-|+)+([0-9]) ]] && [[ $__byref -lt $2 ]] || [[ "$__byref" < "$2" ]]
 	fi
 	return $?
 }
 
+# func __le__ <[str]exp> => [bool]
+#
+# Retorna 'true' se o valor da variável for menor ou igual a 'exp'. Caso contrário retorna 'false'.
+#
 function builtin.__le__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
+
 	if builtin.__extfncall; then
-		[[ $1 == ?(-|+)+([0-9]) ]] && [[ $1 -le $2 ]]
+		declare -n __byref=$1
+		[[ $__byref == ?(-|+)+([0-9]) ]] && [[ $__byref -le $2 ]]
 	fi
 	return $?
 }
 
+# func __float__
+#
+# Converte o valor para um inteiro de ponto flutuante (precisão).
+#
 function builtin.__float__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
+
 	if builtin.__extfncall; then
-		[[ $1 == ?(-|+)+([0-9]) ]] && printf "%0.2f\n" "$1"
+		declare -n __byref=$1
+		[[ $__byref == ?(-|+)+([0-9]) ]] && printf -v __byref "%0.2f" "$__byref"
 	fi
 	return $?
 }
 
+# func __upper__
+#
+# Converte a sequência de caracteres armazenados para maiúsculo.
+#
 function builtin.__upper__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
-	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref^^}
-	return 0
+
+	if builtin.__extfncall; then
+		declare -n __byref=$1
+		__byref=${__byref^^}
+	fi
+	return $?
 }
 
+# func __lower__
+#
+# Converte a sequência de caracteres armazenados para minúsculo.
+#
 function builtin.__lower__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
-	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref,,}
-	return 0
+	
+	if builtin.__extfncall; then
+		declare -n __byref=$1
+		__byref=${__byref,,}
+	fi
+	return $?
 }
 
-function builtin.__swap__()
+# func __swapcase__
+#
+# Inverte a formatação dos caracteres armazenados de maiúsculo para minúsculo e vice-versa.
+#
+function builtin.__swapcase__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
-	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref~~}
-	return 0
+	
+	if builtin.__extfncall; then
+		declare -n __byref=$1
+		__byref=${__byref~~}
+	fi
+	return $?
 }
 
+# func __rev__
+#
+# Inverte a ordem dos caracteres armazenados.
+#
 function builtin.__rev__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
+	
 	if builtin.__extfncall; then
 		declare -n __byref=$1
 		local __i __tmp
+
 		for ((__i=${#__byref}-1; __i >= 0; __i--)); do
 			__tmp+=${__byref:$__i:1}
 		done
+
 		__byref=$__tmp
 	fi
-	return 0
+	return $?
 }
 
+# func __repl__ <[str]old> <[str]new>
+#
+# Substitui todas as ocorrências de 'old' encontradas por 'new'.
+#
 function builtin.__repl__()
 {
 	getopt.parse 3 "var:var:+:$1" "old:str:-:$2" "new:str:-:$3" ${@:4}
-	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref//$2/$3}
-	return 0
+	
+	if builtin.__extfncall; then
+		declare -n __byref=$1
+		__byref=${__byref//$2/$3}
+	fi
+	return $?
 }
 
+# func __rm__ <[str]exp>
+#
+# Remove todas as ocorrências de 'exp'.
+#
 function builtin.__rm__()
 {
-	getopt.parse 1 "var:var:+:$1" ${@:2}
-	builtin.__extfncall && declare -n __byref=$1 && __byref=${__byref//$2/}
-	return 0
+	getopt.parse 1 "var:var:+:$1" "exp:str:-:$2" ${@:3}
+	
+	if builtin.__extfncall; then
+		declare -n __byref=$1
+		__byref=${__byref//$2/}
+	fi
+	return $?
 }
 
+# func __fnmap__ <[func]funcname>
+#
+# Chama 'funcname'a cada iteração dos caracteres armazenados na variável, passando
+# automaticamente como parâmetro posicional '$1' o caractere atual.
+#
 function builtin.__fnmap__()
 {
 	getopt.parse 2 "var:var:+:$1" "funcname:func:+:$2"
@@ -1373,19 +1553,21 @@ function builtin.__fnmap__()
 		__byref=$__tmp
 	fi
 
-	return 0
+	return $?
 }
 
-function builtin.__fn__()
-{
-	getopt.parse 2 "var:var:+:$1" "funcname:func:+:$2"
-	builtin.__extfncall && declare -n __byref=$1 && __byref=$($2 "$__byref" "${@:3}")
-	return 0
-}
-
+# func __iter__ => [str]
+#
+# Retorna uma lista iterável contendo os elementos armazenados. O retorno da função
+# depende do tipo da variável, sendo:
+#
+# var       - retorna um caractere por linha.
+# array|map - retorna um elemento por linha.
+#
 function builtin.__iter__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
+
 	if builtin.__extfncall; then
 		local __attr __ch __i
 		declare -n __byref=$1
@@ -1406,7 +1588,7 @@ function builtin.__init()
 {
 	error.resume off
 
-    local depends=(touch mkdir stat cp)
+    local depends=(touch mkdir stat cp sort)
     local dep deps
 
     for dep in ${depends[@]}; do
@@ -1493,14 +1675,13 @@ readonly -f has \
 			builtin.__ge__ \
 			builtin.__le__ \
 			builtin.__float__ \
-			builtin.__fn__ \
 			builtin.__fnmap__ \
 			builtin.__upper__ \
 			builtin.__lower__ \
 			builtin.__rev__ \
 			builtin.__repl__ \
 			builtin.__rm__ \
-			builtin.__swap__ \
+			builtin.__swapcase__ \
 			builtin.__iter__ \
 			builtin.__extfncall \
 			builtin.__init \
