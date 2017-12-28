@@ -27,13 +27,12 @@ builtin.__le__
 builtin.__float__
 builtin.__iter__
 builtin.__fnmap__
-builtin.__fn__
 builtin.__upper__
 builtin.__lower__
 builtin.__rev__
 builtin.__repl__
 builtin.__rm__
-builtin.__swap__
+builtin.__swapcase__
 '
 
 __BUILTIN_TYPE_IMPLEMENTS[time]='
