@@ -1535,10 +1535,10 @@ function builtin.__rm__()
 	return $?
 }
 
-# func __fnmap__ <[func]funcname>
+# func __fnmap__ <[func]funcname> <[str]args> ...
 #
 # Chama 'funcname'a cada iteração dos caracteres armazenados na variável, passando
-# automaticamente como parâmetro posicional '$1' o caractere atual.
+# automaticamente como parâmetro posicional '$1' o caractere atual com 'N'args (opcional).
 #
 function builtin.__fnmap__()
 {
