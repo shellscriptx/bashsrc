@@ -1207,7 +1207,7 @@ function builtin.__extfncall(){ [[ "${FUNCNAME[-2]}" != "${FUNCNAME[1]}" ]]; ret
 # S.__rev__
 # S.__repl__
 # S.__rm__
-# S.__fnmap__ <[func]funcname>
+# S.__fnmap__ <[func]funcname> <[str]args> ...
 # S.__iter__ => [str]
 #
 # Por padrão todos os tipos com excessão de 'map' e 'struct' são implementados por 'builtin'.
