@@ -153,4 +153,4 @@ function error.resume()
 }
 
 source.__INIT__
-# /* __ERROR_SRC */
+# /* __ERROR_SH */

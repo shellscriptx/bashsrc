@@ -350,4 +350,4 @@ function getopt.params()
 }
 
 source.__INIT__
-# /* __GETOPT_SRC */
+# /* __GETOPT_SH */

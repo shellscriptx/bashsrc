@@ -1593,4 +1593,4 @@ source error.sh
 source getopt.sh
 
 source.__INIT__
-# /* BUILTIN_SRC */
+# /* BUILTIN_SH */

@@ -226,4 +226,4 @@ function map.pop()
 }
 
 source.__INIT__
-# /* __MAP_SRC */
+# /* __MAP_SH */

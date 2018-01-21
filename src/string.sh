@@ -1089,5 +1089,5 @@ function string.trimspace()
 }
 
 source.__INIT__
-# /* __STR_SRC */
+# /* __STR_SH */
 

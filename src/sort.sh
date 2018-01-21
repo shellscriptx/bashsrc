@@ -186,4 +186,4 @@ function sort.expintrev()
 }
 
 source.__INIT__
-# /* __SORT_SRC */
+# /* __SORT_SH */

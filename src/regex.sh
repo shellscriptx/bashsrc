@@ -838,4 +838,4 @@ function regex.fnnreplace()
 }
 
 source.__INIT__
-# /* __REGEX_SRC */
+# /* __REGEX_SH */

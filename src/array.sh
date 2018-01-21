@@ -409,5 +409,5 @@ function array.list()
 }
 
 source.__INIT__
-# /* __ARRAY_SRC */
+# /* __ARRAY_SH */
 

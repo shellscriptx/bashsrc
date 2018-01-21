@@ -666,4 +666,4 @@ function time.__init()
 time.__init
 
 source.__INIT__
-# /* __TIME_SRC */
+# /* __TIME_SH */

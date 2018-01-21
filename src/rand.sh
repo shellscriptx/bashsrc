@@ -136,4 +136,4 @@ function rand.wchoice()
 }
 
 source.__INIT__
-# /* __RAND_SRC */
+# /* __RAND_SH */
