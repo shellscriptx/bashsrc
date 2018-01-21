@@ -37,6 +37,7 @@ readonly __ERR_REGEX_GROUP_REF='referência do grupo inválida'
 
 # const
 readonly REG_ICASE=2
+readonly REG_CASE=0
 
 # func regex.findall <[str]pattern> <[str]exp> <[uint]flag> => [str]|[str] ...
 #
