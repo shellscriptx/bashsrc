@@ -13,52 +13,47 @@ readonly __FILEPATH_SH=1
 
 source builtin.sh
 
+__SRC_TYPES[filepath]='
+filepath.ext
+filepath.basename
+filepath.dirname
+filepath.relpath
+filepath.split
+filepath.splitlist
+filepath.slash
+filepath.ismatch
+filepath.match
+filepath.exists
+filepath.listdir
+filepath.scandir
+filepath.fnscandir
+filepath.fnlistdir
+filepath.copy
+'
+
+__SRC_TYPES[fileinfo]='
+filepath.fileinfo.name
+filepath.fileinfo.size
+filepath.fileinfo.mode
+filepath.fileinfo.modtime
+filepath.fileinfo.modstime
+filepath.fileinfo.isdir
+filepath.fileinfo.perm
+filepath.fileinfo.ext
+filepath.fileinfo.type
+filepath.fileinfo.inode
+filepath.fileinfo.path
+filepath.fileinfo.gid
+filepath.fileinfo.group
+filepath.fileinfo.uid
+filepath.fileinfo.user
+'
+
 # Erros
 readonly __ERR_FILEPATH_READ_DIR='acesso negado: não foi possível ler o diretório'
 readonly __ERR_FILEPATH_COPY_PATH='não foi possível copiar o arquivo ou diretório'
 readonly __ERR_FILEPATH_WRITE_DENIED='acesso negado: não foi possível criar o arquivo'
 readonly __ERR_FILEPATH_READ_DENIED='acesso negado: não foi possível ler o arquivo'
-
-# type filepath
-#
-# Implementa 'S' com os métodos:
-#
-# S.ext => [str]
-# S.basename => [str]
-# S.dirname => [str]
-# S.relpath => [str]
-# S.split => [str]
-# S.splitlist => [str]
-# S.slash => [str]
-# S.ismatch <[str]pattern> => [bool]
-# S.match <[str]pattern> => [str]
-# S.exists => [bool]
-# S.listdir => [str]
-# S.scandir => [str]
-# S.fnscandir <[func]funcname> <[str]args> ...
-# S.walk <[func]walkfunc> <[func]args> ...
-# S.copy <[dir]dest> <[uint]override>
-
-# type fileinfo
-#
-# Implementa 'S' com os métodos:
-#
-# S.name => [str]
-# S.size => [uint]
-# S.mode => [oct]
-# S.modtime => [str]
-# S.modstime => [uint]
-# S.isdir => [bool]
-# S.perm => [bool]
-# S.ext => [str]
-# S.type => [str]
-# S.inode => [str]
-# S.path => [str]
-# S.gid => [uint]
-# S.group => [str]
-# S.uid => [uint]
-# S.user => [str]
-#
 
 # func filepath.ext <[str]path> => [str]
 #
@@ -161,8 +156,8 @@ function filepath.slash()
 	getopt.parse 1 "path:str:+:$1" ${@:2}
 
 	local path
-	path=$(string.ltrim "$1" "/")
-	path=$(string.rtrim "$1" "/")
+	path=${1##+(/)}
+	path=${1%%+(/)}
 	echo -e "${path//\//\\n}"
 
 	return 0	
@@ -174,12 +169,13 @@ function filepath.slash()
 #
 function filepath.join()
 {
+	getopt.parse -1 "elem:str:+:$1" ... "${@:2}"
+
 	local slash path
 
 	for slash in "$@"; do
-		getopt.parse 1 "elem:str:+:$slash"
-		slash=$(string.ltrim "$slash" '/')
-		slash=$(string.rtrim "$slash" '/')
+		slash=${slash##+(/)}
+		slash=${slash%%+(/)}
 		path+='/'$slash	
 	done
 
@@ -287,7 +283,7 @@ function filepath.listdir()
 	local file
 
 	for file in "${1%/}/"* "${1%/}/".*; do 
-		[[ ${file##*/} == "." || ${file##*/} == ".." ]] && continue
+		[[ ${file##*/} == @(.|..) ]] && continue
 		echo "$file"
 	done
 
@@ -307,7 +303,7 @@ function filepath.scandir()
 
 	for file in "${1%/}/"* "${1%/}/".*; do
 		if [[ -d "$file" && ! -L "$file" ]]; then
-			[[ ${file##*/} == "." || ${file##*/} == ".." ]] && continue
+			[[ ${file##*/} == @(.|..) ]] && continue
 			filepath.scandir "$file"
 		elif [[ -f "$file" ]]; then
 			echo "$file"
@@ -334,7 +330,7 @@ function filepath.scandir()
 #
 function filepath.fnscandir()
 {
-	getopt.parse 2 "dir:dir:+:$1" "funcname:func:+:$2"
+	getopt.parse -1 "dir:dir:+:$1" "funcname:func:+:$2" "args:str:-:$3" ... "${@:4}"
 	
 	local file
 
@@ -422,7 +418,7 @@ function filepath.fnscandir()
 #
 function filepath.fnlistdir()
 {
-	getopt.parse 2 "dir:dir:+:$1" "walkfunc:func:+:$2"
+	getopt.parse -1 "dir:dir:+:$1" "walkfunc:func:+:$2" "args:str:-:$3" ... "${@:4}"
 
 	local file
 	
@@ -681,39 +677,5 @@ function filepath.fileinfo.user()
 	return $?
 }
 
-readonly -f	filepath.ext \
-			filepath.basename \
-			filepath.dirname \
-			filepath.relpath \
-			filepath.split \
-			filepath.splitlist \
-			filepath.slash \
-			filepath.join \
-			filepath.ismatch \
-			filepath.match \
-			filepath.exists \
-			filepath.glob \
-			filepath.listdir \
-			filepath.scandir \
-			filepath.fnscandir \
-			filepath.fnlistdir \
-			filepath.copy \
-			filepath.diff \
-			filepath.equal \
-			filepath.fileinfo.name \
-			filepath.fileinfo.size \
-			filepath.fileinfo.mode \
-			filepath.fileinfo.modtime \
-			filepath.fileinfo.modstime \
-			filepath.fileinfo.isdir \
-			filepath.fileinfo.perm \
-			filepath.fileinfo.ext \
-			filepath.fileinfo.type \
-			filepath.fileinfo.inode \
-			filepath.fileinfo.path \
-			filepath.fileinfo.gid \
-			filepath.fileinfo.group \
-			filepath.fileinfo.uid \
-			filepath.fileinfo.user
-
+source.__INIT__
 # /* __FILEPATH_SH */

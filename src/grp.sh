@@ -13,18 +13,15 @@ readonly __GRP_SH=1
 
 source builtin.sh
 
+__SRC_TYPES[group]='
+grp.getgrgid
+grp.getgrusers
+grp.getgrpass
+'
+
 readonly __GRP_PATH='/etc/group'
 readonly __ERR_GRP_READ_GROUP_FILE='falha ao ler o arquivo base'
 readonly __ERR_GRP_GROUP_NOT_FOUND='grupo não encontrado'
-
-# type group
-#
-# Implementa 'S' com os métodos:
-#
-# S.getgrgid => [uint]
-# S.getgrusers => [str]
-# S.getgrpass => [str]
-#
 
 # func grp.getgrgid <[str]grpname> => [uint]
 #
@@ -120,11 +117,5 @@ function grp.__get_info()
 	return $?
 }
 
-readonly -f grp.getgrgid \
-			grp.getgrusers \
-			grp.getgrpass \
-			grp.getgrnam \
-			grp.getgrall \
-			grp.__get_info
-
+source.__INIT__
 # /* __GRP_SH */

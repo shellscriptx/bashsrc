@@ -15,6 +15,26 @@ source builtin.sh
 source time.sh
 source string.sh
 
+__SRC_TYPES[file]='
+os.file.name
+os.file.stat
+os.file.fd
+os.file.readlines
+os.file.readline
+os.file.read
+os.file.writeline
+os.file.write
+os.file.close
+os.file.tell
+os.file.mode
+os.file.seek
+os.file.size
+os.file.isatty
+os.file.writable
+os.file.readable
+os.file.rewind
+'
+
 # Limite máximo de arquivos abertos
 readonly __FD_MAX=1024
 
@@ -45,32 +65,6 @@ readonly O_RDWR=2
 readonly SEEK_SET=0
 readonly SEEK_CUR=1
 readonly SEEK_END=2
-
-# type file
-#
-# É descritor de arquivo constituído de inteiro positivo associado a um fluxo
-# de leitura e escrita.
-#
-# Implementa 'S' com os métodos:
-#
-# S.isatty => [bool]
-# S.writable => [bool]
-# S.readable => [bool]
-# S.size => [uint]
-# S.name => [str]
-# S.mode => [uint]
-# S.stat => [str]
-# S.fd => [uint]
-# S.readlines => [str]
-# S.readline => [str]
-# S.read <[uint]bytes> => [str]
-# S.writeline <[str]exp> => [bool]
-# S.write <[str]exp> <[uint]bytes> => [bool]
-# S.close => [bool]
-# S.tell => [uint]
-# S.rewind => [bool]
-# S.seek <[uint]offset> <[uint]whence> => [bool]
-#
 
 # func os.chdir <[str]dir> => [bool]
 #
@@ -140,7 +134,7 @@ function os.environ()
 {
 	getopt.parse 0 ${@:1}
 
-	while read _ _ env; do
+	while IFS=' ' read _ _ env; do
 		echo "${env%%=*}"
 	done < <(declare -xp)
 	
@@ -926,48 +920,5 @@ function os.file.seek()
 	return 0
 }
 
-readonly -f os.chdir \
-			os.chmod \
-			os.stackdir \
-			os.exists \
-			os.environ \
-			os.getenv \
-			os.setenv \
-			os.geteuid \
-			os.argv \
-			os.argc \
-			os.getgid \
-			os.getgroups \
-			os.getpid \
-			os.getppid \
-			os.getwd \
-			os.hostname \
-			os.chatime \
-			os.chmtime \
-			os.chtime \
-			os.mkdir \
-			os.remove \
-			os.rename \
-			os.tempdir \
-			os.create \
-			os.stat \
-			os.open \
-			os.file.isatty \
-			os.file.writable \
-			os.file.readable \
-			os.file.size \
-			os.file.name \
-			os.file.mode \
-			os.file.stat \
-			os.file.fd \
-			os.file.readlines \
-			os.file.readline \
-			os.file.read \
-			os.file.writeline \
-			os.file.write \
-			os.file.close \
-			os.file.tell \
-			os.file.rewind \
-			os.file.seek
-
+source.__INIT__
 # /* __OS_SH */ #

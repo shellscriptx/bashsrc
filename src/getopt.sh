@@ -15,9 +15,7 @@ source builtin.sh
 
 readonly __ERR_GETOPT_TYPE_ARG='o argumento esperado é do tipo'
 readonly __ERR_GETOPT_TYPE_PARAM='o tipo do parâmetro não é suportado'
-readonly __ERR_GETOPT_ARG_REQUIRED='o argumento é requerido'
 readonly __ERR_GETOPT_FLAG='flag não suportada'
-readonly __ERR_GETOPT_NOT_ARG='função não requer argumento'
 readonly __ERR_GETOPT_VARNAME='nome da variável inválida'
 readonly __ERR_GETOPT_DIR_NOT_FOUND='diretório não encontrado'
 readonly __ERR_GETOPT_FILE_NOT_FOUND='arquivo não encontrado'
@@ -25,32 +23,73 @@ readonly __ERR_GETOPT_PATH_NOT_FOUND='arquivo ou diretório não encontrado'
 readonly __ERR_GETOPT_FD_NOT_EXISTS='o descritor do arquivo não existe'
 readonly __ERR_GETOPT_VAR_TYPE='tipo da variável inválida'
 readonly __ERR_GETOPT_TOO_MANY_ARGS='excesso de argumentos'
-readonly __ERR_GETOPT_PARSE_NARGS='requer o número de argumentos'
+readonly __ERR_GETOPT_KEYWORD='operador/argumento requerido'
+readonly __ERR_GETOPT_ARG_NAME='nome do argumento inválido'
 
-# func getopt.parse <[str]name:type:flag:value> ... -> [bool]
+# func getopt.parse <[uint]nargs> <[str]name:type:flag:value> ... ${@:nargs+1} -> [bool]
 #
-# Trata uma lista de parâmetros em 'str ...' verificando as configurações
-# especificadas para cada argumento posicional. Retorna true se todos os
-# argumentos satisfazem os critérios determinados, caso contrário retorna
-# false e finaliza a execução do script.
-#    
-# 'name:type:flag:value'
+# Trata a lista de parâmetros em 'name:type:flag:value' verificando as configurações
+# especificadas para cada argumento posicional e se possui 'N'args na chamada da função.
+# Retorna true se todos os argumentos satisfazem os critérios determinados, caso contrário
+# retorna false e finaliza a função.
+# 
+# nargs - número máximo de argumentos. (Utilize '-1' para definir uma função variádica).
 #
-# name -> nomenclatura do parâmetro. Caracteres suportados. [a-zA-Z0-9_-]
+# name - nomenclatura do parâmetro. Caracteres suportados. [a-zA-Z0-9_=-]
 #
-# type -> tipo de dado aceito pelo parâmetro. São eles:
+# type - tipo de dado aceito pelo parâmetro.
 #
-# uint, zone, zone, char, str, bool, array, map, null, func, funcname,
-# bin, hex, oct, size, 12h, 24h, date, hour, sec, mday, mon, year, yday, wday, 
-# url, smtp, email, ipv4, ipv6, mac, slic e keyword
-#
-# flag -> Atributo que determina o comportamento do parâmetro. Utilize o 
+# flag - atributo que determina o comportamento do parâmetro. Utilize o 
 # caractere '-' (hifen) para especificar que o argumento é opcional
 # ou '+' para obrigatório.
 #            
-# value -> Valor a ser verificado pela função com base no tipo definido.
+# value - valor a ser verificado pela função com base no tipo definido.
 #
-# Exemplo:
+# ${@:total_args+1} - array de argumentos posicionais a partir do índice 'total_args + 1'.
+#
+# types:
+#
+# uint		- inteiro sem sinal.
+# int		- inteiro com sinal.
+# zone		- fuso horário.
+# char		- caractere único.
+# str		- uma cadeia de caracteres.
+# bool		- booleano (true ou false).
+# var		- identificador de uma variável válida.
+# array		- array indexado.
+# map		- array associativo.
+# func		- identificador de uma função válida.
+# funcname	- identificador válido suportado para referênciar uma função.
+# bin		- número binário (base 2).
+# hex		- número hexadecimal (base 16).
+# oct		- número octal (base 8).
+# size		- unidade de armazenamento. (12KB, 1MB, 10G, 2TB ...)
+# 12h		- hora no formato 12 horas. (HH:MM -> 1..12)
+# 24h		- hora no formato 24 horas. (HH:MM -> 0..23)
+# date		- data. (DD/MM/YYYY) 
+# hour		- hora. (0..23)
+# min		- minutos. (0..59)
+# sec		- segundos. (0..59)
+# mday		- dia do mês. (1..31)
+# mon		- dia da semana. (1..12)
+# year		- ano. inteiro positivo com 4 ou mais digitos.
+# yday		- dias do ano. (1..366)
+# wday		- dias da semana. (1..7)
+# url		- endereço web. (http|https|ftp|smtp)://....
+# email		- endereço de email.
+# ipv4		- protocolo ipv4 (32 bits)
+# ipv6		- protocolo ipv6 (128 bits)
+# mac		- endereço MAC Address (xx:xx:xx:xx:xx:xx)
+# slice		- intervalo númerico positivo. (x:x)
+# uslice    - intervalo número. (x:x)
+# keyword	- palavra chave.
+# dir		- diretório válido.
+# file		- arquivo padrão.
+# path		- caminho válido.
+# fd		- inteiro positivo que representa um descritor de arquivo.
+# type		- objeto de implementação válido.
+#
+# Exemplo 1:
 #
 # #!/bin/bash
 # # script: soma.sh
@@ -73,114 +112,239 @@ readonly __ERR_GETOPT_PARSE_NARGS='requer o número de argumentos'
 # 30
 # ./teste.sh: erro: linha 14: soma: y: 'af' o argumento esperado é do tipo int
 #
+#
+# Exemplo 2:
+#
+# # Protótipo da função variádica 'sum' que realiza a soma de todos os elementos e
+# # que recebe uma quantidade indeterminada de argumentos inteiros.
+#
+# $ getopt.parse -1 "num:int:+:$1" ... "${@:2}"
+#
+# # O nome, flag e tipo dos argumentos variádicos subsequentes serão iguais ao 
+# # argumento que precede as reticências '...'
+#
 function getopt.parse()
 {
-	# getopt.parse <[uint]max_args> <[str]args> ...
-	local name ctype flag value ref flags attr obj_types args param i
+	local name ctype flag value ref flags attr obj_types param app vargs lparam rep
 	
-	error.__clear
-	
-	if ! [[ $1 == +([0-9]) ]]; then
-		error.__trace def 'nargs' 'uint' "$1" "$__ERR_GETOPT_PARSE_NARGS"
+	if [[ $1 != @(-1|0|@([1-9])*([0-9])) ]]; then
+		error.__trace def "nargs" "int" "$1" "$__ERR_GETOPT_TYPE_ARG 'int'"
 		return $?
+	elif [[ $1 -eq -1 ]]; then
+		vargs=1
 	elif [[ $((${#@}-1)) -gt $1 ]]; then
 		error.__trace exa '' '' "${*:$(($1+2))}" "$__ERR_GETOPT_TOO_MANY_ARGS"
 		return $?
 	fi
 
-	for param in "${@:2}"
+	if [[ ${FUNCNAME[1]} != getopt.@(nargs|args|params|values|value|type|flag) ]]; then
+		 __GETOPT_PARSE=()
+		app=1
+	fi
+
+	for param in "${@:2}" 
 	do
-		for i in {0..2}; do
-			args[$i]=${param%%:*}
-			param=${param#*:}
-		done
+		[[ ! $rep && $vargs && $param == ... ]] && { rep=1; continue; } 
+		[[ $rep ]] && param="$lparam:$param"
+	
+		IFS=':' read name ctype flag value <<< "$param"
 		
-		args[$i+1]=$param
-		
-		name=${args[0]}
-		ctype=${args[1]}
-		flag=${args[2]}
-		value=${args[3]}
-		
-		case $flag in
-			+)	[[ $value ]] || { error.__trace def "$name" "$ctype" '<null>' "$__ERR_GETOPT_ARG_REQUIRED"; return $?; };;
-			-)	[[ $value ]] || continue;;
-			*)	error.__trace def "$name" '' "${flag:-<null>}" "$__ERR_GETOPT_FLAG"; return $?;;
-		esac
-		
-		case $ctype in
-			# tipo
-           	uint) 		[[ $value =~ ^(0|[1-9][0-9]*)$ ]];;
-			int|zone) 	[[ $value =~ ^(0|-?[1-9][0-9]*)$ ]];;
-   	        char) 		[[ $value =~ ^.$ ]];;
-			str) 		[[ $value =~ ^.+$ ]];;
-			bool) 		[[ $value =~ ^(true|false)$ ]];;
-			# variavel
-			var|array)	[[ $value =~ ^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$ ]];;
-			map|struct)	[[ $value =~ ^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$ ]] && {
-						read _ attr _ < <(declare -p $value 2>/dev/null)
-        				[[ $value ]] || [[ $attr =~ A ]]
-						};;
-           	func) 		declare -fp "$value" &>/dev/null;;
-			funcname) 	[[ $value =~ ^[a-zA-Z0-9_.-]+$ ]];;
-			# base
-   	        bin) 		[[ $value =~ ^[01]+$ ]];;
-   	        hex) 		[[ $value =~ ^(0x)?[0-9a-fA-F]+$ ]];;
-   	        oct) 		[[ $value =~ ^[0-7]+$ ]];;
-			size) 		[[ $value =~ ^[0-9]+[kKmMgGtTpPeEzZyY]$ ]];;
-			# data/time
-			12h) 		[[ $value =~ ^(0[1-9]|1[0-2]):[0-5][0-9]$ ]];;
-			24h) 		[[ $value =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]];;
-			date) 		[[ $value =~ ^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/([0-9]{4})$ ]];;
-			hour) 		[[ $value =~ ^([01][0-9]|2[0-3])$ ]];;
-			min|sec)	[[ $value =~ ^[0-5][0-9]$ ]];;
-			mday) 		[[ $value =~ ^(0[1-9]|[12][0-9]|3[01])$ ]];;
-			mon) 		[[ $value =~ ^(0[1-9]|1[0-2])$ ]];;
-			year) 		[[ $value =~ ^[0-9]{4,}$ ]];;
-			yday) 		[[ $value =~ ^([1-9][0-9]{,1}|[1-2][0-9]{1,2}|3([0-5][0-9]|6[0-6]))$ ]];;
-			wday) 		[[ $value =~ ^[0-6]$ ]];;	
-			# web
-			url) 		[[ $value =~ ^(https?|ftp|smtp)://(www\.)?[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+/?$ ]];;
-			email) 		[[ $value =~ ^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]];;
-			# rede
-			ipv4) 		[[ $value =~ ^(([0-9]|[1-9][0-9]|1[0-9]{,2}|2[0-4][0-9]|
-										25[0-5])[.]){3}([0-9]|[1-9][0-9]|
-										1[0-9]{,2}|2[0-4][0-9]|25[0-5])$ ]];;
-			ipv6) 		[[ $value =~ ^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|
-										([0-9a-fA-F]{1,4}:){1,7}:|
-										([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|
-										([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|
-										([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|
-										([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|
-										([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|
-										[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|
-										:((:[0-9a-fA-F]{1,4}){1,7}|:)|
-										fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|
-										::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|
-										1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|
-										(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|
-										([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|
-										(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$ ]];;
+		if [[ $name != +([a-zA-Z0-9_=-]) ]]; then
+			error.__trace def "name" 'str' "$name" "$__ERR_GETOPT_ARG_NAME"
+			return $?
+		elif [[ $flag != @(-|+) ]]; then
+			error.__trace def "flag" 'str' "$flag" "$__ERR_GETOPT_FLAG"
+			return $?
+		fi
 
-			mac)		[[ $value =~ ^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$ ]];;
-			slice)		[[ ${value// /} =~ \[[^]][0-9]*:?(-[0-9]+|[0-9]*)\] ]];;
-			keyword) 	[[ $value == $name ]];;
-			null) 		error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_NOT_ARG"; return $?;;
-			dir) 		[[ -d $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_DIR_NOT_FOUND"; return $?; };;
-			file) 		[[ -f $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
-			path) 		[[ -e $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
-			fd) 		([[ $value =~ ^(0|[1-9][0-9]*)$ ]]; [[ -e /dev/fd/$value ]]) || \
-						{ error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
-			type)		printf -v obj_types '%s|' ${!__BUILTIN_TYPE_IMPLEMENTS[@]} ${!__INIT_TYPE_IMPLEMENTS[@]}
-						[[ $value =~ ^(${obj_types%|})$ ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_VAR_TYPE"; return $?; };;
-			*)			error.__trace def "$name" "$ctype" '' "$__ERR_GETOPT_TYPE_PARAM '$ctype'"; return $?;;
-       	esac
-
-		(($?)) && error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG $ctype"
+		if [[ $flag == + ]] || [[ $flag == - && $value ]]; then
+			case $ctype in
+				# tipo
+	           	uint) 		[[ $value =~ ^(0|[1-9][0-9]*)$ ]];;
+				int|zone) 	[[ $value =~ ^(0|-?[1-9][0-9]*)$ ]];;
+   		        char) 		[[ $value =~ ^.$ ]];;
+				str) 		[[ $value =~ ^.+$ ]];;
+				bool) 		[[ $value =~ ^(true|false)$ ]];;
+				# variavel
+				var|array)	[[ $value =~ ^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$ ]];;
+				map)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null)
+   	     					[[ $attr =~ A ]];;
+   	        	func) 		declare -fp "$value" &>/dev/null;;
+				funcname) 	[[ $value =~ ^[a-zA-Z0-9_.-]+$ ]];;
+				# base
+   		        bin) 		[[ $value =~ ^[01]+$ ]];;
+   		        hex) 		[[ $value =~ ^(0x)?[0-9a-fA-F]+$ ]];;
+   		        oct) 		[[ $value =~ ^[0-7]+$ ]];;
+				size) 		[[ $value =~ ^[0-9]+[kKmMgGtTpPeEzZyY]$ ]];;
+				# data/time
+				12h) 		[[ $value =~ ^(0[1-9]|1[0-2]):[0-5][0-9]$ ]];;
+				24h) 		[[ $value =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]];;
+				date) 		[[ $value =~ ^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/([0-9]{4,})$ ]];;
+				hour) 		[[ $value =~ ^([01][0-9]|2[0-3])$ ]];;
+				min|sec)	[[ $value =~ ^[0-5][0-9]$ ]];;
+				mday) 		[[ $value =~ ^([1-9]|[12][0-9]|3[01])$ ]];;
+				mon) 		[[ $value =~ ^([1-9]|1[0-2])$ ]];;
+				year) 		[[ $value =~ ^[0-9]{4,}$ ]];;
+				yday) 		[[ $value =~ ^([1-9][0-9]{,1}|[1-2][0-9]{1,2}|3([0-5][0-9]|6[0-6]))$ ]];;
+				wday) 		[[ $value =~ ^[1-7]$ ]];;	
+				# web
+				url) 		[[ $value =~ ^(https?|ftp|smtp)://(www\.)?[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+/?$ ]];;
+				email) 		[[ $value =~ ^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]];;
+				# rede
+				ipv4) 		[[ $value =~ ^(([0-9]|[1-9][0-9]|1[0-9]{,2}|2[0-4][0-9]|
+											25[0-5])[.]){3}([0-9]|[1-9][0-9]|
+											1[0-9]{,2}|2[0-4][0-9]|25[0-5])$ ]];;
+				ipv6) 		[[ $value =~ ^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|
+											([0-9a-fA-F]{1,4}:){1,7}:|
+											([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|
+											([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|
+											([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|
+											([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|
+											([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|
+											[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|
+											:((:[0-9a-fA-F]{1,4}){1,7}|:)|
+											fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|
+											::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|
+											1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|
+											(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|
+											([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|
+											(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$ ]];;
+	
+				mac)		[[ $value =~ ^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$ ]];;
+				slice)		[[ $value =~  ^((0|-?[1-9][0-9]*):?|:?(0|-?[1-9][0-9]*)|(0|-?[1-9][0-9]*):(0|-?[1-9][0-9]*))$ ]];;
+				uslice)		[[ $value =~  ^((0|[1-9][0-9]*):?|:?(0|[1-9][0-9]*)|(0|[1-9][0-9]*):(0|[1-9][0-9]*))$ ]];;
+				keyword) 	[[ $value == $name ]] || { error.__trace def "$name" "$ctype" "$value" "'$name' $__ERR_GETOPT_KEYWORD"; return $?; };;
+				dir) 		[[ -d $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_DIR_NOT_FOUND"; return $?; };;
+				file) 		[[ -f $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
+				path) 		[[ -e $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
+				fd) 		([[ $value =~ ^(0|[1-9][0-9]*)$ ]]; [[ -e /dev/fd/$value ]]) || \
+							{ error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
+				type)		[[ ${__INIT_SRC_TYPES[$value]} ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_VAR_TYPE"; return $?; };;
+				*)			error.__trace def "$name" "$ctype" '' "$__ERR_GETOPT_TYPE_PARAM '$ctype'"; return $?;;
+   	    	esac || {
+				error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG $ctype"
+				return $?
+			}
+		fi
+		[[ $app ]] && __GETOPT_PARSE+=("$name:$ctype:$flag:$value")
+		lparam="$name:$ctype:$flag"
 	done
+	
+	return $?
+}
+
+# func getopt.nargs => [uint]
+#
+# Retorna o número de argumentos da função na chamada de 'getopt.parse'.
+#
+function getopt.nargs()
+{ 
+	getopt.parse 0 $@
+
+	echo ${#__GETOPT_PARSE[@]}
+	return 0
+}
+
+# func getopt.args => [str]
+#
+# Retorna o nome dos argumentos.
+#
+function getopt.args()
+{
+	getopt.parse 0 $@
+
+	local arg
+	for arg in "${__GETOPT_PARSE[@]}"; do
+		IFS=':' read arg _ _ _ <<< "$arg"
+		echo "$arg"
+	done
+}
+
+# func getopt.values => [str]
+#
+# Retorna os valores dos argumentos.
+#
+function getopt.values()
+{
+	getopt.parse 0 $@
+	
+	local val
+	for val in "${__GETOPT_PARSE[@]}"; do
+		IFS=':' read _ _ _ val <<< "$val"
+		echo "$val"
+	done
+}
+
+# func getopt.value <[str]argname> => [str]
+#
+# Retorna o valor de 'argname'.
+#
+function getopt.value()
+{
+	getopt.parse 1 "argname:str:+:$1" ${@:2}
+	getopt.__get_param $1 val
+	return $?
+}
+
+# func getopt.type <[str]argname> => [str]
+#
+# Retorna o tipo suportado por 'argname'.
+#
+function getopt.type()
+{
+	getopt.parse 1 "argname:str:+:$1" ${@:2}
+	getopt.__get_param $1 type
+	return $?
+}
+
+# func getopt.flag <[str]argname> => [str]
+#
+# Retorna a flag de 'argname'.
+#
+function getopt.flag()
+{
+	getopt.parse 1 "argname:str:+:$1" ${@:2}
+	getopt.__get_param $1 flag
+	return $?
+}
+
+function getopt.__get_param()
+{
+	local param name val
+	for param in "${__GETOPT_PARSE[@]}"; do
+		IFS=':' read name _ _ _ <<< "$param"
+		if [[ $1 == $name ]]; then
+			case $2 in
+				type) 	IFS=':' read _ val _ _ <<< "$param";;
+				flag) 	IFS=':' read _ _ val _ <<< "$param";;
+				val) 	IFS=':' read _ _ _ val <<< "$param";;
+				*) return 1;;
+			esac
+			echo "$val"
+			return 0
+		fi
+	done
+
+	error.__trace def 'argname' 'str' "$1" "$__ERR_GETOPT_ARG_NAME"
 
 	return $?
 }
 
-readonly -f getopt.parse
+# func getopt.params => [str]
+#
+# Retorna os parâmetros da função em um formato utilizável.
+#
+function getopt.params()
+{
+	getopt.parse 0 $@
+
+	local param name ctype flag
+	for param in "${__GETOPT_PARSE[@]}"; do
+		IFS=':' read name ctype flag _ <<< "$param"
+		echo "$name:$ctype:$flag:"
+	done
+	return 0
+}
+
+source.__INIT__
 # /* __GETOPT_SRC */

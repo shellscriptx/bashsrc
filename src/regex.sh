@@ -14,72 +14,62 @@ readonly __REGEX_SH=1
 source builtin.sh
 source string.sh
 
+__SRC_TYPES[regex]='
+regex.findall
+regex.fullmatch 
+regex.match 
+regex.search 
+regex.split 
+regex.ismatch 
+regex.groups
+regex.fngroups
+regex.fnngroups
+regex.savegroups 
+regex.replace
+regex.nreplace 
+regex.fnreplace 
+regex.fnnreplace
+'
+
 # errors
 readonly __ERR_REGEX_FLAG_INVALID='a flag especificada é inválida'
 readonly __ERR_REGEX_GROUP_REF='referência do grupo inválida'
 
-# const REG_ICASE=2
-#
-# Regex flag
-# Não diferencia maiúsculas de minúsculas.
+# const
 readonly REG_ICASE=2
 
-
-# type regex
-#
-# Uma sequência de caracteres que determina um padrão ou mais, associado a
-# uma cadeia de caracteres de um texto. Esta em conformidade com 
-# o padrão (ERE).
-#
-# Implementa 'S' com os métodos:
-#
-# S.findall <[str]exp> <[uint]flag> => [str]
-# S.fullmatch <[str]exp> <[uint]flag> => [uint|uint|str]
-# S.match <[str]exp> [uint]flag => [str]
-# S.search <[str]exp> <[uint]flag> => [uint|uint|str]
-# S.split <[str]exp> <[uint]flag> => [str]
-# S.ismatch <[str]exp> <[uint]flag> => [bool]
-# S.groups <[str]exp> <[uint]flag> => [str]
-# S.savegroups <[str]exp> <[uint]flag> <[array]name>
-# S.replace <[str]exp> <[str]new> <[int]count> <[uint]flag> => [str]
-# S.nreplace <[str]exp> <[str]new> <[uint]match> <[uint]flag> => [str]
-# S.fnreplace <[str]exp> <[int]count> <[uint]flag> <[func]funcname> <[str]args> ... => [str]
-# S.fnnreplace <[str]exp> <[uint]match> <[uint]flag> <[func]funcname> <[str]args> ... => [str]
-#
-# Obs: 'S' é uma variável válida.
-#
-
-# func regex.findall <[str]pattern> <[str]exp> <[uint]flag> => [str]
+# func regex.findall <[str]pattern> <[str]exp> <[uint]flag> => [str]|[str] ...
 #
 # Retorna uma lista de todas as correspondências não sobrepostas na cadeia.
 #
 # Se um ou mais grupos de captura estiverem presentes no padrão, é retornado
-# uma lista de grupos.
+# uma lista de grupos no seguinte padrão:
+#
+# Exemplo: fullmatch|group1|group2|...
 #
 function regex.findall()
 {
 	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 	
-	local exp=$2
-	local flag=$3
-	local def cur
+	local def cur exp match
 
 	shopt -q nocasematch && cur='s' || cur='u'
 	
-	case $flag in
+	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
 
-	while [[ $exp =~ $1 ]]; do
-		for match in "${BASH_REMATCH[@]}"; do
-			echo "$match"
-			exp=${exp/$match/}
+	while read exp; do
+		while [[ $exp =~ $1 ]]; do
+			exp=${exp/${BASH_REMATCH}/}
+			printf -v match '%s|' "${BASH_REMATCH[@]}"
+			echo "${match%|}"
 		done
-	done
+	done <<< "$2"
 	
 	shopt -q${cur} nocasematch
 
@@ -95,23 +85,21 @@ function regex.fullmatch()
 {
 	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 
-	local flag=$3
-	local exp=$2
-	local def cur
+	local def cur exp
 
 	shopt -q nocasematch && cur='s' || cur='u'
 	
-	case $flag in
+	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
 
-	if [[ $exp =~ ^$1$ ]]; then
-		echo "0|${#BASH_REMATCH}|$BASH_REMATCH"
-	fi
+	while read exp; do
+		[[ $exp =~ ^$1$ ]] && echo "0|${#BASH_REMATCH}|$BASH_REMATCH"
+	done <<< "$2"
 
 	shopt -q${cur} nocasematch
 	
@@ -127,23 +115,21 @@ function regex.match()
 {
 	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 	
-	local flag=$3
-	local exp=$2
-	local def cur
+	local def cur exp
 
 	shopt -q nocasematch && cur='s' || cur='u'
 	
-	case $flag in
+	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
 
-	if [[ $exp =~ ^$1 ]]; then
-		echo "0|${#BASH_REMATCH}|$BASH_REMATCH"
-	fi
+	while read exp; do
+		[[ $exp =~ ^$1 ]] && echo "0|${#BASH_REMATCH}|$BASH_REMATCH"
+	done <<< "$2"
 
 	shopt -q${cur} nocasematch
 
@@ -153,35 +139,38 @@ function regex.match()
 # func regex.search <[str]pattern> <[str]exp> <[uint]flag> => [uint|uint|str]
 #
 # Busca uma correspondência do padrão 'pattern' em 'exp', retornando o índice de
-# intervalo do objeto da correspondência ou nulo se não houver. Se parênteses forem
-# utilizados no padrão, é retorna uma lista de objetos de grupo.
+# intervalo do objeto da correspondência ou nulo se não houver.
+#
+# A correspondência é retornada no seguinte padrão:
+#
+# start|end|match
 #
 function regex.search()
 {
 	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 
-	local match s e
-	local flag=$3
-	local exp=$2
-	local def cur
+	local exp tmp old s e def cur
 
 	shopt -q nocasematch && cur='s' || cur='u'
 	
-	case $flag in
+	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
 
-	if [[ $exp =~ $1 ]]; then
-		for match in "${BASH_REMATCH[@]}"; do
-			s=$(string.find "$exp" "$match")
-			e=$((s+${#match}))
-			echo "$s|$e|$match"
+	while read exp; do
+		old=$exp
+		while [[ $exp =~ $1 ]]; do
+			tmp=${old#*${BASH_REMATCH}}
+			e=$((${#old}-${#tmp}))
+			s=$((e-${#BASH_REMATCH}))
+			exp=${exp/${BASH_REMATCH}/}
+			echo "$s|$e|${BASH_REMATCH}"
 		done
-	fi
+	done <<< "$2"
 
 	shopt -q${cur} nocasematch
 	
@@ -190,38 +179,37 @@ function regex.search()
 
 # func regex.split <[str]pattern> <[str]exp> <[uint]flag> => [str]
 #
-# Retorna uma lista contendo as substrings resultantes. E se a captura de parênteses
-# for utilizada no padrão, então o texto de todos grupos também são retornados como
-# parte do resultado da lista.
+# Divide a string 'exp' pela ocorrências do padrão, retornando uma lista contendo as substrings resultantes.
+#
+# Exemplo: substring1|substring2|substring3|...
 #
 function regex.split()
 {
 	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 		
-	local exp=$2
-	local sub=$2
-	local flag=$3
-	local def cur
+	local def cur exp old
 
 	shopt -q nocasematch && cur='s' || cur='u'
 	
-	case $flag in
+	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
 
-	while [[ $sub =~ $1 ]]; do
-		exp=${exp//${BASH_REMATCH[0]}/\\n}
-		sub=${sub//${BASH_REMATCH[0]}/}
-	done
+	while read exp; do
+		old=$exp
+		while [[ $exp =~ $1 ]]; do
+			exp=${exp/${BASH_REMATCH}/}
+			old=${old/${BASH_REMATCH}/\\n}
+		done
+		echo -e "$old"
+	done <<< "$2"
 
 	shopt -q${cur} nocasematch
 	
-	echo "$exp"
-
 	return 0
 }
 
@@ -233,26 +221,25 @@ function regex.ismatch()
 {
 	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 
-	local flag=$3
-	local exp=$2
-	local def cur
+	local exp def cur r
 
 	shopt -q nocasematch && cur='s' || cur='u'
 	
-	case $flag in
+	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
 
-	if [[ $exp =~ $1 ]]; then
-		shopt -q${cur} nocasematch
-		return 0
-	fi
+	while read exp; do
+		[[ $exp =~ $1 ]] && { r=0; break; }
+	done <<< "$2"
 
-	return 1
+	shopt -q${cur} nocasematch
+
+	return ${r:-1}
 }
 
 # func regex.groups <[str]pattern> <[str]exp> <[uint]flag> => [str]
@@ -263,32 +250,163 @@ function regex.groups()
 {
 	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
 
-	local exp=$2
-	local flag=$3
-	local def cur
+	local grp exp def cur
 
 	shopt -q nocasematch && cur='s' || cur='u'
 	
-	case $flag in
+	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
-
-	while [[ $exp =~ $1 ]]; do
-		for match in "${BASH_REMATCH[@]}"; do
-			exp=${exp/$match/}
-			echo "$match"
+	
+	while read exp; do
+		while [[ $exp =~ $1 ]]; do
+			printf -v grp '%s|' "${BASH_REMATCH[@]:1}"
+			exp=${exp/${BASH_REMATCH}/}
+			echo "${grp%|}"
 		done
-	done
+	done <<< "$2"
 
 	shopt -q${cur} nocasematch
 
 	return 0
 }
 
+# func regex.fngroups <[str]pattern> <[str]exp> <[str]new> <[int]count> <[uint]flag> <[func]funcname> <[str]args> ... => [str] 
+#
+# Substitui os retrovisores dos grupos de captura em 'new' pelo retorno de 'funcname' em 'count' ocorrências. Se 'count' for
+# igual a '-1' realiza a substituição em todas as ocorrências.
+# Chama 'funcname' passando como argumento posicional '$1' o grupo de captura se presente com 'N'args (opcional) a cada 
+# ocorrência de 'pattern' em 'exp', subsituindo os retrovisores  &, \\1, \\2, \\3 ... pelo retorno da função.
+# Toda a ocorrência incluindo os grupos de captura são representados pelo caractere '&' e que também é passado como argumento.
+#
+# A função é chamada somente se o grupo de captura estiver presente ou '&' for especificado.
+#
+# Exemplo:
+#
+# # Dobrando o valor do último número contido na expressão.
+#
+# #!/bin/bash
+#
+# source regex.sh
+#
+# nums='num: 4, num: 10, num: 50'
+#
+# dobrar(){
+#    arg=$1
+#
+#    # Efetua a operação se 'arg' for um número, caso contrário retorna o padrão.
+#    __isnum__ arg && echo $(($1 * 2)) || echo $1
+# }
+#
+# echo -n "Antes: "
+# echo $nums
+#
+# echo -n "Depois: "
+# regex.fngroups "^.*\\s([0-9]+)$" "$nums" "& -> \\1" 1 $REG_ICASE dobrar
+#
+# Saida:
+#
+# Antes: num: 4, num: 10, num: 50
+# Depois: num: 4, num: 10, num: 50 -> 100
+#
+function regex.fngroups()
+{
+	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:int:+:$4" "flag:uint:+:$5" "funcname:func:+:$6" "args:str:-:$7" ... "${@:8}"
+
+	local exp new c i
+
+	shopt -q nocasematch && cur='s' || cur='u'
+	
+	case $5 in
+		0) def='u';;
+		2) def='s';;
+		*) error.__trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+	esac	
+	
+	shopt -q${def} nocasematch
+	
+	while read exp; do
+		c=0
+		for ((i=0; i < ${#exp}; i++)); do
+			[[ ${exp:$i} =~ $1 ]] || break
+			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
+				new=${3//&/$($6 "${BASH_REMATCH}" "${@:7}")}
+				if [[ ${#BASH_REMATCH[@]} -eq 2 ]]; then
+					new=${new//\\1/$($6 "${BASH_REMATCH[1]}" "${@:7}")}
+				elif [[ ${#BASH_REMATCH[@]} -gt 2 ]]; then
+					for n in ${!BASH_REMATCH[@]}; do
+						new=${new//\\$((n+1))/$($6 "${BASH_REMATCH[$((n+1))]}" "${@:7}")}
+					done
+				fi
+				exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
+				i=$(($i+${#new}))
+				[[ $((++c)) -eq $4 || ${1:0:1} == ^ ]] && break
+			fi
+		done
+		echo "$exp"
+	done <<< "$2"
+
+	shopt -q${cur} nocasematch
+
+	return 0
+	
+}
+
+# func regex.fnngroups <[str]pattern> <[str]exp> <[str]new> <[uint]match> <[uint]flag> <[func]funcname> <[str]args> ... => [str] 
+#
+# Substitui os retrovisores dos grupos de captura em 'new' pelo retorno de 'funcname' em 'match' ocorrência.
+# Chama 'funcname' passando como argumento posicional '$1' o grupo de captura se presente com 'N'args (opcional) 
+# Toda a ocorrência incluindo os grupos de captura são representados pelo caractere '&' e que também é passado como argumento.
+#
+# A função é chamada somente se o grupo de captura estiver presente ou '&' for especificado.
+#
+function regex.fnngroups()
+{
+	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:uint:+:$4" "flag:uint:+:$5" "funcname:func:+:$6" "args:str:-:$7" ... "${@:8}"
+
+	local exp new c i
+
+	shopt -q nocasematch && cur='s' || cur='u'
+	
+	case $5 in
+		0) def='u';;
+		2) def='s';;
+		*) error.__trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+	esac	
+	
+	shopt -q${def} nocasematch
+	
+	while read exp; do
+		c=0
+		for ((i=0; i < ${#exp}; i++)); do
+			[[ ${exp:$i} =~ $1 ]] || break
+			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
+				if [[ $((++c)) -eq $4 ]]; then
+					new=${3//&/$($6 "${BASH_REMATCH}" "${@:7}")}
+					if [[ ${#BASH_REMATCH[@]} -eq 2 ]]; then
+						new=${new//\\1/$($6 "${BASH_REMATCH[1]}" "${@:7}")}
+					elif [[ ${#BASH_REMATCH[@]} -gt 2 ]]; then
+						for n in ${!BASH_REMATCH[@]}; do
+							new=${new//\\$((n+1))/$($6 "${BASH_REMATCH[$((n+1))]}" "${@:7}")}
+						done
+					fi
+					exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
+					i=$(($i+${#new}))
+				fi
+			fi
+		done
+		echo "$exp"
+	done <<< "$2"
+
+	shopt -q${cur} nocasematch
+
+	return 0
+	
+}
 # func regex.savegroups <[str]pattern> <[str]exp> <[uint]flag> <[array]name>
 #
 # Salva os grupos de captura ou ocorrências casadas em array 'name'.
@@ -304,7 +422,7 @@ function regex.groups()
 # array grupo
 #
 # # Compila o padrão e inicia a variável 're' do tipo 'regex'.
-# padrao='^.*use|<[^>]+>'
+# padrao='(<[^>]+>)'
 #
 # texto="Seja livre use <Linux>. Escolha sua distro <Debian>, <Slackware>, <Redhat> e desfrute da liberdade."
 #
@@ -324,36 +442,36 @@ function regex.groups()
 #
 # $ ./regroup.sh
 #
-# grupo 0: Seja livre use
-# grupo 1: <Linux>
-# grupo 2: <Debian>
-# grupo 3: <Slackware>
-# grupo 4: <Redhat>
+# grupo 0: <Linux>
+# grupo 1: <Debian>
+# grupo 2: <Slackware>
+# grupo 3: <Redhat>
 #
 # Expressão: Seja livre use <Linux> <Debian> <Slackware> <Redhat>
 #
 function regex.savegroups()
 {
-	getopt.parse 4 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" "dest:array:+:$4" ${@:5}
+	getopt.parse 4 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" "dest:array:+:$4" "${@:5}"
 	
-	declare -n __ref=$4
-	local __exp=$2
-	local __flag=$3
-	local __match
-	local __def __cur
+	declare -n __byref=$4
+	local __def __cur __exp
 
 	shopt -q nocasematch && __cur='s' || __cur='u'
 	
-	case $__flag in
+	case $3 in
 		0) __def='u';;
 		2) __def='s';;
-		*) error.__trace def "flag" "uint" "$__flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${__def} nocasematch
 
-	[[ $__exp =~ $1 ]]
-	__ref=("${BASH_REMATCH[@]}")
+	while read __exp; do
+		while [[ $__exp =~ $1 ]]; do
+			__byref+=("${BASH_REMATCH[@]:1}")
+			__exp=${__exp/${BASH_REMATCH}/}
+		done
+	done <<< "$2"
 
 	shopt -q${__cur} nocasematch
 
@@ -364,7 +482,7 @@ function regex.savegroups()
 #
 # Substitui 'count' vezes o padrão em 'pattern' por 'new'. Se 'count' for igual à '-1',
 # aplica a substituição em todas as ocorrências. A expressão em 'pattern' pode ser uma ERE 
-# (expressão regular estendida), podendo utilizar retrovisores '\1, \2, \3 ...' em 'new' se
+# (expressão regular estendida), podendo utilizar retrovisores '&, \\1, \\2, \\3 ...' em 'new' se
 # grupos de captura estiverem presentes entre parenteses '(...)'.
 #
 # Exemplo:
@@ -387,9 +505,9 @@ function regex.savegroups()
 # regex.replace "[0-9]+" '' "$texto" -1 $REG_ICASE
 #
 # # Colocando os números entre '[...]' utilizando grupo/retrovisor.
-# # '\1' represeta o padrão casado no primeiro grupo entre (...).
+# # '\\1' represeta o padrão casado no primeiro grupo entre (...).
 # echo -n '3 - '
-# regex.replace "([0-9]+)" '[\1]' "$texto" -1 $REG_ICASE
+# regex.replace "([0-9]+)" '[\\1]' "$texto" -1 $REG_ICASE
 #
 # # FIM
 #
@@ -402,57 +520,48 @@ function regex.savegroups()
 #
 function regex.replace()
 {
-	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:int:+:$4" "flag:uint:+:$5" ${@:6}
+	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:int:+:$4" "flag:uint:+:$5" "${@:6}"
 
-	local pattern=$1
-	local exp=$2
-	local flag=$5
-	local seg=0
-	local groups grp pos c def new cur
+	local exp new i n c
 
 	shopt -q nocasematch && cur='s' || cur='u'
 	
-	case $flag in
+	case $5 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.__trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
-
-	for ((c=0; c != $4; c++)); do
-		new=$3
-		groups=()
-		
-		[[ ${exp:$seg} =~ $pattern ]]
-		[[ $BASH_REMATCH ]] || break
-		groups=("${BASH_REMATCH[@]}")
-		
-		while [[ $new =~ \\[1-9][0-9]* ]]; do
-			grp=${BASH_REMATCH[0]#\\}
-			new=${new/\\$grp/${groups[$grp]}}
-		done
-		
-		for ((pos=seg; pos < ${#exp}; pos++)); do
-			if [[ "${exp:$pos:${#groups[0]}}" == "${groups[0]}" ]]; then
-				seg=$(($pos+${#new}))
-				break
+	
+	while read exp; do
+		c=0
+		for ((i=0; i < ${#exp}; i++)); do
+			[[ ${exp:$i} =~ $1 ]] || break
+			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
+				new=${3//&/${BASH_REMATCH}}
+				if [[ ${#BASH_REMATCH[@]} -eq 2 ]]; then
+					new=${new//\\1/${BASH_REMATCH[1]}}
+				elif [[ ${#BASH_REMATCH[@]} -gt 2 ]]; then
+					for n in ${!BASH_REMATCH[@]}; do
+						new=${new//\\$((n+1))/${BASH_REMATCH[$((n+1))]}}
+					done
+				fi
+				exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
+				i=$(($i+${#new}))
+				[[ $((++c)) -eq $4 || ${1:0:1} == ^ ]] && break
 			fi
 		done
-		exp=${exp:0:$pos}${new}${exp:$(($pos+${#groups[0]}))}
-	done
+		echo "$exp"
+	done <<< "$2"
 
-	shopt -q${cur} nocasematch
-	
-	echo "$exp"
-	
 	return 0
 }
 	
 # func regex.nreplace <[str]pattern> <[str]exp> <[str]new> <[uint]match> <[uint]flag> => [str]
 #
 # Substitui 'pattern' por 'new' em 'match' ocorrência. A expressão em 'pattern' pode ser uma ERE 
-# (expressão regular estendida), podendo utilizar retrovisores '\1, \2, \3 ...' em 'new' se
+# (expressão regular estendida), podendo utilizar retrovisores '\\1, \\2, \\3 ...' em 'new' se
 # grupos de captura estiverem presentes entre parenteses '(...)'.
 #
 # Exemplo:
@@ -464,20 +573,20 @@ function regex.replace()
 #
 # texto='A Informática é uma ciência exotérica'
 #
-# echo -e "$texto\n"
+# echo -e "$texto\\n"
 #
 # # Apagando a segunda palavra que termina com a letra 'a'.
 # echo -n '1 - '
-# regex.nreplace "\w+a\s" '' "$texto" 2 $REG_ICASE
+# regex.nreplace "\\w+a\\s" '' "$texto" 2 $REG_ICASE
 #
 # # Colocando entre parênteses a terceira palavra com mais de 3 letras.
 # echo -n '2 - '
-# regex.nreplace "(\w{3,})" '(\1)' "$texto" 3 $REG_ICASE
+# regex.nreplace "(\\w{3,})" '(\\1)' "$texto" 3 $REG_ICASE
 #
 # # Criando dois grupos de captura e invertendo a ordem dos retrovisores
-# '\1' e '\2' para geração de uma nova frase.
+# '\\1' e '\\2' para geração de uma nova frase.
 # echo -n '3 - '
-# regex.nreplace "(\w{3,}).*\s(\w{3,})$" '\2 \1' "$texto" 1 $REG_ICASE
+# regex.nreplace "(\\w{3,}).*\\s(\\w{3,})$" '\\2 \\1' "$texto" 1 $REG_ICASE
 #
 # # FIM
 #
@@ -490,50 +599,41 @@ function regex.replace()
 #
 function regex.nreplace()
 {
-	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "match:uint:+:$4" "flag:uint:+:$5" ${@:6}
+	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:uint:+:$4" "flag:uint:+:$5" "${@:6}"
 
-	local pattern=$1
-	local exp=$2
-	local flag=$5
-	local groups grp seg m def new def cur
+	local exp new i n c
 
 	shopt -q nocasematch && cur='s' || cur='u'
 	
-	case $flag in
+	case $5 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.__trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
-
+	
 	shopt -q${def} nocasematch
 
-	while [[ $4 -gt $m ]]; do
-		new=$3
-		groups=()
-		
-		[[ ${exp:$seg} =~ $pattern ]]
-		[[ $BASH_REMATCH ]] || break
-		groups=("${BASH_REMATCH[@]}")
-	
-		while [[ $new =~ \\[1-9][0-9]* ]]; do
-			grp=${BASH_REMATCH[0]#\\}
-			new=${new/\\$grp/${groups[$grp]}}
-		done
-		
-		for ((pos=seg; pos < ${#exp}; pos++)); do
-			if [[ "${exp:$pos:${#groups[0]}}" == "${groups[0]}" ]]; then
-				seg=$(($pos+${#groups[0]}))
-				((m++))
-				break
+	while read exp; do
+		c=0
+		for ((i=0; i < ${#exp}; i++)); do
+			[[ ${exp:$i} =~ $1 ]] || break
+			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
+				if [[ $((++c)) -eq $4 ]]; then
+					new=${3//&/${BASH_REMATCH}}
+					if [[ ${#BASH_REMATCH[@]} -eq 2 ]]; then
+						new=${new//\\1/${BASH_REMATCH[1]}}
+					elif [[ ${#BASH_REMATCH[@]} -gt 2 ]]; then
+						for n in ${!BASH_REMATCH[@]}; do
+							new=${new//\\$((n+1))/${BASH_REMATCH[$((n+1))]}}
+						done
+					fi
+					exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
+					i=$(($i+${#new}))
+				fi
 			fi
 		done
-	done
-
-	[[ $m -eq $4 ]] && exp=${exp:0:$pos}${new}${exp:$(($pos+${#groups[0]}))}
-
-	shopt -q${cur} nocasematch
-
-	echo "$exp"
+		echo "$exp"
+	done <<< "$2"
 
 	return 0
 }
@@ -555,7 +655,7 @@ function regex.nreplace()
 #
 # texto="Contagem regressiva: 5, 4, 3, 2, 1"
 #
-# echo -e "$texto\n"
+# echo -e "$texto\\n"
 #
 # # Rotular números pares e ímpares.
 # rotular(){
@@ -602,46 +702,38 @@ function regex.nreplace()
 #
 function regex.fnreplace()
 {
-	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "count:int:+:$3" "flag:uint:+:$4" "funcname:func:+:$5"
+	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "count:int:+:$3" "flag:uint:+:$4" "funcname:func:+:$5" "args:str:-:$6" ... "${@:7}"
 
-	local pattern=$1
-	local func=$5
-	local exp=$2
-	local flag=$4
-	local pos c seg new def cur
+	local exp new c i
 
 	shopt -q nocasematch && cur='s' || cur='u'
 	
-	case $flag in
+	case $4 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.__trace def "flag" "uint" "$4" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
 
-	for ((c=0; c != $3; c++)); do
-		[[ ${exp:$seg} =~ $pattern ]]
-		[[ $BASH_REMATCH ]] || break
-
-		for ((pos=seg; pos < ${#exp}; pos++)); do
-			if [[ "${exp:$pos:${#BASH_REMATCH}}" == "$BASH_REMATCH" ]]; then
-				new=$($func "$BASH_REMATCH" "${@:6}")
-				seg=$(($pos+${#new}))
-				break
+	while read exp; do
+		c=0
+		for ((i=0; i < ${#exp}; i++)); do
+			[[ ${exp:$i} =~ $1 ]] || break
+			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
+				new=$($5 "$BASH_REMATCH" "${@:6}")
+				exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
+				i=$(($i+${#new}))
+				[[ $((++c)) -eq $3 || ${1:0:1} == ^ ]] && break
 			fi
 		done
-		exp=${exp:0:$pos}${new}${exp:$(($pos+${#BASH_REMATCH}))}
-	done
+		echo "$exp"
+	done <<< "$2"
 
-	shopt -q${cur} nocasematch
-	
-	echo "$exp"
-	
 	return 0
 }
 
-# func regex.fnnreplace <[str]pattern> <[str]exp> <[uint]match> <[uint]flag> <[func]funcname> <[str]args> ...  => [str]
+# func regex.fnnreplace <[str]pattern> <[str]exp> <[uint]match> <[uint]flag> <[func]funcname> <[str]args> ... => [str]
 #
 # Substitui o padrão em 'pattern' pelo retorno de 'funcname' em 'match' ocorrência. 'funcname' é o
 # identificador de uma função válida que é chamada e recebe automaticamente como argumento
@@ -687,7 +779,7 @@ function regex.fnreplace()
 #    echo "[#]"
 # }
 #
-# echo -e "$texto\n"
+# echo -e "$texto\\n"
 #
 # # Atribui nome ao número do mês.
 # echo -n '1 - '
@@ -695,7 +787,7 @@ function regex.fnreplace()
 #
 # # Converte para maiúsculo a quinta palavra.
 # echo -n '2 - '
-# regex.fnnreplace '\w+\s' "$texto" 5 $REG_ICASE maiusculo
+# regex.fnnreplace '\\w+\\s' "$texto" 5 $REG_ICASE maiusculo
 #
 # # Mascara o vigésimo quarto caractere.
 # echo -n '3 - '
@@ -712,57 +804,37 @@ function regex.fnreplace()
 #
 function regex.fnnreplace()
 {
-	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "match:uint:+:$3" "flag:uint:+:$4" "funcname:func:+:$5"
+	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "count:uint:+:$3" "flag:uint:+:$4" "funcname:func:+:$5" "args:str:-:$6" ... "${@:7}"
 
-	local pattern=$1
-	local func=$5
-	local exp=$2
-	local flag=$4
-	local pos seg m def cur
+	local exp new i c
 
 	shopt -q nocasematch && cur='s' || cur='u'
 	
-	case $flag in
+	case $4 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$flag" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.__trace def "flag" "uint" "$4" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
 
-	while [[ $3 -gt $m ]]; do
-		[[ ${exp:$seg} =~ $pattern ]]
-		[[ $BASH_REMATCH ]] || break
-
-		for ((pos=seg; pos < ${#exp}; pos++)); do
-			if [[ "${exp:$pos:${#BASH_REMATCH}}" == "$BASH_REMATCH" ]]; then
-				seg=$(($pos+${#BASH_REMATCH}))
-				((m++))
-				break
+	while read exp; do
+		c=0
+		for ((i=0; i < ${#exp}; i++)); do
+			[[ ${exp:$i} =~ $1 ]] || break
+			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
+				if [[ $((++c)) -eq $3 ]]; then
+					new=$($5 "$BASH_REMATCH" "${@:6}")
+					exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
+					i=$(($i+${#new}))
+				fi
 			fi
 		done
-	done
+		echo "$exp"
+	done <<< "$2"
 
-	[[ $m -eq $3 ]] && exp=${exp:0:$pos}$($func "$BASH_REMATCH" "${@:6}")${exp:$(($pos+${#BASH_REMATCH}))}
-
-	shopt -q${cur} nocasematch
-
-	echo "$exp"
-	
 	return 0
 }
 
-readonly -f regex.findall \
-			regex.fullmatch \
-			regex.match \
-			regex.search \
-			regex.split \
-			regex.ismatch \
-			regex.groups \
-			regex.savegroups \
-			regex.replace \
-			regex.nreplace \
-			regex.fnreplace \
-			regex.fnnreplace 
-
+source.__INIT__
 # /* __REGEX_SRC */

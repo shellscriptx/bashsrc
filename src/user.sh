@@ -6,21 +6,18 @@ readonly __USER_SH=1
 
 source builtin.sh
 
+__SRC_TYPES[user]='
+user.pass
+user.uid
+user.gid
+user.gecos
+user.home
+user.shell
+'
+
 readonly __USER_PATH_PASSWD='/etc/passwd'
 readonly __ERR_USER_READ_PASS_FILE='falha ao ler o arquivo base'
 readonly __ERR_USER_USER_NOT_FOUND='usuário não encontrado'
-
-# type user
-#
-# Implementa 'S' com os métodos:
-#
-# S.pass => [str]
-# S.uid => [uint]
-# S.gid => [uint]
-# S.gecos => [str]
-# S.home => [str]
-# S.shell => [str]
-#
 
 # func user.pass <[str]username> => [str]
 #
@@ -150,14 +147,5 @@ function user.__get_info()
 	return $?
 }
 
-readonly -f user.pass \
-			user.uid \
-			user.gid \
-			user.gecos \
-			user.home \
-			user.shell \
-			user.getallusers \
-			user.getuser \
-			user.__get_info
-
+source.__INIT__
 # /* __USER_SH */

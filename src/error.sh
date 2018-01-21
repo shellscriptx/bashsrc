@@ -15,16 +15,8 @@ readonly __ERROR_SH=1
 
 function error.__trace()
 {
-	# prototype 
-	# error.__trace flag "arg_name" "arg_type" "arg_value" "err_msg" "err_no"; return $?
 	local i l t fn
 	local stack
-	local flag=$1
-	local arg_name=$2
-	local arg_type=$3
-	local arg_val=$4
-	local err_msg=${5:-erro desconhecido}
-	local errno=${6:-1}
 
 	[[ "${FUNCNAME[1]}" == "getopt.parse" ]] && fn=2 || fn=1
 
@@ -35,14 +27,17 @@ function error.__trace()
 		stack+="[${l[$i]}:${t[$i]}] "
 	done
 	
+	set -e
+
 	case $__EXIT_TRACE_ERROR in
 		0)
-			declare -g __ERR__=$errno \
+			set +e
+			declare -g	__ERR__=${6:-1} \
 						__ERR_STACK__=${stack% } \
-						__ERR_ARG__=$arg_name \
-						__ERR_TYPE__=$arg_type \
-						__ERR_VAL__=$arg_val \
-						__ERR_MSG__=$err_msg \
+						__ERR_ARG__=$2 \
+						__ERR_TYPE__=$3 \
+						__ERR_VAL__=$4 \
+						__ERR_MSG__=${5:-erro desconhecido} \
 						__ERR_FUNC__=${FUNCNAME[$fn]}
 
 			;;
@@ -50,76 +45,42 @@ function error.__trace()
 			exec 1>&2
 			stack=${stack// / => }
 			echo "(Pilha de rastreamento)"
-			echo "Arquivo: $0"
+			echo "Script: ${0##*/}"
 			echo
 			echo "Chamada interna: ${FUNCNAME[0]}"
 			echo "Função: ${FUNCNAME[1]}"
 			echo
 			echo -e "Pilha: ${stack% => }"
 
-			case $flag in
+			case $1 in
 				imp)
-					echo "Tipo: $arg_type"
-					echo "Implementação: $arg_val"
-					echo "Composição: ${arg_name:+$arg_name.${arg_val##*.}}"
-					echo "Método: $arg_val"
+					echo "Tipo: $3"
+					echo "Método: $4"
 					;;
 				src)
-					echo "Source: $arg_type"
-					echo "Tipo: [$arg_val]"
+					echo "Source: $3"
+					echo "Tipo: [$4]"
 					;;
 				def)
-					echo "Argumento: <$arg_name>"
-					echo "Tipo: [$arg_type]"
-					echo "Valor: '$arg_val'"
+					echo "Argumento: <$2>"
+					echo "Tipo: [$3]"
+					echo "Valor: '$4'"
 					;;
 				exa)
-					echo "Argumento(s): '$arg_val'"
+					echo "Argumento(s): '$4'"
+					;;
+				deps)
+					echo "Source: $3"
+					echo "Dependência(s): $4"
 					;;
 			esac
-			echo "Erro: $err_msg"
+			echo "Erro: ${5:-erro desconhecido}"
 			echo "------------------------"
 			exec 1<&-
-			exit $errno
 			;;
 	esac
 
-	return $errno
-}
-
-function error.__clear()
-{ 
-	unset __ERR__ \
-			__ERR_STACK__ \
-			__ERR_ARG__ \
-			__ERR_TYPE__ \
-			__ERR_VAL__ \
-			__ERR_MSG__ \
-			__ERR_FUNC__
-	
-	return 0
-}
-
-function error.__depends()
-{
-	local fncall srcname dep
-	
-	fncall=$1
-	srcname=$2
-	dep=${3// /, }
-
-	exec 1>&2
-
-	echo "(Verificação de dependência)"	
-	echo "source: $srcname"
-	echo "Chamada: $fncall"
-	echo "Erro: pacote(s) requerido(s) não encontrado(s)"
-	echo "Dependência(s): ${dep%,}"
-	echo ------------------------
-	
-	exec 1<&-
-	
-	exit 1
+	return ${6:-1}
 }
 
 # func error.resume <[str]flag>
@@ -191,8 +152,5 @@ function error.resume()
 	return 0
 }
 
-readonly -f error.resume \
-			error.__trace \
-			error.__depends 
-
+source.__INIT__
 # /* __ERROR_SRC */

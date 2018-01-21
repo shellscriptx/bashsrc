@@ -185,18 +185,5 @@ function sort.expintrev()
 	return 0
 }
 
-readonly -f sort.int \
-			sort.str \
-			sort.intsorted \
-			sort.strsorted \
-			sort.intrev \
-			sort.strrev \
-			sort.size \
-			sort.sizerev \
-			sort.sizesorted \
-			sort.expstr \
-			sort.expstrrev \
-			sort.expint \
-			sort.expintrev 
-
+source.__INIT__
 # /* __SORT_SRC */

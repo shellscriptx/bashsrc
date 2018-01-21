@@ -7,171 +7,91 @@
 # E-mail:			shellscriptx@gmail.com
 #----------------------------------------------#
 
+if ! command -v bash &>/dev/null; then
+	echo "bashsrc: erro: interpretador de comandos 'bash' não está instalado" 1>&2
+	exit 1
+elif [[ ${BASH_VERSINFO[0]} -lt 4 ]]; then
+	echo "bashsrc: erro: requer 'bash v4.0.0' ou superior" 1>&2
+	echo "atual: bash $BASH_VERSION" 1>&2
+	exit 1
+elif ! [[ $BASHSRC_PATH ]]; then
+	echo "bashsrc: erro: '\$BASHSRC_PATH' variável de ambiente não está configurada" 1>&2
+	exit 1
+fi
+
 [[ $__BUILTIN_SH ]] && return 0
 
 readonly __BUILTIN_SH=1
 
-source types.sh
-source error.sh
-source getopt.sh
+declare -A	__INIT_SRC_TYPES \
+			__SRC_TYPES \
+			__VAR_REG_LIST \
+			__VAR_REG_TYPES
+
+declare __SRC_DEPS
+			
+shopt -s	extglob \
+			globasciiranges \
+			expand_aliases \
+			extquote \
+			sourcepath
+
+shopt -u 	nocasematch
+
+__SRC_TYPES[builtin]='
+__type__
+__len__
+__quote__
+__typeval__
+__isnum__
+__isnull__
+__in__
+__dec__
+__eq__
+__ne__
+__gt__
+__lt__
+__ge__
+__le__
+__float__
+__iter__
+__fnmap__
+__upper__
+__lower__
+__rev__
+__repl__
+__rm__
+__swapcase__
+__insert__
+__append__
+'
 
 # runtime
-readonly __RUNTIME=$BASHSRC_PATH/.runtime
+readonly __RUNTIME=$(mktemp -d -t bashsrc-XXXXXX)
 
 # erros
 readonly __ERR_BUILTIN_FUNC_EXISTS='a função já existe ou é um comando interno'
-readonly __ERR_BUILTIN_ALREADY_INIT='a variável já foi inicializada'
+readonly __ERR_BUILTIN_ALREADY_INIT='o objeto já foi implementado'
 readonly __ERR_BUILTIN_TYPE_CONFLICT='conflito de tipos: o tipo especificado já foi inicializado'
 readonly __ERR_BUILTIN_METHOD_NOT_FOUND='o método de implementação não existe'
 readonly __ERR_BUILTIN_METHOD_CONFLICT='conflito de métodos: o método já foi implementado ou é uma função reservada'
+readonly __ERR_BUILTIN_DEPS='o pacote requerido não está instalado'
 
 readonly NULL=0
 
-# func has <[str]exp> on <[var]name> => [bool]
+# func has <[str]exp1> on <[str]exp2> => [bool]
 #
-# Retorna 'true' se 'name' contém 'exp'. Caso contrário 'false'
-# 'Name' é o identificador do objeto que pode ser um var, array ou map.
-#
-# A validação depende do tipo do objeto especificado respeitando os 
-# critérios abaixo:
-#
-# var - verifica se 'exp' está presente na expressão.
-# array - verifica se 'exp' é um elemento.
-# map - verifica se 'exp' é uma chave válida.
-#  
-# # Exemplo 1:
-#
-# #!/bin/bash
-# # script: has.sh
-#
-# source getopt.sh
-# source builtin.sh
-# source map.sh
-# source array.sh
-#
-# # var
-# text="Linux é a minha casa e shell script é o meu idioma."
-#
-# # array
-# declare -a asys
-#
-# # add        array valor
-# array.append asys Windows
-# array.append asys Linux
-# array.append asys MacOS
-#
-# # map
-# declare -A msys
-#
-# # add   map  key valor
-# map.add msys nt Windows
-# map.add msys unix Linux
-# map.add msys xnu MacOS
-#
-# # Verificando
-# echo "Contém 'Linux'."
-# echo
-# echo -n 'text: ' 
-# has 'Linux' on text && echo sim || echo não
-#
-# echo -n 'asys: ' 
-# has 'Linux' on asys && echo sim || echo não
-#
-# echo -n 'msys: '
-# has 'Linux' on msys && echo sim || echo não
-#
-# echo --------------
-# 
-# echo "Contém 'unix'."
-# echo
-# echo -n 'text: ' 
-# has 'unix' on text && echo sim || echo não
-# 
-# echo -n 'asys: ' 
-# has 'unix' on asys && echo sim || echo não
-#
-# echo -n 'msys: '
-# has 'unix' on msys && echo sim || echo não
-#
-# # FIM
-# 
-# ./has.sh
-# Contém 'Linux'.
-#
-# text: sim
-# asys: sim
-# msys: não
-# --------------
-# Contém 'unix'.
-#
-# text: não
-# asys: não
-# msys: sim
-#
-# # Exemplo 2:
-#
-# #!/bin/bash
-# script: has2.sh
-#
-# source getopt.sh
-# source builtin.sh
-# source map.sh
-# source array.sh
-#
-# # map
-# declare -A msys
-#
-# # add   map  key valor
-# map.add msys nt Windows
-# map.add msys unix Linux
-# map.add msys xnu MacOS
-#
-# while :
-# do
-#     echo
-#     echo "Map: msys"
-#     echo
-#
-#     read -p 'Digite a chave: ' chave
-#
-#     if has "$chave" on msys; then
-#        echo "Chave encontrada: '$chave'"
-#        echo "Valor: ${msys[$chave]}"
-#     else
-#        echo "aviso: '$chave': a chave solicitada não existe."
-#     fi
-# done
-# 
-# # FIM
-#
-# $ ./has2.sh
-# Map: msys
-#
-# Digite a chave: unix [enter]
-# Chave encontrada: 'unix'
-# Valor: Linux
-#
-# Map: msys
-#
-# Digite a chave: Linux [enter]
-# aviso: 'Linux': a chave solicitada não existe.
+# Retorna 'true' se 'exp2' contém 'exp1'. Caso contrário 'false'
 #
 function has()
 {	
-	getopt.parse 3 "exp:str:+:$1" "on:keyword:+:$2" "name:var:+:$3" ${@:4}
-	
-	declare -n __obj_ref=$3
-	local __type __tmp
+	getopt.parse 3 "exp1:str:-:$1" "on:keyword:+:$2" "exp2:str:-:$3" ${@:4}
 
-	read _ __type _ < <(declare -p $3 2>/dev/null)
+	local str; while read str; do
+		[[ $str == *@($1)* ]] && return 0
+	done <<< "$3"
 
-	case $__type in
-		*a*) __tmp=$(printf '%s|' "${__obj_ref[@]}"); [[ $1 =~ ^(${__tmp%|})$ ]];;
-		*A*) __tmp=$(printf '%s|' "${!__obj_ref[@]}"); [[ $1 =~ ^(${__tmp%|})$ ]];;
-		*) [[ $__obj_ref =~ $1 ]];;
-	esac
-
-	return $?
+	return 1
 }
 
 # func swap <[var]name1> <[var]name2>
@@ -209,7 +129,8 @@ function swap(){
 #
 function sum()
 {
-	local -i tmp=($*)
+	getopt.parse -1 "num:int:-:$1" ... "${@:2}"
+	local tmp=($*)
 	local nums=${tmp[@]}
 	echo $((${nums// /+}))
 	return 0
@@ -228,12 +149,12 @@ function sum()
 #
 function fnmap(){
 	
-	getopt.parse 2 "name:var:+:$1" "funcname:func:+:$2"
+	getopt.parse -1 "name:var:+:$1" "funcname:func:+:$2" "args:str:-:$3" ... "${@:4}"
 	
 	declare -n __obj_ref=$1
 	local __item __key __ch __type
 	
-	read _ __type _ < <(declare -p $1 2>/dev/null)
+	IFS=' ' read _ __type _ < <(declare -p $1 2>/dev/null)
 
 	case $__type in
 		*a*) for __item in "${__obj_ref[@]}"; do $2 "$__item" "${@:3}"; done;;
@@ -289,12 +210,12 @@ function fnmap(){
 #
 function filter()
 {
-	getopt.parse 2 "name:var:+:$1" "funcname:func:+:$2"
+	getopt.parse -1 "name:var:+:$1" "funcname:func:+:$2" "args:str:-:$3" ... "${@:4}"
 	
 	declare -n __obj_ref=$1
 	local __item __key __ch __type
 	
-	read _ __type _ < <(declare -p $1 2>/dev/null)
+	IFS=' ' read _ __type _ < <(declare -p $1 2>/dev/null)
 
 	case $__type in
 		*a*) for __item in "${__obj_ref[@]}"; do $2 "$__item" "${@:3}" && echo "$__item"; done;;
@@ -435,7 +356,7 @@ function len()
 	declare -n __obj_ref=$1
 	local __type
 
-	read _ __type _ < <(declare -p $1 2>/dev/null)
+	IFS=' ' read _ __type _ < <(declare -p $1 2>/dev/null)
 
 	case $__type in
 		*a*|*A*) echo ${#__obj_ref[@]};;
@@ -554,7 +475,7 @@ function range()
 #
 function fnrange()
 {
-	getopt.parse 4 "min:int:+:$1" "max:int:+:$2" "step:int:+:$3" "funcname:func:+:$4"
+	getopt.parse -1 "min:int:+:$1" "max:int:+:$2" "step:int:+:$3" "funcname:func:+:$4" "args:str:-:$5" ... "${@:6}"
 
 	local i op
 	
@@ -589,13 +510,14 @@ function isobj()
 #
 function sorted()
 {
+	getopt.parse -1 "name:var:+:$1" ... "${@:2}"
+	
 	local __item __type
 	
 	for __item in $@; do
-		getopt.parse 1 "name:var:+:$__item"
 		declare -n __obj_ref=$__item
 
-		read _ __type _ < <(declare -p $__item 2>/dev/null)
+		IFS=' ' read _ __type _ < <(declare -p $__item 2>/dev/null)
 
 		case $__type in
 			*a*) printf '%s\n' "${__obj_ref[@]}";;
@@ -663,17 +585,15 @@ function enum()
 #
 function min()
 {
+	getopt.parse -1 "name:var:+:$1" ... "${@:2}"
+
 	local __item __obj
 	local -i __arr
 
 	for __obj in $@; do
-		getopt.parse 1 "name:var:+:$__obj"
-		
 		declare -n __obj_ref=$__obj
 		__arr+=(${__obj_ref[@]})
-
-		declare +n __obj_ref
-		unset __obj_ref
+		unset -n __obj_ref
 	done
 
 	__arr=($(printf '%d\n' ${__arr[@]} | sort -n))
@@ -691,17 +611,15 @@ function min()
 #
 function max()
 {
-	local __item __obj
+	getopt.parse -1 "name:var:+:$1" ... "${@:2}"
+
+	local __obj
 	local -i __arr
 
 	for __obj in $@; do
-		getopt.parse 1 "name:var:+:$__obj"
-		
 		declare -n __obj_ref=$__obj
 		__arr+=(${__obj_ref[@]})
-
-		declare +n __obj_ref
-		unset __obj_ref
+		unset -n __obj_ref
 	done
 
 	__arr=($(printf '%d\n' ${__arr[@]} | sort -n))
@@ -748,24 +666,15 @@ function max()
 #
 function list()
 {
-	getopt.parse 1 "list:var:+:$1"
+	getopt.parse -1 "list:var:+:$1" "source:var:+:$2" ... "${@:3}"
 	
 	declare -n __obj_dest=$1
-	local __item __type
+	local __item
 
 	for __item in ${@:2}; do
-		getopt.parse 1 "source:var:+:$__item"
 		declare -n __obj_ref=$__item
-
-		read _ __type _ < <(declare -p $__item 2>/dev/null)
-
-		case $__type in
-			*a*|*A*) __obj_dest+=("${__obj_ref[@]}");;
-			*) __obj_dest+=("$__obj_ref");;
-		esac
-
-		declare +n __obj_ref
-		unset __obj_ref __type
+		__obj_dest+=("${__obj_ref[@]}")
+		unset -n __obj_ref
 	done	
 
 	return 0	
@@ -800,21 +709,14 @@ function list()
 #
 function unique()
 {
-	local __item __type
+	getopt.parse -1 "source:var:+:$1" ... "${@:2}"
+
+	local __item
 
 	for __item in $@; do
-		getopt.parse 1 "source:var:+:$__item"
 		declare -n __obj_ref=$__item
-
-		read _ __type _ < <(declare -p $__item 2>/dev/null)
-
-		case $__type in
-			*a*|*A*) printf '%s\n' "${__obj_ref[@]}";;
-			*) printf '%s\n' $__obj_ref;;
-		esac
-
-		declare +n __obj_ref
-		unset __obj_ref __type
+		printf '%s\n' "${__obj_ref[@]}"
+		unset -n __obj_ref
 	done | sort -u
 
 	return 0	
@@ -829,6 +731,7 @@ function reversed()
 	getopt.parse 1 "iterable:str:-:$1" ${@:2}
 
 	local arr
+
 	mapfile -t arr <<< "$1"
 	
 	for ((i=${#arr[@]}-1; i >= 0; i--)); do
@@ -912,7 +815,8 @@ function iter()
 #
 function fniter()
 {
-	getopt.parse 2 "iterable:str:-:$1" "funcname:func:+:$2"
+	getopt.parse -1 "iterable:str:-:$1" "funcname:func:+:$2" "args:str:-:$3" ... "${@:4}"
+
 	local item; while read item; do $2 "$item" "${@:3}"; done <<< "$1"
 	return 0
 }
@@ -957,59 +861,105 @@ function mod()
 function count()
 {
 	getopt.parse 1 "iterable:str:-:$1" ${@:2}
-
-	local arr
-	mapfile -t arr <<< "$1"
-	echo ${#arr[@]}
+	local c; while read _; do ((++c)); done <<< "$1"; echo $c
 	return 0
 }
 
 # func all <[str]iterable> <[str]condition> ... => [str]
 #
 # Retorna os elementos de 'iterable' que satisfazem a todos os critérios
-# condicionais estabelecidos em 'condition'.
+# condicionais estabelecidos em 'condition'. A cada iteração o elemento
+# atual é validado por 'N' condition.
+#
+# São suportados todos os operadores condicionais do comando 'if' 
+# 
+# Exemplo 1:
+#
+# # Listando somente os números maiores que '10' e menores que '20' de
+# # um determinado arquivo.
+#
+# #!/bin/bash
+# 
+# source builtin.sh
+#
+# all "$(< nums.txt)" '-gt 10' '-lt 20'
+#
+# Saida:
+#
+# 11
+# 12
+# 13
+# 14
+# 15
+# 16
+# 17
+# 18
+# 19
+#
+# Exemplo 2:
+#
+# # Lê uma lista de diretórios a partir de um arquivo e verifica qual elemento
+# # é um path e um arquivo válido e se possui permissão de escrita.
+# 
+# dirs.txt
+#
+# /etc
+# /home
+# /etc/arquivo_invalido.txt
+# /home/usuario/.bashrc
+#
+# #!/bin/bash
+#
+# source builtin.sh
+#
+# all "$(< dirs.txt)" '-e' '-f' '-w'
+# 
+# # Saída:
+#
+# /home/shaman/.bashrc
 #
 function all()
 {
-	getopt.parse 2 "iterable:str:-:$1" "cond:str:+:$2"
+	getopt.parse -1 "iterable:str:-:$1" "cond:str:+:$2" ... "${@:3}"
 	builtin.__iter_cond_any_all "$1" '&' "${@:2}"
 	return 0
 }
 
 # func any <[str]iterable> <[str]condition> ... => [str]
 #
-# Retorna os elementos de 'iterable' que satisfazem a um ou mais critérios
-# condicionais estabelecidos em 'condition'.
+# Retorna os elementos de 'iterable' que satisfazem a qualquer critério
+# condicional estabelecido em 'condition'.
+#
+# São suportados todos os operadores condicionais do comando 'if' 
 #
 function any()
 {
-	getopt.parse 2 "iterable:str:-:$1" "cond:str:+:$2"
+	getopt.parse -1 "iterable:str:-:$1" "cond:str:+:$2" ... "${@:3}"
 	builtin.__iter_cond_any_all "$1" '|' "${@:2}"
 	return 0
 }
 
 function builtin.__iter_cond_any_all()
 {
-	local cond iv bit bits iter
-	local re="^\s*\[\s+((!)\s+)?(!=|=[=~]|-(eq|ge|gt|le|lt|ne|ef|nt|ot|n|z|b|c|d|e|f|g|G|h|k|L|O|p|r|s|S|t|u|w|x))(\s+[\"']?([^\"']+)[\"']?)?\s+\]\s*$"
+	local op exp cond iv bit bits iter err
 
 	while read iter; do
 		for cond in "${@:3}"; do
-			if [[ $cond =~ $re ]]; then
-				iv=${BASH_REMATCH[2]}
-				case ${BASH_REMATCH[3]} in
-					=~) [[ "$iter" =~ ${BASH_REMATCH[6]} ]];;
-					==) [[ "$iter" == "${BASH_REMATCH[6]}" ]];;
-					!=) [[ "$iter" != "${BASH_REMATCH[6]}" ]];;
-					-eq) [[ "$iter" -eq "${BASH_REMATCH[6]}" ]];;
-					-ge) [[ "$iter" -ge "${BASH_REMATCH[6]}" ]];;
-					-gt) [[ "$iter" -gt "${BASH_REMATCH[6]}" ]];;
-					-le) [[ "$iter" -le "${BASH_REMATCH[6]}" ]];;
-					-lt) [[ "$iter" -lt "${BASH_REMATCH[6]}" ]];;
-					-ne) [[ "$iter" -ne "${BASH_REMATCH[6]}" ]];;
-					-ef) [[ "$iter" -ef "${BASH_REMATCH[6]}" ]];;
-					-nt) [[ "$iter" -nt "${BASH_REMATCH[6]}" ]];;
-					-ot) [[ "$iter" -ot "${BASH_REMATCH[6]}" ]];;
+			IFS=' ' read iv op exp <<< "$cond"
+				[[ $iv != ! ]] && { exp=$op; op=$iv; unset iv; }
+				case $op in
+					=~) [[ "$iter" =~ $exp ]];;
+					==) [[ "$iter" == "$exp" ]];;
+					!=) [[ "$iter" != "$exp" ]];;
+					-eq) [[ "$iter" -eq "$exp" ]];;
+					-ge) [[ "$iter" -ge "$exp" ]];;
+					-gt) [[ "$iter" -gt "$exp" ]];;
+					-le) [[ "$iter" -le "$exp" ]];;
+					-lt) [[ "$iter" -lt "$exp" ]];;
+					-ne) [[ "$iter" -ne "$exp" ]];;
+					-ef) [[ "$iter" -ef "$exp" ]];;
+					-nt) [[ "$iter" -nt "$exp" ]];;
+					-ot) [[ "$iter" -ot "$exp" ]];;
 					-n) [[ -n "$iter" ]];;
 					-z) [[ -z "$iter" ]];;
 					-b) [[ -b "$iter" ]];;
@@ -1031,14 +981,17 @@ function builtin.__iter_cond_any_all()
 					-u) [[ -u "$iter" ]];;
 					-w) [[ -w "$iter" ]];;
 					-x) [[ -x "$iter" ]];;
+					*) err=1;;
 				esac &>/dev/null
+				
 				bit=$(($? ^ 1))
 				[[ $iv ]] && bit=$(($bit ^ 1))
 				bits+=" $bit $2"
-			else
-				error.__trace def 'cond' 'str' "$cond" 'instrução condicional inválida'
-				return $?
-			fi
+				
+				if [[ $err ]]; then
+					error.__trace def 'cond' 'str' "$cond" 'instrução condicional inválida'
+					return $?
+				fi
 		done
 		[[ $((${bits%$2})) -eq 1 ]] && echo "$iter"
 		unset bits
@@ -1049,642 +1002,595 @@ function builtin.__iter_cond_any_all()
 
 # func del <[var]varname> ...
 #
-# Apaga da memória as variáveis inicializadas.
+# Apaga da memória os objetos implementados.
 #
 function del()
 {
-	local obj func init member
-	local parent=${FUNCNAME[1]}
+	getopt.parse -1 "varname:var:+:$1" ... "${@:2}"
 
-	for obj in $@; do
-		getopt.parse 1 "varname:var:+:$obj"
-		
-		if [[ $($obj.__type__) == struct ]]; then
-			for member in ${__STRUCT_REG_LIST[$parent.$obj]}; do
-				unset $obj[$member]
-			done
-		fi	
-		for func in ${__VAR_REG_LIST[$parent.$obj]}; do
-			unset -f $func
-			init=1
+	local var member
+
+	for var in $@; do
+		for member in ${__STRUCT_MEMBERS[${FUNCNAME[1]}.$var]}; do
+			unset __STRUCT_VAL_MEMBERS[${FUNCNAME[1]}.$var.$member]
+			unset -f $var.$member
 		done
-		if [[ $init ]]; then
-			unset __VAR_REG_LIST[$parent.$obj] $obj init
-			unset -f $obj.__type__
-		fi
-	done
-
+		unset -f ${__VAR_REG_LIST[$var]}
+		unset 	__VAR_REG_TYPES[$var] \
+				__VAR_REG_LIST[$var] \
+				__STRUCT_MEMBERS[${FUNCNAME[1]}.$var] \
+				$var
+	done &>/dev/null
 	return 0
 }
 
-# func var <[var]varname> ... <[type]typename>
-#
-# Inicializa uma ou mais variáveis do tipo especificado em 'typename' e
-# implementa seus métodos disponíveis.
-# 
 function var()
 {
-	getopt.parse 2 "varname:var:+:$1" "type:type:+:${@: -1}"
+	getopt.parse -1 "varname:var:+:$1" ... "${@:2:$((${#@}-1))}"
+	getopt.parse 1 "type:type:+:${@: -1}"
 
-	local type method proto ptr_func struct_func var attr err builtin_method
+	local type method proto func_ref func_type func_call var
+	
 	type=${@: -1}
-
+	
 	for var in ${@:1:$((${#@}-1))}; do
-		getopt.parse 1 "varname:var:+:$var"
-		
-		if [[ ${__VAR_REG_LIST[${FUNCNAME[1]}.$var]} ]]; then
+		if [[ ${__VAR_REG_LIST[$var]} ]]; then
 			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"
 			return $?
 		fi
-		
-		for method in 	${__BUILTIN_TYPE_IMPLEMENTS[@]} \
-						${__INIT_TYPE_IMPLEMENTS[@]}; do
+
+		for method in ${__INIT_SRC_TYPES[$type]} ${__INIT_SRC_TYPES[builtin]}; do
+
+			func_type=$(declare -fp $method 2>/dev/null)
+			func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func):[+-]:[^\"']+[\"']"
 			
-			if [[ "$var.${method##*.}" == "$method" ]]; then
+			if [[ $func_type =~ $func_ref ]]; then
+				func_call='%s(){ %s "%s" "$@"; return $?; }'
+			else
+				func_call='%s(){ %s "$%s" "$@"; return $?; }'
+			fi
+
+			printf -v func_call "$func_call" $var.${method##*.} $method $var
+
+			if ! eval "$func_call" &>/dev/null; then
 				error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
 				return $?
 			fi
+
+			__VAR_REG_LIST[$var]+="$var.${method##*.} "
 		done
-		
-		[[ "$type" == "map" || "$type" == "struct" ]] && declare -Ag $var
-		[[ "$type" != "builtin" && "$type" != "struct" ]] && builtin_method=${__BUILTIN_TYPE_IMPLEMENTS[builtin]}
-			
-		for method in	${__BUILTIN_TYPE_IMPLEMENTS[$type]} \
-						${__INIT_TYPE_IMPLEMENTS[$type]} \
-						$builtin_method; do
-		
-			ptr_func="^\s*${method//./\\.}\s*\(\)\s*\{\s*getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|struct):[+-]:[^\"']+[\"']"
-
-			if ! struct_func=$(declare -fp $method 2>/dev/null); then
-				error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
-				return $?
-			fi
-			
-			if [[ $struct_func =~ $ptr_func ]]; then
-				proto="%s(){ %s %s \"\$@\"; return \$?; }"
-			else
-				proto="%s(){ %s \"\$%s\" \"\$@\"; return \$?; }"
-			fi
-				
-			eval "$(printf "$proto\n" $var.${method##*.} $method $var)"
-			__VAR_REG_LIST[${FUNCNAME[1]}.$var]+="$var.${method##*.} "
-
-		done
-
-		eval "$var.__type__(){ echo $type; return 0; }"
-		__VAR_REG_LIST[${FUNCNAME[1]}.$var]+="$var.__type__ "
-
+		__VAR_REG_TYPES[$var]="$type"
 	done
 
 	return 0
 }
 
-function builtin.__INIT__()
+# func __type__  <[var]name> => [str]
+#
+# Retorna o tipo do objeto implementado.
+#
+function __type__()
 {
-	getopt.parse 0 ${@:1}
-
-	local attr type method regtype
-
-	if read _ attr _ < <(declare -p SRC_TYPE_IMPLEMENTS 2>/dev/null); then
-
-		if [[ "$attr" =~ r ]]; then
-			error.__trace src '' "$__IMPORT_SOURCE" '' "'SRC_TYPE_IMPLEMENTS' o array possui atributo somente leitura"
-			return $?
-		elif [[ ! "$attr" =~ A ]]; then
-			error.__trace src '' "$__IMPORT_SOURCE" '' "'SRC_TYPE_IMPLEMENTS' não é um array associativo"
-			return $?
-		elif [[ ${SRC_TYPE_IMPLEMENTS[@]} ]]; then
-				
-			for type in ${!SRC_TYPE_IMPLEMENTS[@]}; do
-				for regtype in	${!__BUILTIN_TYPE_IMPLEMENTS[@]} \
-								${!__INIT_TYPE_IMPLEMENTS[@]}; do
-				
-					if [[ $type == $regtype ]]; then
-						error.__trace src '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE_CONFLICT"
-						return $?
-					fi
-				done
-				
-				for method in ${SRC_TYPE_IMPLEMENTS[$type]}; do
-					if ! readonly -f $method 2>/dev/null; then
-						error.__trace imp '' "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
-						return $?
-					fi
-				done
-
-				__INIT_TYPE_IMPLEMENTS[$type]=${SRC_TYPE_IMPLEMENTS[$type]}
-				unset SRC_TYPE_IMPLEMENTS[$type]
-			done
-		fi
-	fi
-
+	getopt.parse 1 "var:var:+:$1" ${@:2}
+	echo "${__VAR_REG_TYPES[$1]}"
 	return 0
 }
 
-function builtin.__extfncall(){ [[ "${FUNCNAME[-2]}" != "${FUNCNAME[1]}" ]]; return $?; }
-
-# type builtin
+# func __len__ <[var]name> => [str]|[uint]
 #
-# Implementa 'S' com os métodos:
+# Retorna o índice/chave e o comprimento do elemento armazenado.
 #
-# S.__len__ => [uint]
-# S.__quote__ => [str]
-# S.__typeval__ => [str]
-# S.__isnum__ => [bool]
-# S.__isnull__ => [bool]
-# S.__in__
-# S.__dec__
-# S.__eq__ <[str]exp> => [bool]
-# S.__ne__ <[str]exp> => [bool]
-# S.__gt__ <[str]exp> => [bool]
-# S.__ge__ <[str]exp> => [bool]
-# S.__lt__ <[str]exp> => [bool]
-# S.__le__ <[str]exp> => [bool]
-# S.__float__ => [int]
-# S.__upper__ 
-# S.__lower__
-# S.__swapcase__
-# S.__rev__
-# S.__repl__
-# S.__rm__
-# S.__fnmap__ <[func]funcname> <[str]args> ...
-# S.__iter__ => [str]
-#
-# Por padrão todos os tipos com excessão de 'map' e 'struct' são implementados por 'builtin'.
-#
-
-# func __len__ => [uint]
-#
-# Retorna o comprimento do objeto
-#
-function builtin.__len__()
+function __len__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		echo ${#__byref}	
-	fi
-	return $?
+	declare -n __byref=$1
+	local __elem
+
+	for __elem in "${!__byref[@]}"; do
+		echo "$__elem|${#__byref[$__elem]}"
+	done
+	return 0
 }
 
-# func __quote__ => [str]
+# func __quote__ <[var]name> => [str]
 #
 # Retorna o contéudo da variável escapando os caracteres especiais e não 
 # imprimíveis com '\'.
 #
-function builtin.__quote__()
+function __quote__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		printf "%q\n" "${__byref[@]}"
-	fi
-	return $?
+	declare -n __byref=$1
+	printf "%q\n" "${__byref[@]}"
+	return 0
 }
 
-# func __typeval__ => [str]
+# func __typeval__ <[var]name> => [str]|[str]
 #
-# Retorna o tipo de dado armazenado na variável:
+# Retorna o índice/chave e o tipo do dado armazenado na variável.
+# Se 'name' for um array, retorna o tipo de todos os elementos.
 #
 # string - cadeia de caracteres
 # int    - número inteiro
-# float  - número de ponto flutuante (precisão)
-# null   - vazio
-#
-function builtin.__typeval__()
+# float  - número de ponto flutuante.
+
+function __typeval__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 	
-	if builtin.__extfncall; then
+	declare -n __byref=$1
+	local __elem __type
 
-		declare -n __byref=$1
-		local tn
-
-		if [[ ! $__byref ]]; then tn='null'
-		elif [[ $__byref == ?(-|+)+([0-9]) ]]; then tn='int'
-		elif [[ $__byref == ?(-|+)+([0-9])@(.+([0-9])) ]]; then tn='float'
-		else tn='string'
-		fi	
+	for	__elem in "${!__byref[@]}"; do
+		case ${__byref[$__elem]} in
+			?(-|+)+([0-9]))	__type=int;;
+			?(-|+)+([0-9])@(,+([0-9])))	__type=float;;
+			*) __type=string;;
+		esac
+		echo "$__elem|$__type"
+	done
 	
-		echo "$tn"
-	fi
-
-	return $?
+	return 0
 }
 
-# func __isnum__ => [bool]
+# func __isnum__ <[var]name> => [bool]
 #
-# Retorna 'true' se o valor da variável for um inteiro.
+# Retorna 'true' se o valor de 'name' é um número.
+# Se 'name' for um array, testa todos os elementos.
 #
-function builtin.__isnum__()
+function __isnum__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		[[ $__byref == ?(-|+)+([0-9])?(.+([0-9])) ]]
-	fi
-	return $?
+	declare -n __byref=$1
+	local __elem __bit
+
+	for __elem in "${!__byref[@]}"; do
+		[[ ${__byref[$__elem]} == ?(-|+)+([0-9])?(,+([0-9])) ]]
+		__bit+="$?|"
+	done
+
+	return $((${__bit%|}))
 }
 
-# func __isnull__ => [bool]
+# func __isnull__ <[var]name> => [bool]
 #
-# Retorna 'true' se a variável for nulo.
+# Retorna 'true' se 'name' for nula.
 #
-function builtin.__isnull__()
+function __isnull__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		[[ ! $__byref ]]
-	fi
+	declare -n __byref=$1
+	[[ ! ${__byref[@]} ]]
 	return $?
 }
 
-# func __in__
+# func __in__ <[var]name>
 #
-# Incrementa o valor atual da variável.
+# Incrementa o valor de 'name'.
+# Se 'name' for um array incrementa todos os elementos.
 #
-function builtin.__in__()
+function __in__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		[[ $__byref == ?(-|+)+([0-9]) ]] && ((__byref++))
-	fi
+	declare -n __byref=$1
+	local __elem
+	
+	for __elem in "${!__byref[@]}"; do
+		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] && ((__byref[$__elem]++))
+	done
+	
 	return $?
 }
 
-# func __dec__
+# func __dec__ <[var]name>
 #
-# Decrementa o valor atual da variável.
+# Decrementa o valor de 'name'.
+# Se 'name' for um array decrementa todos os elementos.
 #
-function builtin.__dec__()
+function __dec__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		[[ $__byref == ?(-|+)+([0-9]) ]] && ((__byref--))
-	fi
-	return $?
+	declare -n __byref=$1
+	local __elem
+	
+	for __elem in "${!__byref[@]}"; do
+		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] && ((__byref[$__elem]--))
+	done
 }
 
-# func __eq__ <[str]exp> => [bool]
+# func __eq__ <[var]name> <[str]exp> => [bool]
 #
-# Retorna 'true' se o valor da variável for igual a 'exp'. Caso contrário retorna 'false'.
+# Retorna 'true' se o valor de 'name' for igual a 'exp'. Caso contrário retorna 'false'.
+# Se 'name' for um array verifica todos os elementos.
 #
-function builtin.__eq__()
+function __eq__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:+:$2" ${@:3}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		[[ $__byref == ?(-|+)+([0-9]) ]] && [[ $__byref -eq $2 ]] || [[ "$__byref" == "$2" ]]
-	fi
-	return $?
+	declare -n __byref=$1
+	local __elem
+	
+	for __elem in "${!__byref[@]}"; do
+		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] &&
+		[[ ${__byref[$__elem]} -eq $2 ]] ||
+		[[ "${__byref[$__elem]}" == "$2" ]] && return 0
+	done
+
+	return 1
 }
 
-# func __ne__ <[str]exp> => [bool]
+# func __ne__ <[var]name> <[str]exp> => [bool]
 #
-# Retorna 'true' se o valor da variável for diferente de 'exp'. Caso contrário retorna 'false'.
+# Retorna 'true' se o valor de 'name' for diferente de 'exp'. Caso contrário retorna 'false'.
+# Se 'name' for um array verifica todos os elementos.
 #
-function builtin.__ne__()
+function __ne__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
 
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		[[ $__byref == ?(-|+)+([0-9]) ]] && [[ $__byref -ne $2 ]] || [[ "$__byref" != "$2" ]]
-	fi
-	return $?
+	declare -n __byref=$1
+	local __elem
+	
+	for __elem in "${!__byref[@]}"; do	
+		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] &&
+		[[ ${__byref[$__elem]} -ne $2 ]] ||
+		[[ ${__byref[$__elem]} != $2 ]] && return 0
+	done
+	return 1
 }
 
-# func __gt__ <[str]exp> => [bool]
+# func __gt__ <[var]name> <[str]exp> => [bool]
 #
-# Retorna 'true' se o valor da variável for maior que 'exp'. Caso contrário retorna 'false'.
+# Retorna 'true' se o valor de 'name' for maior que 'exp'. Caso contrário retorna 'false'.
+# Se 'name' for um array verifica todos os elementos.
 #
-function builtin.__gt__()
+function __gt__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
 
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		[[ $__byref == ?(-|+)+([0-9]) ]] && [[ $__byref -gt $2 ]] || [[ "$__byref" > "$2" ]]
-	fi
-	return $?
+	declare -n __byref=$1
+	local __elem
+
+	for __elem in "${!__byref[@]}"; do	
+		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] &&
+		[[ ${__byref[$__elem]} -gt $2 ]] ||
+		[[ ${__byref[$__elem]} > $2 ]] && return 0
+	done
+	return 1
 }
 
-# func __ge__ <[str]exp> => [bool]
+# func __ge__ <[var]name> <[str]exp> => [bool]
 #
-# Retorna 'true' se o valor da variável for maior ou igual a 'exp'. Caso contrário retorna 'false'.
+# Retorna 'true' se o valor de 'name' for maior ou igual a 'exp'. Caso contrário retorna 'false'.
+# Se 'name' for um array verifica todos os elementos.
 #
-function builtin.__ge__()
+function __ge__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		[[ $__byref == ?(-|+)+([0-9]) ]] && [[ $__byref -ge $2 ]]
-	fi
-	return $?
+	declare -n __byref=$1
+	local __elem
+
+	for __elem in "${!__byref[@]}"; do
+		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] &&
+		[[ ${__byref[$__elem]} -ge $2 ]] &&
+		return 0
+	done
+	return 1
 }
 
-# func __lt__ <[str]exp> => [bool]
+# func __lt__ <[var]name> <[str]exp> => [bool]
 #
-# Retorna 'true' se o valor da variável for menor que 'exp'. Caso contrário retorna 'false'.
+# Retorna 'true' se o valor de 'name' for menor que 'exp'. Caso contrário retorna 'false'.
+# Se 'name' for um array verifica todos os elementos.
 #
-function builtin.__lt__()
+function __lt__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
 
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		[[ $__byref == ?(-|+)+([0-9]) ]] && [[ $__byref -lt $2 ]] || [[ "$__byref" < "$2" ]]
-	fi
-	return $?
+	declare -n __byref=$1
+	local __elem
+
+	for __elem in "${!__byref[@]}"; do
+		[[ ${__byref[@]} == ?(-|+)+([0-9]) ]] &&
+		[[ ${__byref[$__elem]} -lt $2 ]] ||
+		[[ ${__byref[$__elem]} < $2 ]] && return 0
+	done
+	return 1
 }
 
-# func __le__ <[str]exp> => [bool]
+# func __le__ <[var]name> <[str]exp> => [bool]
 #
-# Retorna 'true' se o valor da variável for menor ou igual a 'exp'. Caso contrário retorna 'false'.
+# Retorna 'true' se o valor de 'name' for menor ou igual a 'exp'. Caso contrário retorna 'false'.
+# Se 'name' for um array verifica todos os elementos.
 #
-function builtin.__le__()
+function __le__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
 
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		[[ $__byref == ?(-|+)+([0-9]) ]] && [[ $__byref -le $2 ]]
-	fi
-	return $?
+	declare -n __byref=$1
+	local __elem
+
+	for __elem in "${!__byref[@]}"; do
+		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] && 
+		[[ ${__byref[$__elem]} -le $2 ]] && return 0
+	done
+	return 1
 }
 
-# func __float__
+# func __float__ <[var]name>
 #
-# Converte o valor para um inteiro de ponto flutuante (precisão).
+# Converte o valor de 'name' para um inteiro de ponto flutuante (precisão).
+# Se 'name' for um array converte todos os elementos.
 #
-function builtin.__float__()
+function __float__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		[[ $__byref == ?(-|+)+([0-9]) ]] && printf -v __byref "%0.2f" "$__byref"
-	fi
+	declare -n __byref=$1
+	local __elem
+	
+	for __elem in "${!__byref[@]}"; do
+		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] &&
+		printf -v __byref[$__elem] "%0.2f" "${__byref[$__elem]}"
+	done
 	return $?
 }
 
-# func __upper__
+# func __upper__ <[var]name>
 #
-# Converte a sequência de caracteres armazenados para maiúsculo.
-#
-function builtin.__upper__()
+# Converte a sequência de caracteres armazenados em 'name' para maiúsculo.
+# Se 'name' for um array converte todos os elementos.
+# 
+function __upper__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		__byref=${__byref^^}
-	fi
+	declare -n __byref=$1
+	local __elem
+
+	for __elem in "${!__byref[@]}"; do
+		__byref[$__elem]=${__byref[$__elem]^^}
+	done
 	return $?
 }
 
-# func __lower__
+# func __lower__ <[var]name>
 #
-# Converte a sequência de caracteres armazenados para minúsculo.
+# Converte a sequência de caracteres armazenados em 'name' para minúsculo.
+# Se 'name' for um array converte todos os elementos.
 #
-function builtin.__lower__()
+function __lower__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		__byref=${__byref,,}
-	fi
+	declare -n __byref=$1
+	local __elem
+
+	for __elem in "${!__byref[@]}"; do
+		__byref[$__elem]=${__byref[$__elem],,}
+	done
 	return $?
 }
 
-# func __swapcase__
+# func __swapcase__ <[var]name>
 #
-# Inverte a formatação dos caracteres armazenados de maiúsculo para minúsculo e vice-versa.
+# Inverte a formatação dos caracteres armazenados em 'name' para  maiúsculo e vice-versa.
+# Se 'name' for um array inverte todos os elementos.
 #
-function builtin.__swapcase__()
+function __swapcase__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		__byref=${__byref~~}
-	fi
+	declare -n __byref=$1
+	local __elem
+
+	for __elem in "${!__byref[@]}"; do
+		__byref[$__elem]=${__byref[$__elem]~~}
+	done
 	return $?
 }
 
-# func __rev__
+# func __rev__ <[var]name>
 #
-# Inverte a ordem dos caracteres armazenados.
+# Inverte a ordem dos caracteres armazenados em 'name'.
+# Se 'name' for um array inverte todos os elementos.
 #
-function builtin.__rev__()
+function __rev__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		local __i __tmp
+	declare -n __byref=$1
+	local __i __tmp __elem
 
-		for ((__i=${#__byref}-1; __i >= 0; __i--)); do
-			__tmp+=${__byref:$__i:1}
+	for __elem in "${!__byref[@]}"; do
+		for ((__i=${#__byref[$__elem]}-1; __i >= 0; __i--)); do
+			__tmp+=${__byref[$__elem]:$__i:1}
 		done
-
-		__byref=$__tmp
-	fi
+		__byref[$__elem]=$__tmp
+		__tmp=''
+	done
 	return $?
 }
 
-# func __repl__ <[str]old> <[str]new>
+# func __repl__ <[var]name> <[str]old> <[str]new>
 #
-# Substitui todas as ocorrências de 'old' encontradas por 'new'.
+# Substitui todas as ocorrências de 'old' por 'new' em 'name'.
+# Se 'name' for um array substitui todos os elementos com a ocorrência.
 #
-function builtin.__repl__()
+function __repl__()
 {
 	getopt.parse 3 "var:var:+:$1" "old:str:-:$2" "new:str:-:$3" ${@:4}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		__byref=${__byref//$2/$3}
-	fi
+	declare -n __byref=$1
+	local __elem
+
+	for __elem in "${!__byref[@]}"; do
+		__byref[$__elem]=${__byref[$__elem]//$2/$3}
+	done
 	return $?
 }
 
-# func __rm__ <[str]exp>
+# func __rm__ <[var]name> <[str]exp>
 #
-# Remove todas as ocorrências de 'exp'.
+# Remove todas as ocorrências de 'exp' em 'name'.
+# Se 'name' for um array remove a ocorrẽncia em todos os elementos.
 #
-function builtin.__rm__()
+function __rm__()
 {
-	getopt.parse 1 "var:var:+:$1" "exp:str:-:$2" ${@:3}
+	getopt.parse 2 "var:var:+:$1" "exp:str:-:$2" ${@:3}
 	
-	if builtin.__extfncall; then
-		declare -n __byref=$1
-		__byref=${__byref//$2/}
-	fi
+	declare -n __byref=$1
+	local __elem
+
+	for __elem in "${!__byref[@]}"; do
+		__byref[$__elem]=${__byref[$__elem]//$2/}
+	done
 	return $?
 }
 
-# func __fnmap__ <[func]funcname> <[str]args> ...
+# func __insert__ <[var]name> <[str]prefix>
 #
-# Chama 'funcname'a cada iteração dos caracteres armazenados na variável, passando
-# automaticamente como parâmetro posicional '$1' o caractere atual com 'N'args (opcional).
+# Insere 'prefix' em 'name'.
+# Se 'name' for um array, insere em todos os elementos.
 #
-function builtin.__fnmap__()
+function __insert__()
 {
-	getopt.parse 2 "var:var:+:$1" "funcname:func:+:$2"
+	getopt.parse 2 "var:var:+:$1" "exp:str:+:$2" ${@:3}
+
+	declare -n __byref=$1
+	local __elem
 	
-	if builtin.__extfncall; then
-		local __tmp __i
-		declare -n __byref=$1
-		for ((__i=0; __i < ${#__byref}; __i++)); do
-			__tmp+=$($2 "${__byref:$__i:1}" "${@:3}")
-		done
-		__byref=$__tmp
+	for __elem in "${!__byref[@]}"; do
+		__byref[$__elem]=${2}${__byref[$__elem]}
+	done
+	return $?
+}
+
+# func __append__ <[var]name> <[str]suffix>
+#
+# Anexa 'suffix' em 'name'.
+# Se 'name' for um array, anexa em todos os elementos.
+#
+function __append__()
+{
+	getopt.parse 2 "var:var:+:$1" "exp:str:+:$2" ${@:3}
+
+	declare -n __byref=$1
+	local __elem
+	
+	for __elem in "${!__byref[@]}"; do
+		__byref[$__elem]=${__byref[$__elem]}${2}
+	done
+	return $?
+}
+
+# func __fnmap__ <[var]name> <[func]funcname> <[str]args> ...
+#
+# Chama 'funcname'a cada iteração de caracteres ou elementos armazenados em 'name', passando
+# automaticamente como parâmetro posicional '$1' o item atual com 'N'args (opcional) e salva
+# o retorno.
+#
+function __fnmap__()
+{
+	getopt.parse -1 "var:var:+:$1" "funcname:func:+:$2" "args:str:-:$3" ... "${@:4}"
+	
+	local __tmp __i __attr
+	declare -n __byref=$1
+
+	if IFS=' ' read _ __attr _ < <(declare -p $1 2>/dev/null); then
+		case $__attr in
+			*a*|*A*)	for __i in "${!__byref[@]}"; do
+							__byref[$__i]=$($2 "${__byref[$__i]}" "${@:3}")
+						done;;
+
+			*)			for ((__i=0; __i < ${#__byref}; __i++)); do
+							__tmp+=$($2 "${__byref:$__i:1}" "${@:3}")
+						done
+						__byref=$__tmp;;
+		esac
 	fi
 
 	return $?
 }
 
-# func __iter__ => [str]
+# func __iter__ <[var]name> => [str]
 #
-# Retorna uma lista iterável contendo os elementos armazenados. O retorno da função
+# Retorna uma lista iterável contendo os elementos armazenados em 'name'. O retorno da função
 # depende do tipo da variável, sendo:
 #
 # var       - retorna um caractere por linha.
 # array|map - retorna um elemento por linha.
 #
-function builtin.__iter__()
+function __iter__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
 
-	if builtin.__extfncall; then
-		local __attr __ch __i
-		declare -n __byref=$1
-		if read _ __attr _ < <(declare -p $1 2>/dev/null); then
-			case $__attr in
-				*a*|*A*)	printf '%s\n' "${__byref[@]}";;
-				*)		for ((__i=0; __i<${#__byref}; __i++)); do 
+	local __attr __ch __i
+	declare -n __byref=$1
+	
+	if IFS=' ' read _ __attr _ < <(declare -p $1 2>/dev/null); then
+		case $__attr in
+			*a*|*A*)	printf '%s\n' "${__byref[@]}";;
+			*)			for ((__i=0; __i<${#__byref}; __i++)); do 
 							__ch[$__i]=${__byref:$__i:1}; done
 							printf "%s\n" "${__ch[@]}";;
-			esac
-		fi	
-	fi
+		esac
+	fi	
 
 	return $?
 }
 
-function builtin.__init()
+function source.__INIT__()
 {
-	error.resume off
-
-    local depends=(touch mkdir stat cp sort)
-    local dep deps
-
-    for dep in ${depends[@]}; do
-        if ! command -v $dep &>/dev/null; then
-            deps+=($dep)
-        fi
-    done
-
-    [[ $deps ]] && error.__depends $FUNCNAME ${BASH_SOURCE##*/} "${deps[*]}"
+	local attr type method inittype func pkg err deps
 	
-	if ! mkdir -p "$__RUNTIME" &>/dev/null; then
-		error.__trace def '' '' "$__RUNTIME" 'não foi possível gerar os arquivos temporários'; return $?
+	for pkg in ${__SRC_DEPS[@]}; do
+		command -v $pkg &>/dev/null || { err=1; deps+="$pkg, "; }
+	done
+
+	if [[ $err ]]; then
+		error.__trace deps '' "${BASH_SOURCE[-2]}" "${deps%, }" "$__ERR_BUILTIN_DEPS"
+		return $?
 	fi
 
-	# CONFIGURAÇÕES DO AMBIENTE
+	if IFS=' ' read _ attr _ < <(declare -p __SRC_TYPES 2>/dev/null) && ! [[ $attr =~ A ]]; then
+		error.__trace src '' "${BASH_SOURCE[-2]}" '' "'__SRC_TYPES' não é um array associativo"
+		return $?
+	fi	
+
+	for type in ${!__SRC_TYPES[@]}; do
+		for inittype in ${!__INIT_SRC_TYPES[@]}; do
+			if [[ $type == $inittype ]]; then
+				error.__trace src '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE_CONFLICT"
+				return $?
+			fi
+		done
+		for method in ${__SRC_TYPES[$type]}; do
+			if ! declare -fp $method &>/dev/null; then
+				error.__trace imp '' "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
+				return $?
+			fi
+		done
+		__INIT_SRC_TYPES[$type]=${__SRC_TYPES[$type]}
+		unset __SRC_TYPES[$type] || error.__trace def
+	done
+
+	while IFS=' ' read _ _ func; do readonly -f $func; done < <(declare -Fp)
+
+	unset __SRC_DEPS || error.__trace def
 	
-	# Delimitador padrão (somente leitura)
-	unset IFS
-	declare -gxr IFS
-
-	# Opções do BASH
-	shopt -s extglob
-	shopt -u nocasematch
-
-	# Variáveis globais
-	declare -Ag __INIT_TYPE_IMPLEMENTS \
-				__VAR_REG_LIST \
-				__STRUCT_REG_LIST \
-				SRC_TYPE_IMPLEMENTS
-
-	trap "rm -rf $__RUNTIME/$$ &>/dev/null" INT QUIT ABRT KILL TERM 
-
-    return 0
+	return 0
 }
 
-builtin.__init
+source error.sh
+source getopt.sh
 
-readonly -f has \
-			swap \
-			sum \
-			fnmap \
-			filter \
-			chr \
-			ord \
-			hex \
-			bin \
-			oct \
-			htoi \
-			btoi \
-			otoi \
-			len \
-			range \
-			fnrange \
-			isobj \
-			sorted \
-			fndef \
-			enum \
-			min \
-			max \
-			list \
-			unique \
-			reversed \
-			iter \
-			fniter \
-			niter \
-			mod \
-			count \
-			del \
-			var \
-			all \
-			any \
-			builtin.__INIT__ \
-			builtin.__len__ \
-			builtin.__quote__ \
-			builtin.__typeval__ \
-			builtin.__isnum__ \
-			builtin.__isnull__ \
-			builtin.__in__ \
-			builtin.__dec__ \
-			builtin.__eq__ \
-			builtin.__ne__ \
-			builtin.__gt__ \
-			builtin.__lt__ \
-			builtin.__ge__ \
-			builtin.__le__ \
-			builtin.__float__ \
-			builtin.__fnmap__ \
-			builtin.__upper__ \
-			builtin.__lower__ \
-			builtin.__rev__ \
-			builtin.__repl__ \
-			builtin.__rm__ \
-			builtin.__swapcase__ \
-			builtin.__iter__ \
-			builtin.__extfncall \
-			builtin.__init \
-			builtin.__iter_cond_any_all 
-
+source.__INIT__
 # /* BUILTIN_SRC */

@@ -13,6 +13,19 @@ readonly __RAND_SH=1
 
 source builtin.sh
 
+__SRC_TYPES[arand]='
+rand.achoice
+'
+
+__SRC_TYPES[mrand]='
+rand.mchoice
+'
+
+__SRC_TYPES[srand]='
+rand.cchoice
+rand.wchoice
+'
+
 # func rand.range <[int]min> <[int]max> => [int]
 #
 # Retorna um número inteiro pseudo-aleatório dentro do intervalo
@@ -22,6 +35,17 @@ function rand.range()
 {
 	getopt.parse 2 "min:int:+:$1" "max:int:+:$2" ${@:3}
 	echo $((RANDOM%($2-$1)+$1))
+	return 0
+}
+
+# func rand.nrange <[uint]count> => [uint]
+#
+# Gera 'N' números pseudo-aleatórios.
+#
+function rand.nrange()
+{
+	getopt.parse 1 "count:uint:+:$1" ${@:2}
+	for ((i=0;i < $1; i++)); do echo "$RANDOM"; done
 	return 0
 }
 
@@ -50,7 +74,7 @@ function rand.long()
 
 	return 0
 }
-# func rand.achoice <[array]name> => [object]
+# func rand.achoice <[array]name> => [str]
 #
 # Retorna aleatóriamente um elemento em 'name'.
 #
@@ -59,29 +83,28 @@ function rand.achoice()
 	getopt.parse 1 "name:array:+:$1" ${@:2}
 
 	declare -n __ref=$1
-	local __rnum
-
-	__rnum=$(rand.range 0 ${#__ref[@]})
-	echo "${__ref[$__rnum]}"
-
+	echo "${__ref[$((RANDOM%${#__ref[@]}))]}"
 	return 0
 }
 
-# func rand.cchoice <[str]exp> => [char]
+# func rand.cchoice <[str]exp> => [str]
 #
 # Retorna aleatóriamente um caractere da sequência contida em 'exp'.
+# Se 'exp' for uma lista iterável, retorna um caractere de cada elemento.
 #
 function rand.cchoice()
 {
 	getopt.parse 1 "exp:str:+:$1" ${@:2}
-
-	local rnum=$(rand.range 0 ${#1})
-	echo "${1:$rnum:1}"
+	
+	local exp
+	while read exp; do 
+		echo "${exp:$((RANDOM % ${#exp})):1}"
+	done <<< "$1"
 
 	return 0
 }
 
-# func rand.mchoice <[map]name> => [key|object]
+# func rand.mchoice <[map]name> => [str|str]
 #
 # Retorna um item aleatório em 'map' represetado por 'chave' e 'objeto'.
 #
@@ -91,9 +114,8 @@ function rand.mchoice()
 	
 	declare -n __map_ref=$1
 	local __keys=("${!__map_ref[@]}")
-	local __key=$(rand.achoice __keys)
+	local __key=${__keys[$((RANDOM % ${#__keys[@]}))]}
 	echo "$__key|${__map_ref[$__key]}"
-
 	return 0
 }
 
@@ -104,20 +126,14 @@ function rand.mchoice()
 function rand.wchoice()
 {
 	getopt.parse 1 "exp:str:-:$1" ${@:2}
-	
-	local words=($1)
-	local word=$(rand.achoice words)
-	echo "$word"
-	
+
+	local exp words
+	while read exp; do
+		exp=($exp)
+		echo "${exp[$(($RANDOM % ${#exp[@]}))]}"
+	done <<< "$1"	
 	return 0
 }
 
-readonly -f rand.range \
-			rand.int \
-			rand.mchoice \
-			rand.achoice \
-			rand.cchoice \
-			rand.wchoice \
-			rand.long
-
+source.__INIT__
 # /* __RAND_SRC */

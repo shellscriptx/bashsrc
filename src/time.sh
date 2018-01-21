@@ -14,6 +14,11 @@ readonly __TIME_SH=1
 source builtin.sh
 source map.sh
 
+__SRC_TYPES[time]='
+time.localtime
+time.ctime
+'
+
 # arquivos
 readonly __TIME_TZFILE=/usr/share/zoneinfo/zone.tab
 readonly __TIME_CTZFILE=/etc/timezone
@@ -660,35 +665,5 @@ function time.__init()
 
 time.__init
 
-readonly -f time.today \
-			time.gmtime \
-			time.localtime \
-			time.mtime \
-			time.tznames \
-			time.tzinfo \
-			time.tzname \
-			time.tzgmtime \
-			time.tztoday \
-			time.now \
-			time.date \
-			time.hour \
-			time.minute \
-			time.second \
-			time.month \
-			time.month.str \
-			time.weekday \
-			time.weekday.str \
-			time.year \
-			time.yearday \
-			time.day \
-			time.time \
-			time.ctime \
-			time.tzset \
-			time.tzreset \
-			time.asctime \
-			time.strftime \
-			time.__check_date \
-			time.__check_time \
-			time.__init
-
+source.__INIT__
 # /* __TIME_SRC */

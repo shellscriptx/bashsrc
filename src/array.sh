@@ -13,37 +13,29 @@ readonly __ARRAY_SH=1
 
 source builtin.sh
 
-# type array
-#
-# Uma estrutura de dados que armazena uma coleção de elementos onde cada elemento
-# é acessado utilizando uma índice ou vetor, demoninado de array indexado.
-#
-# Implementa 'S' com os métodos:
-#
-# S.append <[str]object>
-# S.clear
-# S.clone <[array]dest>
-# S.copy <[array]dest>
-# S.count <[str]object> => [uint]
-# S.items => [str]
-# S.index <[str]object> => [int]
-# S.insert <[uint]index> <[str]object>
-# S.pop <[int]index> => [object]
-# S.remove <[str]object>
-# S.removeall <[str]object>
-# S.reverse
-# S.len => [uint]
-# S.sort
-# S.join <[str]exp> => [str]
-# S.item <[int]index> => [object]
-# S.contains <[str]object> => [bool]
-# S.reindex
-# S.slice <[slice]slice> ... => [object]
-# S.listindex => [uint]
-# S.list => [uint|object]
-#
-# Obs: 'S' é uma variável válida.
-#
+__SRC_TYPES[array]='
+array.append 
+array.clear 
+array.copy 
+array.clone 
+array.count 
+array.items 
+array.index 
+array.insert 
+array.pop 
+array.remove 
+array.removeall 
+array.reverse 
+array.len 
+array.sort 
+array.join 
+array.item 
+array.contains 
+array.reindex 
+array.slice
+array.listindex
+array.list
+'
 
 # func array.append <[array]name> <[str]object>
 #
@@ -353,45 +345,36 @@ function array.reindex()
 # $ array.append sys "Windows"
 #
 # # Capturando os dois primeiros caracteres do objeto na posição 1.
-# $ array.slice sys '[1][:2]'
+# $ array.slice sys '1' ':2'
 # Li
 #
 function array.slice()
 {
-    getopt.parse 2 "exp:array:+:$1" "slice:slice:+:$2"
-	
+    getopt.parse -1 "exp:array:+:$1" "slice:slice:+:$2" ... "${@:3}"
+
 	declare -n __arr=$1
-    local __exp __slice __ini __start __length __delm
-
-	__slice=$2
-	__ini=0
-
-    while [[ $__slice =~ \[([^]][0-9]*:?(-[0-9]+|[0-9]*))\] ]]
-    do
-        __start=${BASH_REMATCH[1]%:*}
-        __length=${BASH_REMATCH[1]#*:}
-        __delm=${BASH_REMATCH[1]//[0-9]/}
-
-        [[ ! $__delm ]] && __length=1
-
-		__start=${__start:-0}
-
-		if [[ $__ini -eq 0 ]]; then
-			__length=${__length:-${#__arr[@]}}
-			__exp=${__arr[@]:$__start:$__length}
-			__ini=1
-		else
-			__length=${__length:-${#__exp}}
-			__exp=${__exp:$__start:$__length}
-		fi
+	local __slice __elem
 	
-		__slice=${__slice/\[${BASH_REMATCH[1]}\]/}
+	echo "-> $1 <-"
+	IFS=':' __slice=($2)
 
-    done
+	__slice[0]=${__slice[0]#-}
+	__slice[1]=${__slice[1]#-}
 
-    echo  "$__exp"
+	__slice[0]=${__slice[0]:-0}
+	__slice[1]=${__slice[1]:-1}
+	__elem=${__arr[@]:${__slice[0]}:${__slice[1]}}
 
-    return 0
+	for __slice in "${@:3}"; do
+		IFS=':' __slice=($__slice)
+		__slice[0]=${__slice[0]:-0}
+		__slice[1]=${__slice[1]:-$((${#__elem}-${__slice[0]}))}
+		__elem=${__elem:${__slice[0]}:${__slice[1]}}
+	done
+
+	echo "$__elem"
+
+	return 0
 }
 
 # func array.listindex <[array]name> => [uint]
@@ -403,7 +386,7 @@ function array.listindex()
 	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
-	printf "%d " "${!__arr[@]}"; echo
+	echo "${!__arr[@]}"
 	return 0
 }
 
@@ -425,27 +408,6 @@ function array.list()
 	return 0
 }
 
-readonly -f array.append \
-			array.clear \
-			array.copy \
-			array.clone \
-			array.count \
-			array.items \
-			array.index \
-			array.insert \
-			array.pop \
-			array.remove \
-			array.removeall \
-			array.reverse \
-			array.len \
-			array.sort \
-			array.join \
-			array.item \
-			array.contains \
-			array.reindex \
-			array.slice \
-			array.listindex \
-			array.list 
-
+source.__INIT__
 # /* __ARRAY_SRC */
 
