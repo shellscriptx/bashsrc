@@ -1,5 +1,5 @@
 
-# bashsrc 0.1.4-alpha
+# bashsrc 1.0.0
 sources (builtin/coreutils)
 
 ```
