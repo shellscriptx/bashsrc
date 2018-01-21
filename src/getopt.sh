@@ -150,7 +150,10 @@ function getopt.parse()
 		if [[ ! $rep && $vargs && $param == ... ]]; then
 			rep=_
 			continue
-		else
+		fi
+		
+		if ! [[ $rep ]]; then
+			echo "Verificar $value"
 			if [[ $name != +([a-zA-Z0-9_=-]) ]]; then
 				error.__trace def "name" 'str' "$name" "$__ERR_GETOPT_ARG_NAME"
 				return $?
