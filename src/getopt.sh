@@ -144,17 +144,20 @@ function getopt.parse()
 
 	for param in "${@:2}" 
 	do
-		[[ ! $rep && $vargs && $param == ... ]] && { rep=1; continue; } 
-		[[ $rep ]] && param="$lparam:$param"
-	
-		IFS=':' read name ctype flag value <<< "$param"
+		rep=${rep:+$lparam:$param}
+		IFS=':' read name ctype flag value <<< "${rep:-$param}"
 		
-		if [[ $name != +([a-zA-Z0-9_=-]) ]]; then
-			error.__trace def "name" 'str' "$name" "$__ERR_GETOPT_ARG_NAME"
-			return $?
-		elif [[ $flag != @(-|+) ]]; then
-			error.__trace def "flag" 'str' "$flag" "$__ERR_GETOPT_FLAG"
-			return $?
+		if [[ ! $rep && $vargs && $param == ... ]]; then
+			rep=_
+			continue
+		else
+			if [[ $name != +([a-zA-Z0-9_=-]) ]]; then
+				error.__trace def "name" 'str' "$name" "$__ERR_GETOPT_ARG_NAME"
+				return $?
+			elif [[ $flag != @(-|+) ]]; then
+				error.__trace def "flag" 'str' "$flag" "$__ERR_GETOPT_FLAG"
+				return $?
+			fi
 		fi
 
 		if [[ $flag == + ]] || [[ $flag == - && $value ]]; then
@@ -169,7 +172,7 @@ function getopt.parse()
 				var|array)	[[ $value =~ ^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$ ]];;
 				map)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null)
    	     					[[ $attr =~ A ]];;
-   	        	func) 		declare -fp "$value" &>/dev/null;;
+   	        	func) 		declare -Fp "$value" &>/dev/null;;
 				funcname) 	[[ $value =~ ^[a-zA-Z0-9_.-]+$ ]];;
 				# base
    		        bin) 		[[ $value =~ ^[01]+$ ]];;
