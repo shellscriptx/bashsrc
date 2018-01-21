@@ -4,7 +4,7 @@ sources (builtin/coreutils)
 
 ```
 NOME
-       bashsrc - utilitário para consulta de documentações sources.
+       bashsrc 1.0.0
 
 DESCRIÇÃO
        O  bashsrc  é  um  projeto open source distribuído em uma coleção de bibliotecas desen‐
@@ -93,9 +93,9 @@ BASHSRC
        Exemplo:
 
        $ bashsrc --doc regex
-       readonly regex_case=1 # [flag] - considera a diferença entre caracteres  maiúsuculos  e
+       readonly REG_ICASE=2 # [flag] - considera a diferença entre caracteres  maiúsuculos  e
        minúsculos.
-       readonly regex_ignorecase=2 # [flag] - ignora a diferença entre caracteres maiúsculos e
+       readonly REG_CASE=0 # [flag] - ignora a diferença entre caracteres maiúsculos e
        minúsculos.
        func regex.findall <[str]pattern> <[str]exp> <[uint]flag> => [str]
        func regex.fullmatch <[str]pattern> <[str]exp> <[uint]flag> => [uint|uint|str]
@@ -113,6 +113,7 @@ BASHSRC
        <[uint]flag> => [str]
        func   regex.fnnreplace   <[str]pattern>   <[str]exp>   <[func]funcname>  <[uint]match>
        <[uint]flag> => [str]
+	   ...
 
 FUNÇÕES
        A biblioteca contém um conjunto de funções que  realizam  tarefas  especificas  onde  a
