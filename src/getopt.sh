@@ -152,15 +152,12 @@ function getopt.parse()
 			continue
 		fi
 		
-		if ! [[ $rep ]]; then
-			echo "Verificar $value"
-			if [[ $name != +([a-zA-Z0-9_=-]) ]]; then
-				error.__trace def "name" 'str' "$name" "$__ERR_GETOPT_ARG_NAME"
-				return $?
-			elif [[ $flag != @(-|+) ]]; then
-				error.__trace def "flag" 'str' "$flag" "$__ERR_GETOPT_FLAG"
-				return $?
-			fi
+		if [[ $name != +([a-zA-Z0-9_=-]) ]]; then
+			error.__trace def "name" 'str' "$name" "$__ERR_GETOPT_ARG_NAME"
+			return $?
+		elif [[ $flag != @(-|+) ]]; then
+			error.__trace def "flag" 'str' "$flag" "$__ERR_GETOPT_FLAG"
+			return $?
 		fi
 
 		if [[ $flag == + ]] || [[ $flag == - && $value ]]; then
