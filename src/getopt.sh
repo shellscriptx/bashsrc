@@ -125,7 +125,7 @@ readonly __ERR_GETOPT_ARG_NAME='nome do argumento inválido'
 #
 function getopt.parse()
 {
-	local name ctype flag value ref flags attr obj_types param app vargs lparam rep
+	local name ctype flag value flags attr param app vargs lparam rep
 	
 	if [[ $1 != @(-1|0|@([1-9])*([0-9])) ]]; then
 		error.__trace def "nargs" "int" "$1" "$__ERR_GETOPT_TYPE_ARG 'int'"
@@ -229,8 +229,8 @@ function getopt.parse()
 				return $?
 			}
 		fi
-		[[ $app ]] && __GETOPT_PARSE+=("$name:$ctype:$flag:$value")
 		lparam="$name:$ctype:$flag"
+		[[ $app ]] && __GETOPT_PARSE+=("$name:$ctype:$flag:$value")
 	done
 	
 	return $?
