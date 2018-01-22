@@ -167,9 +167,9 @@ function string.hassuffix()
 
 	local str
 	while read str; do
-		[[ ${str: -${#2}} == $2 ]] && return 0
+		[[ ${str: -${#2}} != $2 ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0
 }
 
 # func string.hasprefix <[str]exp> <[str]prefix> => [bool]
@@ -183,12 +183,12 @@ function string.hasprefix()
 
 	local str
 	while read str; do
-		[[ ${str:0:${#2}} == $2 ]] && return 0
+		[[ ${str:0:${#2}} != $2 ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0
 }
 
-# func string.expandtabs <[str]exp> <[uint]size> => [str]
+# func string.expandspace <[str]exp> <[uint]size> => [str]
 #
 # Retorna uma seqüência de caracteres em que os caracteres de espaço são expandidos
 # para o comprimento especificado em 'size'.
@@ -261,9 +261,9 @@ function string.isalnum(){
 
 	local str
 	while read str; do
-		[[ $str == +([[:alnum:]]) ]] && return 0
+		[[ $str != +([[:alnum:]]) ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0
 }
 
 # func string.isalpha <[str]exp> => [bool]
@@ -277,9 +277,9 @@ function string.isalpha()
 
 	local str
 	while read str; do
-		[[ $str == +([[:alpha:]]) ]] && return 0
+		[[ $str != +([[:alpha:]]) ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0
 }
 
 # func string.isdecimal <[str]exp> => [bool]
@@ -293,9 +293,9 @@ function string.isdecimal()
 
 	local str
 	while read str; do
-		[[ $str == +([[:digit:]]) ]] && return 0
+		[[ $str != +([[:digit:]]) ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0
 }
 
 # func string.isdigit <[str]exp> => [bool]
@@ -308,9 +308,9 @@ function string.isdigit()
 	
 	local str
 	while read str; do
-		[[ $str == +([[:digit:]]) ]] && return 0
+		[[ $str != +([[:digit:]]) ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0
 }
 
 # func string.isspace <[str]exp> => [bool]
@@ -324,9 +324,9 @@ function string.isspace()
 
 	local str
 	while read str; do
-		[[ $str == +([[:space:]]) ]] && return 0
+		[[ $str != +([[:space:]]) ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0
 }
 
 # func string.isprintable <[str]exp> => [bool]
@@ -340,9 +340,9 @@ function string.isprintable()
 	
 	local str
 	while read str; do
-		[[ $str == +([[:print:]]) ]] && return 0
+		[[ $str != +([[:print:]]) ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0
 }
 
 # func string.islower <[str]exp> => [bool]
@@ -356,9 +356,9 @@ function string.islower()
 	
 	local str
 	while read str; do
-		[[ $str == *([^[:upper:]])+([[:lower:]])*([^[:upper:]]) ]] && return 0
+		[[ $str != *([^[:upper:]])+([[:lower:]])*([^[:upper:]]) ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0 
 }
 
 # func string.isupper <[str]exp> => [bool]
@@ -372,9 +372,9 @@ function string.isupper()
 
 	local str
 	while read str; do
-		[[ $str == *([^[:lower:]])+([[:upper:]])*([^[:lower:]]) ]] && return 0
+		[[ $str != *([^[:lower:]])+([[:upper:]])*([^[:lower:]]) ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0
 }
 
 # func string.istitle <[str]exp> => [bool]
@@ -388,9 +388,9 @@ function string.istitle()
 
 	local str
 	while read str; do
-		[[ $str == +(*([^[:alpha:]])@([[:upper:]])+([[:lower:]])) ]] && return 0
+		[[ $str != +(*([^[:alpha:]])@([[:upper:]])+([[:lower:]])) ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0
 }
 
 # func string.join <[str]iterable> <[str]elem> => [str]
