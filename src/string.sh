@@ -865,9 +865,9 @@ function string.compare()
 
 	local str
 	while read str; do
-		[[ $str == $2 ]] && return 0
+		[[ $str != $2 ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0
 }
 
 # func string.nocasecompare <[str]exp1> <[str]exp2> => [bool]
@@ -880,9 +880,9 @@ function string.nocasecompare()
 
 	local str
 	while read str; do
-		[[ ${str,,} == ${2,,} ]] && return 0
+		[[ ${str,,} != ${2,,} ]] && return 1
 	done
-	return 1
+	return 0
 }
 
 # func string.contains <[str]exp> <[str]sub> => [bool]
@@ -896,9 +896,9 @@ function string.contains()
 
 	local str
 	while read str; do
-		[[ $str == *(*)@($2)*(*) ]] && return 0
+		[[ $str != *@($2)* ]] && return 1
 	done <<< "$1"
-	return 1
+	return 0
 }
 
 # func string.fnmap <[str]exp> <[func]funcname> <[str]args> ... => [str]
