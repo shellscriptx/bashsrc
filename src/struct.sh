@@ -10,8 +10,8 @@ declare -A 	__STRUCT_VAL_MEMBERS \
 			__STRUCT_MEMBERS
 
 readonly __ERR_STRUCT_MEMBER_NAME='nome do membro da estrutura inválido'
-readonly __ERR_STRUCT_NOT_FOUND='o objeto informado não é do tipo "struct"'
-readonly __ERR_STRUCT_MEMBER_ALREADY_INIT='o membro da estrutura já foi inicializado'
+readonly __ERR_STRUCT_ALREADY_INIT='a estrutura já foi inicializada'
+readonly __ERR_STRUCT_MEMBER_CONFLICT='conflito de membros na estrutura'
 
 __SRC_TYPES[struct]='
 struct.__init__
@@ -27,142 +27,110 @@ struct.__items__
 # Inicializa a estrutura 'name' com 'N' members.
 #
 function struct.__init__(){
-	getopt.parse 1 "struct:var:+:$1"
+	getopt.parse -1 "name:struct:+:$1" "member:str:+:$2" ... "${@:3}"
 
-	local member struct i
+	local member struct
 
-	[[ ${FUNCNAME[1]} == $1.__init__ ]] && i=2 || i=1
+	if [[ ${__STRUCT_MEMBERS[$1]} ]]; then	
+		error.__trace def 'struct' "$1" "$member" "$__ERR_STRUCT_ALREADY_INIT"
+		return $?
+	fi
 
 	for member in ${@:2}; do
-		if [[ $member != +([a-zA-Z])*([a-zA-Z0-9_.]) ]]; then
+		if [[ $member != *(_)+([a-zA-Z])*([a-zA-Z0-9_.]) ]]; then
 			error.__trace def '' '' "$member" "$__ERR_STRUCT_MEMBER_NAME"
 			return $?
-		fi
-		
-		printf -v struct '%s.%s(){ struct.__set_and_get "${FUNCNAME[1]}" "%s" "%s" "$@"; return 0; }' \
-		"$1" "$member" "$1" "$member"
-	
-		if ! eval "$struct" &>/dev/null; then
-			error.__trace def 'struct' "$1" "$member" "$__ERR_STRUCT_MEMBER_ALREADY_INIT"
+		elif declare -Fp $1.$member &>/dev/null; then
+			error.__trace def 'member' 'str' "$member" "$__ERR_STRUCT_MEMBER_CONFLICT"
 			return $?
 		fi
-		__STRUCT_MEMBERS[${FUNCNAME[$i]}.$1]+="$member "
+
+		printf -v struct '%s.%s(){ struct.__set_and_get "%s" "%s" "$@"; return 0; }' \
+		"$1" "$member" "$1" "$member"
+
+		eval "$struct" &>/dev/null || error.__trace def
+		__STRUCT_MEMBERS[$1]+="$member "
 	done
 	
 	return 0
 }
 
-# func struct.__members__ <[var]name> => [str]
+# func struct.__members__ <[struct]name> => [str]
 #
 # Lista os membros da estrutura.
 #
 function struct.__members__()
 {
-	getopt.parse 1 "struct:var:+:$1" "${@:2}"
-
-	local i
-	[[ ${FUNCNAME[1]} == $1.__members__ ]] && i=2 || i=1
-	echo ${__STRUCT_MEMBERS[${FUNCNAME[$i]}.$1]}
+	getopt.parse 1 "name:struct:+:$1" "${@:2}"
+	echo ${__STRUCT_MEMBERS[$1]}
 
 	return 0
 }
 
-# func struct.__copy__ <[var]src> <[var]dest>
+# func struct.__copy__ <[struct]src> <[struct]dest>
 #
-# Copia os dados da estrutura 'src' para 'dest'.
+# Cria uma cópia de 'src' com a nomenclatura especificada em 'dest'.
 #
 function struct.__copy__()
 {
-	getopt.parse 2 "st_src:var:+:$1" "st_dest:var:+:$2" "${@:3}"
+	getopt.parse 2 "src:struct:+:$1" "dest:struct:+:$2" "${@:3}"
 	
-	local member i
+	local member
 	
-	[[ ${FUNCNAME[1]} == $1.__copy__ ]] && i=2 || i=1
+	$2.__init__ $($1.__members__)
 
-	if [[ ${__VAR_REG_TYPES[$1]} != struct ]]; then
-		error.__trace def 'st_src' 'struct' "$1" "$__ERR_STRUCT_NOT_FOUND"
-		return $?
-	elif [[ ${__VAR_REG_TYPES[$2]} != struct ]]; then
-		error.__trace def 'st_dest' 'struct' "$2" "$__ERR_STRUCT_NOT_FOUND"
-		return $?
-	fi
-
-	for member in ${__STRUCT_MEMBERS[${FUNCNAME[$i]}.$1]}; do
-		__STRUCT_VAL_MEMBERS[${FUNCNAME[$i]}.$2.$member]=${__STRUCT_VAL_MEMBERS[${FUNCNAME[$i]}.$1.$member]}
+	for member in ${__STRUCT_MEMBERS[$1]}; do
+		__STRUCT_VAL_MEMBERS[$2.$member]=${__STRUCT_VAL_MEMBERS[$1.$member]}
 	done
 
-	__STRUCT_MEMBERS[${FUNCNAME[$i]}.$2]=${__STRUCT_MEMBERS[${FUNCNAME[$i]}.$1]}
-	
+	__STRUCT_MEMBERS[$2]=${__STRUCT_MEMBERS[$1]}
+
 	return 0
 }
 
-# func struct.__size__ => [uint]
+# func struct.__size__ <[struct]name> => [uint]
 #
 # Retorna o total de elementos contidos na estrutura.
 #
 function struct.__size__()
 {
-	getopt.parse 1 "struct:var:+:$1" "${@:2}"
+	getopt.parse 1 "name:struct:+:$1" "${@:2}"
 
-	local len i
-
-	[[ ${FUNCNAME[1]} == $1.__size__ ]] && i=2 || i=1
-
-	if [[ ${__VAR_REG_TYPES[$1]} != struct ]]; then
-		error.__trace def 'st_src' 'struct' "$1" "$__ERR_STRUCT_NOT_FOUND"
-		return $?
-	fi
-
-	len=(${__STRUCT_MEMBERS[${FUNCNAME[$i]}.$1]})
+	local len
+	len=(${__STRUCT_MEMBERS[$1]})
 	echo ${#len[@]}
 
 	return 0	
 }
 
-# func struct.__values__ => [str]
+# func struct.__values__ <[struct]name> => [str]
 #
 # Retorna uma lista iterável contendo os valores de cada elemento da estrutura.
 # 
 function struct.__values__()
 {
-	getopt.parse 1 "struct:var:+:$1" "${@:2}"
+	getopt.parse 1 "name:struct:+:$1" "${@:2}"
 
-	local member i
-
-	[[ ${FUNCNAME[1]} == $1.__values__ ]] && i=2 || i=1
-
-	if [[ ${__VAR_REG_TYPES[$1]} != struct ]]; then
-		error.__trace def 'st_src' 'struct' "$1" "$__ERR_STRUCT_NOT_FOUND"
-		return $?
-	fi
-
-	for member in ${__STRUCT_MEMBERS[${FUNCNAME[$i]}.$1]}; do
-		echo "${__STRUCT_VAL_MEMBERS[${FUNCNAME[$i]}.$1.$member]}"
+	local member
+	for member in ${__STRUCT_MEMBERS[$1]}; do
+		echo "${__STRUCT_VAL_MEMBERS[$1.$member]}"
 	done
 
 	return 0
 }
 
-# func struct.__items__ => [uint]|[str]|[str]
+# func struct.__items__ <[struct]name> => [uint]|[str]|[str]
 #
 # Retorna uma lista iterável com o tamanho, nome e valor de cada membro
 # da estrutura.
 # 
 function struct.__items__()
 {
-	getopt.parse 1 "struct:var:+:$1" "${@:2}"
+	getopt.parse 1 "name:struct:+:$1" "${@:2}"
 
-	local member val i
-	
-	[[ ${FUNCNAME[1]} == $1.__items__ ]] && i=2 || i=1
-
-	if [[ ${__VAR_REG_TYPES[$1]} != struct ]]; then
-		error.__trace def 'st_src' 'struct' "$1" "$__ERR_STRUCT_NOT_FOUND"
-		return $?
-	fi
-
-	for member in ${__STRUCT_MEMBERS[${FUNCNAME[$i]}.$1]}; do
-		val=${__STRUCT_VAL_MEMBERS[${FUNCNAME[$i]}.$1.$member]}
+	local member val
+	for member in ${__STRUCT_MEMBERS[$1]}; do
+		val=${__STRUCT_VAL_MEMBERS[$1.$member]}
 		echo "${#val}|$member|${val}"
 	done
 
@@ -171,11 +139,11 @@ function struct.__items__()
 
 function struct.__set_and_get()
 {
-	getopt.parse 5 "scope:str:+:$1" "struct:var:+:$2" "member:str:+:$3" "=:keyword:-:$4" "value:str:-:$5" "${@:6}"
+	getopt.parse 4 "name:struct:+:$1" "member:str:+:$2" "=:keyword:-:$3" "value:str:-:$4" "${@:5}"
 
 	case ${#@} in
-		3)		echo "${__STRUCT_VAL_MEMBERS[$1.$2.$3]}";;
-		4|5) 	__STRUCT_VAL_MEMBERS[$1.$2.$3]=$5;;
+		2)		echo "${__STRUCT_VAL_MEMBERS[$1.$2]}";;
+		3|4) 	__STRUCT_VAL_MEMBERS[$1.$2]=$4;;
 	esac
 	return 0
 }

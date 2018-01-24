@@ -172,6 +172,7 @@ function getopt.parse()
 				var|array)	[[ $value =~ ^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$ ]];;
 				map)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null)
    	     					[[ $attr =~ A ]];;
+				struct)		[[ ${__VAR_REG_TYPES[$value]} == struct ]];;
    	        	func) 		declare -Fp "$value" &>/dev/null;;
 				funcname) 	[[ $value =~ ^[a-zA-Z0-9_.-]+$ ]];;
 				# base

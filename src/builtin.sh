@@ -1007,14 +1007,14 @@ function del()
 
 	local var member
 	for var in $@; do
-		for member in ${__STRUCT_MEMBERS[${FUNCNAME[1]}.$var]}; do
-			unset __STRUCT_VAL_MEMBERS[${FUNCNAME[1]}.$var.$member]
+		for member in ${__STRUCT_MEMBERS[$var]}; do
+			unset __STRUCT_VAL_MEMBERS[$var.$member]
 			unset -f $var.$member
 		done
 		unset -f ${__VAR_REG_LIST[$var]}
 		unset 	__VAR_REG_TYPES[$var] \
 				__VAR_REG_LIST[$var] \
-				__STRUCT_MEMBERS[${FUNCNAME[1]}.$var] 
+				__STRUCT_MEMBERS[$var] 
 
 	done &>/dev/null
 	return 0
@@ -1038,7 +1038,7 @@ function var()
 		for method in ${__INIT_SRC_TYPES[$type]} ${__INIT_SRC_TYPES[builtin]}; do
 
 			func_type=$(declare -fp $method 2>/dev/null)
-			func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func):[+-]:[^\"']+[\"']"
+			func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|struct):[+-]:[^\"']+[\"']"
 			
 			if [[ $func_type =~ $func_ref ]]; then
 				func_call='%s(){ %s "%s" "$@"; return $?; }'
@@ -1046,13 +1046,14 @@ function var()
 				func_call='%s(){ %s "$%s" "$@"; return $?; }'
 			fi
 
-			printf -v func_call "$func_call" $var.${method##*.} $method $var
-
-			if ! eval "$func_call" &>/dev/null; then
+			if declare -Fp $var.${method##*.} &>/dev/null; then
 				error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
 				return $?
 			fi
 
+			printf -v func_call "$func_call" $var.${method##*.} $method $var
+
+			eval "$func_call" || error.__trace def
 			__VAR_REG_LIST[$var]+="$var.${method##*.} "
 		done
 		__VAR_REG_TYPES[$var]="$type"
