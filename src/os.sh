@@ -910,7 +910,7 @@ function os.file.seek()
 	
 	local filename mode fd cur var
 
-	IFS='|' read var filename mode fd cur <<< "${__OS_FD_OPEN[$1]}"
+	IFS='|' read _ filename mode _ cur <<< "${__OS_FD_OPEN[$1]}"
 	
 	case $mode in
 		0)	eval exec "$1<'$filename'";;
@@ -921,7 +921,7 @@ function os.file.seek()
 		return $?
 	}
 
-	__OS_FD_OPEN[$1]="$var|$filename|$mode|$fd|0"
+	__OS_FD_OPEN[$1]="${__OS_FD_OPEN[$1]%|*}|0"
 
 	case $3 in
 		0)	os.file.read $1 $2;;
