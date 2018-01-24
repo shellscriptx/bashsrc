@@ -66,9 +66,6 @@ __insert__
 __append__
 '
 
-# runtime
-readonly __RUNTIME=$(mktemp -d -t bashsrc-XXXXXX)
-
 # erros
 readonly __ERR_BUILTIN_FUNC_EXISTS='a função já existe ou é um comando interno'
 readonly __ERR_BUILTIN_ALREADY_INIT='o objeto já foi implementado'
@@ -1009,7 +1006,6 @@ function del()
 	getopt.parse -1 "varname:var:+:$1" ... "${@:2}"
 
 	local var member
-
 	for var in $@; do
 		for member in ${__STRUCT_MEMBERS[${FUNCNAME[1]}.$var]}; do
 			unset __STRUCT_VAL_MEMBERS[${FUNCNAME[1]}.$var.$member]
@@ -1018,8 +1014,8 @@ function del()
 		unset -f ${__VAR_REG_LIST[$var]}
 		unset 	__VAR_REG_TYPES[$var] \
 				__VAR_REG_LIST[$var] \
-				__STRUCT_MEMBERS[${FUNCNAME[1]}.$var] \
-				$var
+				__STRUCT_MEMBERS[${FUNCNAME[1]}.$var] 
+
 	done &>/dev/null
 	return 0
 }
