@@ -14,7 +14,7 @@ readonly __OS_SH=1
 source builtin.sh
 source time.sh
 
-__SRC_TYPES[os.file]='
+__SRC_TYPES[file_t]='
 os.file.name
 os.file.stat
 os.file.fd
@@ -437,7 +437,7 @@ function os.stat()
 	return $?	
 }
 
-# func os.open <[os.file]var> <[str]filename> <[uint]flag> => [bool]
+# func os.open <[file_t]var> <[str]filename> <[uint]flag> => [bool]
 #
 # Abre o arquivo especificado em 'filename' associando um descritor 
 # válido para modo de acesso determinado em 'flag'. Se o arquivo for
@@ -482,7 +482,7 @@ function os.stat()
 #
 function os.open()
 {
-	getopt.parse 3 "var:os.file:+:$1" "filename:str:+:$2" "flag:uint:+:$3" ${@:4}
+	getopt.parse 3 "var:file_t:+:$1" "filename:str:+:$2" "flag:uint:+:$3" ${@:4}
 	
 	local __file=$2
 	local __mode=$3

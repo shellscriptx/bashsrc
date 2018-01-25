@@ -80,7 +80,7 @@ readonly -a __weekdays=(
 'Saturday'
 )
 
-var st_time struct.struct
+var st_time struct_t
 
 st_time.__init__	tm_mon \
 					tm_mday \

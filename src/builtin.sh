@@ -37,7 +37,7 @@ shopt -s	extglob \
 
 shopt -u 	nocasematch
 
-__SRC_TYPES[builtin]='
+__SRC_TYPES[builtin_t]='
 __type__
 __len__
 __quote__
@@ -61,8 +61,8 @@ __rev__
 __repl__
 __rm__
 __swapcase__
-__insert__
-__append__
+__ins__
+__app__
 __sum__
 '
 
@@ -80,7 +80,7 @@ readonly NULL=0
 readonly -A __HASH_TYPE=(
 [funcname]='^[a-zA-Z0-9_.-]+$'
 [varname]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$'
-[srctype]='^[a-zA-Z0-9_.]+$'
+[srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]$'
 [st_member]='^[a-zA-Z0-9_.]+$'
 [getopt_nargs]='^(-1|0|[1-9][0-9]*)$'
 [getopt_pname]='^[a-zA-Z0-9_=+-]+$'
@@ -1081,7 +1081,7 @@ function var()
 		
 		__VAR_REG_LIST[$var]="$type|"
 
-		for method in ${__INIT_SRC_TYPES[$type]} ${__INIT_SRC_TYPES[builtin]}; do
+		for method in ${__INIT_SRC_TYPES[$type]} ${__INIT_SRC_TYPES[builtin_t]}; do
 			
 			func_type=$(declare -fp $method 2>/dev/null)
 			func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|${src_types// /|}):[+-]:[^\"']+[\"']"
@@ -1518,12 +1518,12 @@ function __rm__()
 	return $?
 }
 
-# func __insert__ <[var]name> <[str]prefix>
+# func __ins__ <[var]name> <[str]prefix>
 #
 # Insere 'prefix' em 'name'.
 # Se 'name' for um array, insere em todos os elementos.
 #
-function __insert__()
+function __ins__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:+:$2" ${@:3}
 
@@ -1536,12 +1536,12 @@ function __insert__()
 	return $?
 }
 
-# func __append__ <[var]name> <[str]suffix>
+# func __app__ <[var]name> <[str]suffix>
 #
 # Anexa 'suffix' em 'name'.
 # Se 'name' for um array, anexa em todos os elementos.
 #
-function __append__()
+function __app__()
 {
 	getopt.parse 2 "var:var:+:$1" "exp:str:+:$2" ${@:3}
 

@@ -164,10 +164,13 @@ function getopt.parse()
 
 		if [[ $flag == + ]] || [[ $flag == - && $value ]]; then
 			case $ctype in
-				uint|int|zone|char|str|bool|var|array| \
+				uint|int|zone|char|str| \
+				bool|var|array| \
 				bin|hex|oct|size| \
-				12h|24h|date|hour|min|sec|mday|mon|year|yday|wday| \
-				url|email|ipv4|ipv6|mac| \
+				12h|24h|date|hour| \
+				min|sec|mday|mon| \
+				year|yday|wday|url| \
+				email|ipv4|ipv6|mac| \
 				slice|uslice|funcname) [[ $value =~ ${__HASH_TYPE[$ctype]} ]];;
 				map)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null); [[ $attr =~ A ]];;
    	        	func) 		declare -Fp "$value" &>/dev/null;;

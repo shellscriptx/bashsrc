@@ -13,7 +13,7 @@ readonly __FILEPATH_SH=1
 
 source builtin.sh
 
-__SRC_TYPES[filepath.path]='
+__SRC_TYPES[path_t]='
 filepath.ext
 filepath.basename
 filepath.dirname
@@ -31,7 +31,7 @@ filepath.fnlistdir
 filepath.copy
 '
 
-__SRC_TYPES[filepath.fileinfo]='
+__SRC_TYPES[fileinfo_t]='
 filepath.fileinfo.name
 filepath.fileinfo.size
 filepath.fileinfo.mode

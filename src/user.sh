@@ -6,7 +6,7 @@ readonly __USER_SH=1
 
 source builtin.sh
 
-__SRC_TYPES[user.user]='
+__SRC_TYPES[user_t]='
 user.pass
 user.uid
 user.gid
