@@ -63,6 +63,7 @@ __rm__
 __swapcase__
 __insert__
 __append__
+__sum__
 '
 
 # erros
@@ -85,8 +86,8 @@ readonly -A __HASH_TYPE=(
 [getopt_pname]='^[a-zA-Z0-9_=+-]+$'
 [getopt_flag]='^(\+|-)$'
 [uint]='^(0|[1-9][0-9]*)$'
-[int]='^(0|-?[1-9][0-9]*)$'
-[float]='^-?[0-9](,[0-9]+)$'
+[int]='^(0|[-+]?[1-9][0-9]*)$'
+[float]='^[-+]?[0-9](,[0-9]+)$'
 [char]='^.$'
 [str]='^.+$'
 [bool]='^(true|false)$'
@@ -1165,11 +1166,9 @@ function __typeval__()
 	local __elem __type
 
 	for	__elem in "${!__byref[@]}"; do
-		case ${__byref[$__elem]} in
-			?(-|+)+([0-9]))	__type=int;;
-			?(-|+)+([0-9])@(,+([0-9])))	__type=float;;
-			*) __type=string;;
-		esac
+		for __type in int float string; do
+			[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[$__type]} ]] && break
+		done
 		echo "$__elem|$__type"
 	done
 	
@@ -1189,7 +1188,7 @@ function __isnum__()
 	local __elem __bit
 
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} == ?(-|+)+([0-9])?(,+([0-9])) ]]
+		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]]
 		__bit+="$?|"
 	done
 
@@ -1222,10 +1221,33 @@ function __in__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] && ((__byref[$__elem]++))
+		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] && ((__byref[$__elem]++))
 	done
 	
 	return $?
+}
+
+# func __sum__ <[var]name> <[int]num> ...
+#
+# Incrementa 'name' com a soma de 'N' nums.
+# Se 'name' for um array incrementa todos os elementos
+#
+function __sum__()
+{
+	getopt.parse -1 "var:var:+:$1" "num:int:-:$2" ... "${@:3}"
+
+	declare -n __byref=$1
+	local __tmp __nums __elem
+
+	__tmp=(${*:2})
+	__nums=${__tmp[@]}
+	
+	for __elem in "${!__byref[@]}"; do
+		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] && 
+		__byref[$__elem]=$((${__byref[$__elem]}+${__nums// /+}))
+	done
+
+	return 0
 }
 
 # func __dec__ <[var]name>
@@ -1241,7 +1263,7 @@ function __dec__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] && ((__byref[$__elem]--))
+		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] && ((__byref[$__elem]--))
 	done
 }
 
@@ -1258,7 +1280,7 @@ function __eq__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] &&
+		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] &&
 		[[ ${__byref[$__elem]} -eq $2 ]] ||
 		[[ "${__byref[$__elem]}" == "$2" ]] && return 0
 	done
@@ -1279,7 +1301,7 @@ function __ne__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do	
-		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] &&
+		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] &&
 		[[ ${__byref[$__elem]} -ne $2 ]] ||
 		[[ ${__byref[$__elem]} != $2 ]] && return 0
 	done
@@ -1299,7 +1321,7 @@ function __gt__()
 	local __elem
 
 	for __elem in "${!__byref[@]}"; do	
-		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] &&
+		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] &&
 		[[ ${__byref[$__elem]} -gt $2 ]] ||
 		[[ ${__byref[$__elem]} > $2 ]] && return 0
 	done
@@ -1319,7 +1341,7 @@ function __ge__()
 	local __elem
 
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] &&
+		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] &&
 		[[ ${__byref[$__elem]} -ge $2 ]] &&
 		return 0
 	done
@@ -1339,7 +1361,7 @@ function __lt__()
 	local __elem
 
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[@]} == ?(-|+)+([0-9]) ]] &&
+		[[ ${__byref[@]} =~ ${__HASH_TYPE[int]} ]] &&
 		[[ ${__byref[$__elem]} -lt $2 ]] ||
 		[[ ${__byref[$__elem]} < $2 ]] && return 0
 	done
@@ -1359,7 +1381,7 @@ function __le__()
 	local __elem
 
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] && 
+		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] && 
 		[[ ${__byref[$__elem]} -le $2 ]] && return 0
 	done
 	return 1
@@ -1378,7 +1400,7 @@ function __float__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} == ?(-|+)+([0-9]) ]] &&
+		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] &&
 		printf -v __byref[$__elem] "%0.2f" "${__byref[$__elem]}"
 	done
 	return $?
