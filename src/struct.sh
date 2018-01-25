@@ -37,7 +37,7 @@ function struct.__init__(){
 	fi
 
 	for member in ${@:2}; do
-		if [[ $member != *(_)+([a-zA-Z])*([a-zA-Z0-9_.]) ]]; then
+		if ! [[ $member =~ ${__HASH_TYPE[st_member]} ]]; then
 			error.__trace def '' '' "$member" "$__ERR_STRUCT_MEMBER_NAME"
 			return $?
 		elif declare -Fp $1.$member &>/dev/null; then

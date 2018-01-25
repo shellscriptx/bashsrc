@@ -72,8 +72,50 @@ readonly __ERR_BUILTIN_TYPE_CONFLICT='conflito de tipos: o tipo especificado já
 readonly __ERR_BUILTIN_METHOD_NOT_FOUND='o método de implementação não existe'
 readonly __ERR_BUILTIN_METHOD_CONFLICT='conflito de métodos: o método já foi implementado ou é uma função reservada'
 readonly __ERR_BUILTIN_DEPS='o pacote requerido não está instalado'
+readonly __ERR_BUILTIN_TYPE='o identificador do tipo é inválido'
 
 readonly NULL=0
+
+readonly -A __HASH_TYPE=(
+[funcname]='^[a-zA-Z0-9_.-]+$'
+[varname]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$'
+[srctype]='^[a-zA-Z0-9_.]+$'
+[st_member]='^[a-zA-Z0-9_.]+$'
+[getopt_nargs]='^(-1|0|[1-9][0-9]*)$'
+[getopt_pname]='^[a-zA-Z0-9_=+-]+$'
+[getopt_flag]='^(\+|-)$'
+[uint]='^(0|[1-9][0-9]*)$'
+[int]='^(0|-?[1-9][0-9]*)$'
+[float]='^-?[0-9](,[0-9]+)$'
+[char]='^.$'
+[str]='^.+$'
+[bool]='^(true|false)$'
+[var]=${__HASH_TYPE[varname]}
+[array]=${__HASH_TYPE[varname]}
+[zone]=${__HASH_TYPE[int]}
+[bin]='^[01]+$'
+[hex]='^(0x)?[0-9a-fA-F]+$'
+[oct]='^[0-7]+$'
+[size]='^[0-9]+[kKmMgGtTpPeEzZyY]$'
+[12h]='^(0[1-9]|1[0-2]):[0-5][0-9]$'
+[24h]='^([01][0-9]|2[0-3]):[0-5][0-9]$'
+[date]='^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/([0-9]{4,})$'
+[hour]='^([01][0-9]|2[0-3])$'
+[min]='^[0-5][0-9]$'
+[sec]='^[0-5][0-9]$'
+[mday]='^([1-9]|[12][0-9]|3[01])$'
+[month]=' ^([1-9]|1[0-2])$'
+[year]='^[0-9]{4,}$'
+[yday]='^([1-9][0-9]{,1}|[1-2][0-9]{1,2}|3([0-5][0-9]|6[0-6]))$'
+[wday]='^[1-7]$'
+[url]='^(https?|ftp|smtp)://(www\.)?[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+/?$'
+[email]='^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+[ipv4]='^(([0-9]|[1-9][0-9]|1[0-9]{,2}|2[0-4][0-9]|25[0-5])[.]){3}([0-9]|[1-9][0-9]|1[0-9]{,2}|2[0-4][0-9]|25[0-5])$'
+[ipv6]='^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$'
+[mac]='^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$'
+[slice]='^((0|-?[1-9][0-9]*):?|:?(0|-?[1-9][0-9]*)|(0|-?[1-9][0-9]*):(0|-?[1-9][0-9]*))$'
+[uslice]='^((0|[1-9][0-9]*):?|:?(0|[1-9][0-9]*)|(0|[1-9][0-9]*):(0|[1-9][0-9]*))$'
+)
 
 # func has <[str]exp1> on <[str]exp2> => [bool]
 #
@@ -1020,9 +1062,9 @@ function del()
 
 function var()
 {
-	getopt.parse -1 "varname:var:+:$1" ... "${@:2:$((${#@}-1))}"
+	getopt.parse -1 "varname:var:+:$1" ... "${@:1:$((${#@}-1))}"
 	getopt.parse 1 "type:type:+:${@: -1}"
-
+	
 	local type method proto func_ref func_type func_call var src_types
 	
 	type=${@: -1}
@@ -1565,6 +1607,10 @@ function source.__INIT__()
 	fi	
 
 	for type in ${!__SRC_TYPES[@]}; do
+		if ! [[ $type =~ ${__HASH_TYPE[srctype]} ]]; then
+			error.__trace def '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE"
+			return $?	
+		fi
 		for inittype in ${!__INIT_SRC_TYPES[@]}; do
 			if [[ $type == $inittype ]]; then
 				error.__trace src '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE_CONFLICT"

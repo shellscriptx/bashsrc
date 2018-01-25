@@ -14,17 +14,16 @@ readonly __GETOPT_SH=1
 source builtin.sh
 
 readonly __ERR_GETOPT_TYPE_ARG='o argumento esperado é do tipo'
-readonly __ERR_GETOPT_TYPE_PARAM='o tipo do parâmetro não é suportado'
+readonly __ERR_GETOPT_TYPE_INVALID='tipo do objeto inválido'
 readonly __ERR_GETOPT_FLAG='flag não suportada'
-readonly __ERR_GETOPT_VARNAME='nome da variável inválida'
 readonly __ERR_GETOPT_DIR_NOT_FOUND='diretório não encontrado'
 readonly __ERR_GETOPT_FILE_NOT_FOUND='arquivo não encontrado'
 readonly __ERR_GETOPT_PATH_NOT_FOUND='arquivo ou diretório não encontrado'
 readonly __ERR_GETOPT_FD_NOT_EXISTS='o descritor do arquivo não existe'
-readonly __ERR_GETOPT_VAR_TYPE='tipo da variável inválida'
 readonly __ERR_GETOPT_TOO_MANY_ARGS='excesso de argumentos'
 readonly __ERR_GETOPT_KEYWORD='operador/argumento requerido'
 readonly __ERR_GETOPT_ARG_NAME='nome do argumento inválido'
+readonly __ERR_GETOPT_ARG_REQUIRED='o argumento requerido'
 
 # func getopt.parse <[uint]nargs> <[str]name:type:flag:value> ... ${@:nargs+1} -> [bool]
 #
@@ -127,7 +126,7 @@ function getopt.parse()
 {
 	local name ctype flag value flags attr param app vargs lparam rep
 	
-	if [[ $1 != @(-1|0|@([1-9])*([0-9])) ]]; then
+	if ! [[ $1 =~ ${__HASH_TYPE[getopt_nargs]} ]]; then
 		error.__trace def "nargs" "int" "$1" "$__ERR_GETOPT_TYPE_ARG 'int'"
 		return $?
 	elif [[ $1 -eq -1 ]]; then
@@ -152,85 +151,38 @@ function getopt.parse()
 			continue
 		fi
 		
-		if [[ $name != +([a-zA-Z0-9_=-]) ]]; then
+		if ! [[ $name =~ ${__HASH_TYPE[getopt_pname]} ]]; then
 			error.__trace def "name" 'str' "$name" "$__ERR_GETOPT_ARG_NAME"
 			return $?
-		elif [[ $flag != @(-|+) ]]; then
+		elif ! [[ $flag =~ ${__HASH_TYPE[getopt_flag]} ]]; then
 			error.__trace def "flag" 'str' "$flag" "$__ERR_GETOPT_FLAG"
+			return $?
+		elif [[ $flag == + && ! $value ]]; then
+			error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_ARG_REQUIRED"
 			return $?
 		fi
 
 		if [[ $flag == + ]] || [[ $flag == - && $value ]]; then
 			case $ctype in
-				# tipo
-	           	uint) 		[[ $value =~ ^(0|[1-9][0-9]*)$ ]];;
-				int|zone) 	[[ $value =~ ^(0|-?[1-9][0-9]*)$ ]];;
-   		        char) 		[[ $value =~ ^.$ ]];;
-				str) 		[[ $value =~ ^.+$ ]];;
-				bool) 		[[ $value =~ ^(true|false)$ ]];;
-				# variavel
-				var|array)	[[ $value =~ ^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$ ]];;
-				map)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null)
-   	     					[[ $attr =~ A ]];;
+				uint|int|zone|char|str|bool|var|array| \
+				bin|hex|oct|size| \
+				12h|24h|date|hour|min|sec|mday|mon|year|yday|wday| \
+				url|email|ipv4|ipv6|mac| \
+				slice|uslice|funcname) [[ $value =~ ${__HASH_TYPE[$ctype]} ]];;
+				map)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null); [[ $attr =~ A ]];;
    	        	func) 		declare -Fp "$value" &>/dev/null;;
-				funcname) 	[[ $value =~ ^[a-zA-Z0-9_.-]+$ ]];;
-				# base
-   		        bin) 		[[ $value =~ ^[01]+$ ]];;
-   		        hex) 		[[ $value =~ ^(0x)?[0-9a-fA-F]+$ ]];;
-   		        oct) 		[[ $value =~ ^[0-7]+$ ]];;
-				size) 		[[ $value =~ ^[0-9]+[kKmMgGtTpPeEzZyY]$ ]];;
-				# data/time
-				12h) 		[[ $value =~ ^(0[1-9]|1[0-2]):[0-5][0-9]$ ]];;
-				24h) 		[[ $value =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]];;
-				date) 		[[ $value =~ ^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/([0-9]{4,})$ ]];;
-				hour) 		[[ $value =~ ^([01][0-9]|2[0-3])$ ]];;
-				min|sec)	[[ $value =~ ^[0-5][0-9]$ ]];;
-				mday) 		[[ $value =~ ^([1-9]|[12][0-9]|3[01])$ ]];;
-				mon) 		[[ $value =~ ^([1-9]|1[0-2])$ ]];;
-				year) 		[[ $value =~ ^[0-9]{4,}$ ]];;
-				yday) 		[[ $value =~ ^([1-9][0-9]{,1}|[1-2][0-9]{1,2}|3([0-5][0-9]|6[0-6]))$ ]];;
-				wday) 		[[ $value =~ ^[1-7]$ ]];;	
-				# web
-				url) 		[[ $value =~ ^(https?|ftp|smtp)://(www\.)?[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+/?$ ]];;
-				email) 		[[ $value =~ ^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]];;
-				# rede
-				ipv4) 		[[ $value =~ ^(([0-9]|[1-9][0-9]|1[0-9]{,2}|2[0-4][0-9]|
-											25[0-5])[.]){3}([0-9]|[1-9][0-9]|
-											1[0-9]{,2}|2[0-4][0-9]|25[0-5])$ ]];;
-				ipv6) 		[[ $value =~ ^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|
-											([0-9a-fA-F]{1,4}:){1,7}:|
-											([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|
-											([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|
-											([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|
-											([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|
-											([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|
-											[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|
-											:((:[0-9a-fA-F]{1,4}){1,7}|:)|
-											fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|
-											::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|
-											1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|
-											(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|
-											([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|
-											(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$ ]];;
-	
-				mac)		[[ $value =~ ^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$ ]];;
-				slice)		[[ $value =~  ^((0|-?[1-9][0-9]*):?|:?(0|-?[1-9][0-9]*)|(0|-?[1-9][0-9]*):(0|-?[1-9][0-9]*))$ ]];;
-				uslice)		[[ $value =~  ^((0|[1-9][0-9]*):?|:?(0|[1-9][0-9]*)|(0|[1-9][0-9]*):(0|[1-9][0-9]*))$ ]];;
 				keyword) 	[[ $value == $name ]] || { error.__trace def "$name" "$ctype" "$value" "'$name' $__ERR_GETOPT_KEYWORD"; return $?; };;
 				dir) 		[[ -d $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_DIR_NOT_FOUND"; return $?; };;
 				file) 		[[ -f $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
 				path) 		[[ -e $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
 				fd) 		[[ -e /dev/fd/$value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
-				type)		[[ ${__INIT_SRC_TYPES[$value]} ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_VAR_TYPE"; return $?; };;
-				*)			if ! [[ ${__INIT_SRC_TYPES[$ctype]} ]]; then
-								error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_VAR_TYPE"
-								return $?
-							elif [[ ${__VAR_REG_LIST[$value]%%|*} != $ctype ]]; then
-								error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG $ctype"
-								return $?
-							fi
-							;;	
-   	    	esac
+				type)		[[ ${__INIT_SRC_TYPES[$value]} ]];;
+				*)			[[ ${__INIT_SRC_TYPES[$ctype]} ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_INVALID"; return $?; }
+							[[ ${__VAR_REG_LIST[$value]%%|*} == $ctype ]];;
+   	    	esac || {
+				error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG '$ctype'"
+				return $?
+			}
 		fi
 		lparam="$name:$ctype:$flag"
 		[[ $app ]] && __GETOPT_PARSE+=("$name:$ctype:$flag:$value")
