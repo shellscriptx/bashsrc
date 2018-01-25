@@ -13,11 +13,7 @@ readonly __TIME_SH=1
 
 source builtin.sh
 source map.sh
-
-__SRC_TYPES[time]='
-time.localtime
-time.ctime
-'
+source struct.sh
 
 # arquivos
 readonly __TIME_TZFILE=/usr/share/zoneinfo/zone.tab
@@ -84,6 +80,17 @@ readonly -a __weekdays=(
 'Saturday'
 )
 
+var st_time struct.struct
+
+st_time.__init__	tm_mon \
+					tm_mday \
+					tm_hour \
+					tm_min \
+					tm_sec \
+					tm_year \
+					tm_yday \
+					tm_wday \
+					tm_isdst
 
 # func time.today => [str]
 #
@@ -142,48 +149,48 @@ function time.today()
 #
 function time.gmtime()
 {
-	getopt.parse 2 "name:map:+:$1" "seconds:uint:+:$2" ${@:3}
+	getopt.parse 2 "st_time:struct.struct:+:$1" "seconds:uint:+:$2" ${@:3}
 	
-	declare -n  __map_ref=$1
-	local __info
-
-	__info=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
+	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
 		
-	__map_ref[tm_mon]=${__info[0]}
-	__map_ref[tm_mday]=${__info[1]}
-	__map_ref[tm_hour]=${__info[2]}
-	__map_ref[tm_min]=${__info[3]}
-	__map_ref[tm_sec]=${__info[4]}
-	__map_ref[tm_year]=${__info[5]}
-	__map_ref[tm_yday]=${__info[6]}
-	__map_ref[tm_wday]=${__info[7]}
-	__map_ref[tm_isdst]=${__info[8]}
+	struct.__copy__ st_time $1
+	
+	$1.tm_mon = ${info_t[0]}
+	$1.tm_mday = ${info_t[1]}
+	$1.tm_hour = ${info_t[2]}
+	$1.tm_min = ${info_t[3]}
+	$1.tm_sec = ${info_t[4]}
+	$1.tm_year = ${info_t[5]}
+	$1.tm_yday = ${info_t[6]}
+	$1.tm_wday = ${info_t[7]}
+	$1.tm_isdst = ${info_t[8]}
 
 	return 0
 }
 
-# func time.mtime <[map]name>
+# func time.mtime <[struct]st_time>
 #
-# Converte a hora atual para um estrutura time e salva em 'name'.
+# Converte a hora atual para um estrutura 'st_time'.
 #
 function time.mtime()
 {
-	getopt.parse 1 "name:map:+:$1" ${@:2}
+	getopt.parse 1 "st_time:struct.struct:+:$1" ${@:2}
 	
-	declare -n __map_ref=$1
-	local __info
+	local info_t
 
-	__info=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T"))
+	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T"))
+
+	struct.__copy__ st_time $1
 	
-	__map_ref[tm_mon]=${__info[0]}
-	__map_ref[tm_mday]=${__info[1]}
-	__map_ref[tm_hour]=${__info[2]}
-	__map_ref[tm_min]=${__info[3]}
-	__map_ref[tm_sec]=${__info[4]}
-	__map_ref[tm_year]=${__info[5]}
-	__map_ref[tm_yday]=${__info[6]}
-	__map_ref[tm_wday]=${__info[7]}
-	__map_ref[tm_isdst]=${__info[8]}
+	$1.tm_mon = ${info_t[0]}
+	$1.tm_mday = ${info_t[1]}
+	$1.tm_hour = ${info_t[2]}
+	$1.tm_min = ${info_t[3]}
+	$1.tm_sec = ${info_t[4]}
+	$1.tm_year = ${info_t[5]}
+	$1.tm_yday = ${info_t[6]}
+	$1.tm_wday = ${info_t[7]}
+	$1.tm_isdst = ${info_t[8]}
 
 	return 0
 }
@@ -229,20 +236,21 @@ function time.mtime()
 #
 function time.localtime()
 {
-	getopt.parse 2 "name:map:+:$1" "seconds:uint:+:$2" ${@:3}
+	getopt.parse 2 "st_time:struct.struct:+:$1" "seconds:uint:+:$2" ${@:3}
 	
-	declare -n __map_ref=$1
-	local __info=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
-	
-	__map_ref[tm_mon]=${__info[0]}
-	__map_ref[tm_mday]=${__info[1]}
-	__map_ref[tm_hour]=${__info[2]}
-	__map_ref[tm_min]=${__info[3]}
-	__map_ref[tm_sec]=${__info[4]}
-	__map_ref[tm_year]=${__info[5]}
-	__map_ref[tm_yday]=${__info[6]}
-	__map_ref[tm_wday]=${__info[7]}
-	__map_ref[tm_isdst]=${__info[8]}
+	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
+		
+	struct.__copy__ st_time $1
+
+	$1.tm_mon = ${info_t[0]}
+	$1.tm_mday = ${info_t[1]}
+	$1.tm_hour = ${info_t[2]}
+	$1.tm_min = ${info_t[3]}
+	$1.tm_sec = ${info_t[4]}
+	$1.tm_year = ${info_t[5]}
+	$1.tm_yday = ${info_t[6]}
+	$1.tm_wday = ${info_t[7]}
+	$1.tm_isdst = ${info_t[8]}
 			
 	return 0
 }
@@ -302,18 +310,18 @@ function time.tzname()
 	return 0
 }
 
-# func time.tzgmtime <[map]name> <[str]tzname>
+# func time.tzgmtime <[struct]name> <[str]tzname>
 #
 # O mesmo que 'time.gmtime', porém salva a estrutura de hora e data
 # do fuso horário especificado em 'tzname'.
 #
 function time.tzgmtime()
 {
-	getopt.parse 1 "name:map:+:$1" ${@:2}
+	getopt.parse 2 "name:struct.struct:+:$1" "tzname:str:+:$2" ${@:3}
 
 	time.tzinfo $2 1>/dev/null
 	export TZ=$2
-	time.gmtime "$1"
+	time.gmtime "$1" $(printf '%(%s)T')
 	unset TZ
 	return 0
 }
@@ -403,7 +411,7 @@ function time.month()
 #
 # Retorna a nomenclatura que representa o mês atual.
 #
-function time.month.str
+function time.month.string
 {
 	getopt.parse 0 ${@:1}
 	echo "${__months[$(printf "%(%_m)T")]}"
@@ -426,7 +434,7 @@ function time.weekday()
 #
 # Retorna a nomenclatura que representa dia da semana atual.
 #
-function time.weekday.str()
+function time.weekday.string()
 {
 	getopt.parse 0 ${@:1}
 	echo "${__weekdays[$(time.weekday)]}"
@@ -522,31 +530,31 @@ function time.asctime()
 {
 	getopt.parse 1 "datetime:map:+:$1" ${@:2}
 
-	declare -n __asctime_map=$1
-	
-	if ! (time.__check_time ${__asctime_map[tm_hour]} \
-							${__asctime_map[tm_min]} \
-							${__asctime_map[tm_sec]} &&
-		  time.__check_date ${__asctime_map[tm_wday]} \
-							${__asctime_map[tm_mday]} \
-							${__asctime_map[tm_mon]} \
-							${__asctime_map[tm_year]} \
-							${__asctime_map[tm_yday]}); then
-		
-		error.__trace def 'datetime' 'map' "\n$(map.list $1)" "$__ERR_TIME_DATETIME"; return $?
-	fi
-	
-	printf "%s %s %d %02d:%02d:%02d %d %s\n" \
-		${__weekdays[${__asctime_map[tm_wday]}]:0:3} \
-		${__months[${__asctime_map[tm_mon]}]:0:3} \
-		${__asctime_map[tm_mday]} \
-		${__asctime_map[tm_hour]} \
-		${__asctime_map[tm_min]} \
-		${__asctime_map[tm_sec]} \
-		${__asctime_map[tm_year]} \
-		${__asctime_map[tm_isdst]}
-		
-	return 0	
+#	declare -n __asctime_map=$1
+#	
+#	if ! (time.__check_time ${__asctime_map[tm_hour]} \
+#							${__asctime_map[tm_min]} \
+#							${__asctime_map[tm_sec]} &&
+#		  time.__check_date ${__asctime_map[tm_wday]} \
+#							${__asctime_map[tm_mday]} \
+#							${__asctime_map[tm_mon]} \
+#							${__asctime_map[tm_year]} \
+#							${__asctime_map[tm_yday]}); then
+#		
+#		error.__trace def 'datetime' 'map' "\n$(map.list $1)" "$__ERR_TIME_DATETIME"; return $?
+#	fi
+#	
+#	printf "%s %s %d %02d:%02d:%02d %d %s\n" \
+#		${__weekdays[${__asctime_map[tm_wday]}]:0:3} \
+#		${__months[${__asctime_map[tm_mon]}]:0:3} \
+#		${__asctime_map[tm_mday]} \
+#		${__asctime_map[tm_hour]} \
+#		${__asctime_map[tm_min]} \
+#		${__asctime_map[tm_sec]} \
+#		${__asctime_map[tm_year]} \
+#		${__asctime_map[tm_isdst]}
+#		
+#	return 0	
 }
 
 # func time.strftime <[str]format> <[map]datetime> => [str]

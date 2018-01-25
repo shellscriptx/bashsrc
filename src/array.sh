@@ -13,7 +13,7 @@ readonly __ARRAY_SH=1
 
 source builtin.sh
 
-__SRC_TYPES[array]='
+__SRC_TYPES[array.array]='
 array.append 
 array.clear 
 array.copy 

@@ -13,7 +13,7 @@ readonly __ERR_STRUCT_MEMBER_NAME='nome do membro da estrutura inválido'
 readonly __ERR_STRUCT_ALREADY_INIT='a estrutura já foi inicializada'
 readonly __ERR_STRUCT_MEMBER_CONFLICT='conflito de membros na estrutura'
 
-__SRC_TYPES[struct]='
+__SRC_TYPES[struct.struct]='
 struct.__init__
 struct.__members__
 struct.__copy__
@@ -22,12 +22,12 @@ struct.__values__
 struct.__items__
 '
 
-# func struct.__init__ <[var]name> <[str]member> ...
+# func struct.__init__ <[struct.struct]name> <[str]member> ...
 #
 # Inicializa a estrutura 'name' com 'N' members.
 #
 function struct.__init__(){
-	getopt.parse -1 "name:struct:+:$1" "member:str:+:$2" ... "${@:3}"
+	getopt.parse -1 "name:struct.struct:+:$1" "member:str:+:$2" ... "${@:3}"
 
 	local member struct
 
@@ -55,25 +55,25 @@ function struct.__init__(){
 	return 0
 }
 
-# func struct.__members__ <[struct]name> => [str]
+# func struct.__members__ <[struct.struct]name> => [str]
 #
 # Lista os membros da estrutura.
 #
 function struct.__members__()
 {
-	getopt.parse 1 "name:struct:+:$1" "${@:2}"
+	getopt.parse 1 "name:struct.struct:+:$1" "${@:2}"
 	echo ${__STRUCT_MEMBERS[$1]}
 
 	return 0
 }
 
-# func struct.__copy__ <[struct]src> <[struct]dest>
+# func struct.__copy__ <[struct.struct]src> <[struct.struct]dest>
 #
 # Cria uma cópia de 'src' com a nomenclatura especificada em 'dest'.
 #
 function struct.__copy__()
 {
-	getopt.parse 2 "src:struct:+:$1" "dest:struct:+:$2" "${@:3}"
+	getopt.parse 2 "src:struct.struct:+:$1" "dest:struct.struct:+:$2" "${@:3}"
 	
 	local member
 	
@@ -88,13 +88,13 @@ function struct.__copy__()
 	return 0
 }
 
-# func struct.__size__ <[struct]name> => [uint]
+# func struct.__size__ <[struct.struct]name> => [uint]
 #
 # Retorna o total de elementos contidos na estrutura.
 #
 function struct.__size__()
 {
-	getopt.parse 1 "name:struct:+:$1" "${@:2}"
+	getopt.parse 1 "name:struct.struct:+:$1" "${@:2}"
 
 	local len
 	len=(${__STRUCT_MEMBERS[$1]})
@@ -103,13 +103,13 @@ function struct.__size__()
 	return 0	
 }
 
-# func struct.__values__ <[struct]name> => [str]
+# func struct.__values__ <[struct.struct]name> => [str]
 #
 # Retorna uma lista iterável contendo os valores de cada elemento da estrutura.
 # 
 function struct.__values__()
 {
-	getopt.parse 1 "name:struct:+:$1" "${@:2}"
+	getopt.parse 1 "name:struct.struct:+:$1" "${@:2}"
 
 	local member
 	for member in ${__STRUCT_MEMBERS[$1]}; do
@@ -119,14 +119,14 @@ function struct.__values__()
 	return 0
 }
 
-# func struct.__items__ <[struct]name> => [uint]|[str]|[str]
+# func struct.__items__ <[struct.struct]name> => [uint]|[str]|[str]
 #
 # Retorna uma lista iterável com o tamanho, nome e valor de cada membro
 # da estrutura.
 # 
 function struct.__items__()
 {
-	getopt.parse 1 "name:struct:+:$1" "${@:2}"
+	getopt.parse 1 "name:struct.struct:+:$1" "${@:2}"
 
 	local member val
 	for member in ${__STRUCT_MEMBERS[$1]}; do
@@ -139,7 +139,7 @@ function struct.__items__()
 
 function struct.__set_and_get()
 {
-	getopt.parse 4 "name:struct:+:$1" "member:str:+:$2" "=:keyword:-:$3" "value:str:-:$4" "${@:5}"
+	getopt.parse 4 "name:struct.struct:+:$1" "member:str:+:$2" "=:keyword:-:$3" "value:str:-:$4" "${@:5}"
 
 	case ${#@} in
 		2)		echo "${__STRUCT_VAL_MEMBERS[$1.$2]}";;

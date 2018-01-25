@@ -25,8 +25,7 @@ readonly __BUILTIN_SH=1
 
 declare -A	__INIT_SRC_TYPES \
 			__SRC_TYPES \
-			__VAR_REG_LIST \
-			__VAR_REG_TYPES
+			__VAR_REG_LIST 
 
 declare __SRC_DEPS
 			
@@ -1012,8 +1011,7 @@ function del()
 			unset -f $var.$member
 		done
 		unset -f ${__VAR_REG_LIST[$var]}
-		unset 	__VAR_REG_TYPES[$var] \
-				__VAR_REG_LIST[$var] \
+		unset 	__VAR_REG_LIST[$var] \
 				__STRUCT_MEMBERS[$var] 
 
 	done &>/dev/null
@@ -1025,20 +1023,25 @@ function var()
 	getopt.parse -1 "varname:var:+:$1" ... "${@:2:$((${#@}-1))}"
 	getopt.parse 1 "type:type:+:${@: -1}"
 
-	local type method proto func_ref func_type func_call var
+	local type method proto func_ref func_type func_call var src_types
 	
 	type=${@: -1}
 	
+	src_types=${!__INIT_SRC_TYPES[@]}
+
 	for var in ${@:1:$((${#@}-1))}; do
+
 		if [[ ${__VAR_REG_LIST[$var]} ]]; then
 			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"
 			return $?
 		fi
+		
+		__VAR_REG_LIST[$var]="$type|"
 
 		for method in ${__INIT_SRC_TYPES[$type]} ${__INIT_SRC_TYPES[builtin]}; do
-
+			
 			func_type=$(declare -fp $method 2>/dev/null)
-			func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|struct):[+-]:[^\"']+[\"']"
+			func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|${src_types// /|}):[+-]:[^\"']+[\"']"
 			
 			if [[ $func_type =~ $func_ref ]]; then
 				func_call='%s(){ %s "%s" "$@"; return $?; }'
@@ -1056,7 +1059,6 @@ function var()
 			eval "$func_call" || error.__trace def
 			__VAR_REG_LIST[$var]+="$var.${method##*.} "
 		done
-		__VAR_REG_TYPES[$var]="$type"
 	done
 
 	return 0
@@ -1069,7 +1071,7 @@ function var()
 function __type__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
-	echo "${__VAR_REG_TYPES[$1]}"
+	echo "${__VAR_REG_LIST[$1]%%|*}"
 	return 0
 }
 

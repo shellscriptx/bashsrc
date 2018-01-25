@@ -14,7 +14,7 @@ readonly __REGEX_SH=1
 source builtin.sh
 source string.sh
 
-__SRC_TYPES[regex]='
+__SRC_TYPES[regex.regex]='
 regex.findall
 regex.fullmatch 
 regex.match 

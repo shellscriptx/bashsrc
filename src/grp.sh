@@ -13,7 +13,7 @@ readonly __GRP_SH=1
 
 source builtin.sh
 
-__SRC_TYPES[group]='
+__SRC_TYPES[grp.group]='
 grp.getgrgid
 grp.getgrusers
 grp.getgrpass

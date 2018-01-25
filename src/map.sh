@@ -13,7 +13,7 @@ readonly __MAP_SH=1
 
 source builtin.sh
 
-__SRC_TYPES[map]='
+__SRC_TYPES[map.map]='
 map.clone
 map.copy
 map.fromkeys

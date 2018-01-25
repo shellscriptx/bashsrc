@@ -172,7 +172,6 @@ function getopt.parse()
 				var|array)	[[ $value =~ ^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$ ]];;
 				map)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null)
    	     					[[ $attr =~ A ]];;
-				struct)		[[ ${__VAR_REG_TYPES[$value]} == struct ]];;
    	        	func) 		declare -Fp "$value" &>/dev/null;;
 				funcname) 	[[ $value =~ ^[a-zA-Z0-9_.-]+$ ]];;
 				# base
@@ -221,14 +220,17 @@ function getopt.parse()
 				dir) 		[[ -d $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_DIR_NOT_FOUND"; return $?; };;
 				file) 		[[ -f $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
 				path) 		[[ -e $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
-				fd) 		([[ $value =~ ^(0|[1-9][0-9]*)$ ]]; [[ -e /dev/fd/$value ]]) || \
-							{ error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
+				fd) 		[[ -e /dev/fd/$value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
 				type)		[[ ${__INIT_SRC_TYPES[$value]} ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_VAR_TYPE"; return $?; };;
-				*)			error.__trace def "$name" "$ctype" '' "$__ERR_GETOPT_TYPE_PARAM '$ctype'"; return $?;;
-   	    	esac || {
-				error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG $ctype"
-				return $?
-			}
+				*)			if ! [[ ${__INIT_SRC_TYPES[$ctype]} ]]; then
+								error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_VAR_TYPE"
+								return $?
+							elif [[ ${__VAR_REG_LIST[$value]%%|*} != $ctype ]]; then
+								error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG $ctype"
+								return $?
+							fi
+							;;	
+   	    	esac
 		fi
 		lparam="$name:$ctype:$flag"
 		[[ $app ]] && __GETOPT_PARSE+=("$name:$ctype:$flag:$value")
