@@ -15,7 +15,7 @@ readonly __STRING_SH=1
 source builtin.sh
 
 # tipos
-__SRC_TYPES[str_t]='
+__SRC_TYPES[string_t]='
 string.capitalize 
 string.center 
 string.count 

@@ -74,6 +74,7 @@ readonly __ERR_BUILTIN_METHOD_NOT_FOUND='o método de implementação não exist
 readonly __ERR_BUILTIN_METHOD_CONFLICT='conflito de métodos: o método já foi implementado ou é uma função reservada'
 readonly __ERR_BUILTIN_DEPS='o pacote requerido não está instalado'
 readonly __ERR_BUILTIN_TYPE='o identificador do tipo é inválido'
+readonly __ERR_BUILTIN_SRC_TYPE='o tipo do objeto é invalido'
 
 readonly NULL=0
 
@@ -1064,14 +1065,20 @@ function del()
 function var()
 {
 	getopt.parse -1 "varname:var:+:$1" ... "${@:1:$((${#@}-1))}"
-	getopt.parse 1 "type:type:+:${@: -1}"
 	
-	local type method proto func_ref func_type func_call var src_types
+	local type method proto func_ref func_type func_call var src_types builtin
 	
 	type=${@: -1}
 	
 	src_types=${!__INIT_SRC_TYPES[@]}
 
+	if ! [[ $type =~ ^(${src_types// /|})$ ]]; then
+		error.__trace def 'type' 'type' "$type" "$__ERR_BUILTIN_SRC_TYPE"
+		return $?
+	fi
+
+	[[ $type != builtin_t ]] && builtin=${__INIT_SRC_TYPES[builtin_t]}
+	
 	for var in ${@:1:$((${#@}-1))}; do
 
 		if [[ ${__VAR_REG_LIST[$var]} ]]; then
@@ -1081,7 +1088,7 @@ function var()
 		
 		__VAR_REG_LIST[$var]="$type|"
 
-		for method in ${__INIT_SRC_TYPES[$type]} ${__INIT_SRC_TYPES[builtin_t]}; do
+		for method in ${__INIT_SRC_TYPES[$type]} $builtin; do
 			
 			func_type=$(declare -fp $method 2>/dev/null)
 			func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|${src_types// /|}):[+-]:[^\"']+[\"']"
@@ -1098,7 +1105,6 @@ function var()
 			fi
 
 			printf -v func_call "$func_call" $var.${method##*.} $method $var
-
 			eval "$func_call" || error.__trace def
 			__VAR_REG_LIST[$var]+="$var.${method##*.} "
 		done
@@ -1640,7 +1646,7 @@ function source.__INIT__()
 			fi
 		done
 		for method in ${__SRC_TYPES[$type]}; do
-			if ! declare -fp $method &>/dev/null; then
+			if ! declare -Fp $method &>/dev/null; then
 				error.__trace imp '' "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
 				return $?
 			fi

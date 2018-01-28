@@ -198,7 +198,7 @@ function filepath.join()
 # source filepath.sh
 #
 # # Declara e implementa 'file' com o tipo 'filepath'.
-# var file filepath
+# var file path_t
 #
 # # Lendo os arquivos do diretório '/etc'.
 # while read file; do
@@ -385,7 +385,7 @@ function filepath.fnscandir()
 # source filepath.sh
 #
 # # Define variável do tipo 'fileinfo'
-# var arq fileinfo
+# var arq fileinfo_t
 #
 # exibir_tamanho(){
 #
