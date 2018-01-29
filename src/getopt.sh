@@ -165,7 +165,7 @@ function getopt.parse()
 		if [[ $flag == + ]] || [[ $flag == - && $value ]]; then
 			case $ctype in
 				uint|int|zone|char|str| \
-				bool|var|array| \
+				bool|var| \
 				bin|hex|oct|size| \
 				12h|24h|date|hour| \
 				min|sec|mday|mon| \
@@ -173,6 +173,7 @@ function getopt.parse()
 				email|ipv4|ipv6|mac| \
 				slice|uslice|funcname) [[ $value =~ ${__HASH_TYPE[$ctype]} ]];;
 				map)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null); [[ $attr =~ A ]];;
+				array)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null); [[ $attr =~ a ]];;
    	        	func) 		declare -Fp "$value" &>/dev/null;;
 				keyword) 	[[ $value == $name ]] || { error.__trace def "$name" "$ctype" "$value" "'$name' $__ERR_GETOPT_KEYWORD"; return $?; };;
 				dir) 		[[ -d $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_DIR_NOT_FOUND"; return $?; };;

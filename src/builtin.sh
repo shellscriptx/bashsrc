@@ -1062,8 +1062,8 @@ function del()
 			return $?
 		fi			
 		unset 	__VAR_REG_LIST[$var]
-
 	done 
+
 	return 0
 }
 
@@ -1080,13 +1080,16 @@ function var()
 	type=${@: -1}
 	
 	src_types=${!__INIT_SRC_TYPES[@]}
-
+	
 	if ! [[ $type =~ ^(${src_types// /|})$ ]]; then
 		error.__trace def 'type' 'type' "$type" "$__ERR_BUILTIN_SRC_TYPE"
 		return $?
 	fi
 
-	[[ $type != builtin_t ]] && builtin=${__INIT_SRC_TYPES[builtin_t]}
+	case $type in
+		builtin_t|struct_t);;
+		*) builtin=${__INIT_SRC_TYPES[builtin_t]};;
+	esac
 	
 	for var in ${@:1:$((${#@}-1))}; do
 
@@ -1098,7 +1101,7 @@ function var()
 		__VAR_REG_LIST[$var]="$type|"
 
 		for method in ${__INIT_SRC_TYPES[$type]} $builtin; do
-			
+		
 			func_type=$(declare -fp $method 2>/dev/null)
 			func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|${src_types// /|}):[+-]:[^\"']+[\"']"
 			

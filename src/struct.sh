@@ -7,29 +7,31 @@ readonly __STRUCT_SH=1
 source builtin.sh
 
 declare -A 	__STRUCT_VAL_MEMBERS \
-			__STRUCT_MEMBERS
+			__STRUCT_MEMBERS \
+			__STRUCT_TYPE
 
 readonly __ERR_STRUCT_MEMBER_NAME='nome do membro da estrutura inválido'
 readonly __ERR_STRUCT_ALREADY_INIT='a estrutura já foi inicializada'
 readonly __ERR_STRUCT_MEMBER_CONFLICT='conflito de membros na estrutura'
+readonly __ERR_STRUCT_TYPE='requer estrutura do tipo'
 
 __SRC_TYPES[struct_t]='
-struct.__init__
+struct.__typedef__
 struct.__add__
 struct.__members__
 struct.__copy__
-struct.__size__
+struct.__len__
 struct.__values__
 struct.__items__
 struct.__readonly__
+struct.__handle__
 '
 
-
-# func struct.__init__ <[struct_t]name> <[struct_t]type>
+# func struct.__typedef__ <[struct_t]name> <[struct_t]type>
 #
-# Inicializa 'name' com os membros da estrutura 'type' (valores são ignorados).
+# Inicializa 'name' com o tipo da estrutura especificada em 'type'.
 #
-function struct.__init__()
+function struct.__typedef__()
 {
 	getopt.parse 2 "new:struct_t:+:$1" "type:struct_t:+:$2" "${@:3}"
 
@@ -45,6 +47,7 @@ function struct.__init__()
 	done
 	
 	$1.__add__ $members
+	__STRUCT_TYPE[$1]=$2
 
 	return 0	
 }
@@ -91,6 +94,7 @@ function struct.__add__(){
 
 		eval "$struct" &>/dev/null || error.__trace def
 		__STRUCT_MEMBERS[$1]+="$1.$member "
+		__STRUCT_TYPE[$1]="$1"
 	done
 	
 	return 0
@@ -128,11 +132,11 @@ function struct.__copy__()
 	return 0
 }
 
-# func struct.__size__ <[struct_t]name> => [uint]
+# func struct.__len__ <[struct_t]name> => [uint]
 #
 # Retorna o total de elementos contidos na estrutura.
 #
-function struct.__size__()
+function struct.__len__()
 {
 	getopt.parse 1 "name:struct_t:+:$1" "${@:2}"
 
@@ -174,6 +178,17 @@ function struct.__items__()
 		echo "${#val}|$member|$val"
 	done
 
+	return 0
+}
+
+# func struct.__handle__ <[struct_t]name> => [str]
+#
+# Retorna a flag de identificação da estrutura.
+#
+function struct.__handle__()
+{
+	getopt.parse 1 "name:struct_t:+:$1" "${@:2}"
+	echo "${__STRUCT_TYPE[$1]:-$1}"
 	return 0
 }
 

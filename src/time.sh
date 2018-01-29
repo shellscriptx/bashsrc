@@ -100,7 +100,7 @@ st_time.__readonly__
 #
 function time.today()
 {
-	getopt.parse 0 ${@:1}
+	getopt.parse 0 "${@:1}"
 	printf "%(%a %b %d %H:%M:%S %Y %z)T\n"
 	return 0	
 }
@@ -144,11 +144,14 @@ function time.today()
 #
 function time.gmtime()
 {
-	getopt.parse 2 "st_time:struct_t:+:$1" "seconds:uint:+:$2" ${@:3}
+	getopt.parse 2 "st_time:struct_t:+:$1" "seconds:uint:+:$2" "${@:3}"
 	
+	if [[ $($1.__handle__) != st_time ]]; then
+		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_STRUCT_TYPE 'st_time'"
+		return $?
+	fi
+
 	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
-	
-	$1.__init__ st_time	
 	
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}
@@ -169,14 +172,17 @@ function time.gmtime()
 #
 function time.mtime()
 {
-	getopt.parse 1 "st_time:struct_t:+:$1" ${@:2}
+	getopt.parse 1 "st_time:struct_t:+:$1" "${@:2}"
 	
 	local info_t
 
+	if [[ $($1.__handle__) != st_time ]]; then
+		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_STRUCT_TYPE 'st_time'"
+		return $?
+	fi
+	
 	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T"))
 
-	$1.__init__ st_time
-	
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}
 	$1.tm_hour = ${info_t[2]}
@@ -229,9 +235,12 @@ function time.localtime()
 {
 	getopt.parse 2 "st_time:struct_t:+:$1" "seconds:uint:+:$2" ${@:3}
 	
-	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
+	if [[ $($1.__handle__) != st_time ]]; then
+		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_STRUCT_TYPE 'st_time'"
+		return $?
+	fi
 
-	$1.__init__ st_time		
+	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
 
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}
@@ -513,94 +522,125 @@ function time.tzreset()
 	return 0
 }
 
-# func time.asctime <[map]datetime> => [str]
+# func time.asctime <[struct_t]st_time> => [str]
 #
-# Converte a estrutura 'datetime' para string.
+# Converte a estrutura 'st_time' para string.
 #
 function time.asctime()
 {
-	getopt.parse 1 "datetime:map:+:$1" ${@:2}
+	getopt.parse 1 "st_time:struct_t:+:$1" ${@:2}
 
-#	declare -n __asctime_map=$1
-#	
-#	if ! (time.__check_time ${__asctime_map[tm_hour]} \
-#							${__asctime_map[tm_min]} \
-#							${__asctime_map[tm_sec]} &&
-#		  time.__check_date ${__asctime_map[tm_wday]} \
-#							${__asctime_map[tm_mday]} \
-#							${__asctime_map[tm_mon]} \
-#							${__asctime_map[tm_year]} \
-#							${__asctime_map[tm_yday]}); then
-#		
-#		error.__trace def 'datetime' 'map' "\n$(map.list $1)" "$__ERR_TIME_DATETIME"; return $?
-#	fi
-#	
-#	printf "%s %s %d %02d:%02d:%02d %d %s\n" \
-#		${__weekdays[${__asctime_map[tm_wday]}]:0:3} \
-#		${__months[${__asctime_map[tm_mon]}]:0:3} \
-#		${__asctime_map[tm_mday]} \
-#		${__asctime_map[tm_hour]} \
-#		${__asctime_map[tm_min]} \
-#		${__asctime_map[tm_sec]} \
-#		${__asctime_map[tm_year]} \
-#		${__asctime_map[tm_isdst]}
-#		
-#	return 0	
+	if [[ $($1.__handle__) != st_time ]]; then
+		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_STRUCT_TYPE 'st_time'"
+		return $?
+	fi
+
+	if	! (time.__check_time $($1.tm_hour) \
+								$($1.tm_min) \
+								$($1.tm_sec) &&
+			time.__check_date 	$($1.tm_wday) \
+								$($1.tm_mday) \
+								$($1.tm_mon) \
+								$($1.tm_year) \
+								$($1.tm_yday)) 2>/dev/null; then
+		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
+		return $?
+	fi
+
+	printf "%s %s %d %02d:%02d:%02d %d %s\n" \
+		${__weekdays[$($1.tm_wday)]:0:3} \
+		${__months[$($1.tm_mon)]:0:3} \
+		$($1.tm_mday) \
+		$($1.tm_hour) \
+		$($1.tm_min) \
+		$($1.tm_sec) \
+		$($1.tm_year) \
+		$($1.tm_isdst)
+
+	return 0
 }
 
-# func time.strftime <[str]format> <[map]datetime> => [str]
+# func time.strftime <[strct_t]st_time> <[str]format> => [str]
+#
+# Converte a estrutura 'st_time' para o formato especificado em 'format'.
+#
+# Códigos de formato:
+#
+# %a - nome do dia da semana abreviado.
+# %A - nome do dia da semana completo.
+# %b - nome do mês abreviado.
+# %B - nome do mês completo.
+# %c - data e Hora local.
+# %d - dia do mês.
+# %m - mês.
+# %y - último dois digitos do ano.
+# %Y - ano.
+# %H - hora (00..23)
+# %I - hora (01..12)
+# %M - minuto (00..59)
+# %S - segundos (00..59)
+# %j - dia do ano (001...366)
+# %w - dia da semana (1..7)
+# %z - fuso horário.
+#
 function time.strftime()
 {
-	getopt.parse 2 "format:str:+:$1" "datetime:map:+:$2" ${@:3}
+	getopt.parse 2 "st_time:struct_t:+:$1" "format:str:+:$2" ${@:3}
 
-	declare -n __dt_ref=$2
-	local __fmt=$1
+	local ch fmt week day month year hour min sec i
 
-	if ! (time.__check_time ${__dt_ref[tm_hour]} \
-							${__dt_ref[tm_min]} \
-							${__dt_ref[tm_sec]} &&
-		  time.__check_date ${__dt_ref[tm_wday]} \
-							${__dt_ref[tm_mday]} \
-							${__dt_ref[tm_mon]} \
-							${__dt_ref[tm_year]} \
-							${__dt_ref[tm_yday]}); then
-		
-		error.__trace def 'datetime' 'map' "\n$(map.list $2)" "$__ERR_TIME_DATETIME"; return $?
+	if [[ $($1.__handle__) != st_time ]]; then
+		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_STRUCT_TYPE 'st_time'"
+		return $?
 	fi
-	
-	for ((__i=0; __i < ${#__fmt}; __i++)); do
-		
-		__ch=${__fmt:$__i:2}
-		
-		case $__ch in
-			%a) __fmt=${__fmt//$__ch/${__weekdays[${__dt_ref[tm_wday]}]:0:3}};;
-			%A) __fmt=${__fmt//$__ch/${__weekdays[${__dt_ref[tm_wday]}]}};;
-			%b) __fmt=${__fmt//$__ch/${__months[${__dt_ref[tm_mon]}]:0:3}};;
-			%B) __fmt=${__fmt//$__ch/${__months[${__dt_ref[tm_mon]}]}};;
-			%c)	__week=${__weekdays[${__dt_ref[tm_wday]}]:0:3}
-				__day=${__dt_ref[tm_mday]}
-				__month=${__months[${__dt_ref[tm_mon]}]:0:3}
-				__year=${__dt_ref[tm_year]}
-				__hour=${__dt_ref[tm_hour]}
-				__min=${__dt_ref[tm_min]}
-				__sec=${__dt_ref[tm_sec]}
-				__fmt=${__fmt//$__ch/${__week} ${__day} ${__month} ${__year} ${__hour}:${__min}:${__sec}};;
 
-			%d) __fmt=${__fmt//$__ch/${__dt_ref[tm_mday]}};;
-			%m) __fmt=${__fmt//$__ch/${__dt_ref[tm_mon]}};;
-			%y) __fmt=${__fmt//$__ch/${__dt_ref[tm_year]: -2}};;
-			%Y) __fmt=${__fmt//$__ch/${__dt_ref[tm_year]}};;
-			%H) __fmt=${__fmt//$__ch/${__dt_ref[tm_hour]}};;
-			%I) __fmt=${__fmt//$__ch/$((${__dt_ref[tm_hour]}%12))};;
-			%M) __fmt=${__fmt//$__ch/${__dt_ref[tm_min]}};;
-			%S) __fmt=${__fmt//$__ch/${__dt_ref[tm_sec]}};;
-			%j) __fmt=${__fmt//$__ch/${__dt_ref[tm_yday]}};;
-			%w) __fmt=${__fmt//$__ch/${__dt_ref[tm_wday]}};;
-			%z) __fmt=${__fmt//$__ch/${__dt_ref[tm_isdst]}};;
+	fmt=$2
+
+	if	! (time.__check_time $($1.tm_hour) \
+								$($1.tm_min) \
+								$($1.tm_sec) &&
+			time.__check_date 	$($1.tm_wday) \
+								$($1.tm_mday) \
+								$($1.tm_mon) \
+								$($1.tm_year) \
+								$($1.tm_yday)) 2>/dev/null; then
+		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
+		return $?
+	fi
+
+	for ((i=0; i < ${#fmt}; i++)); do
+		
+		ch=${fmt:$i:2}
+
+		case $ch in
+			%a) fmt=${fmt//$ch/${__weekdays[$($1.tm_wday)]:0:3}};;
+			%A) fmt=${fmt//$ch/${__weekdays[$($1.tm_wday)]}};;
+			%b) fmt=${fmt//$ch/${__months[$($1.tm_mon)]:0:3}};;
+			%B) fmt=${fmt//$ch/${__months[$($1.tm_mon)]}};;
+			%c)	week=${__weekdays[$($1.tm_wday)]:0:3}
+				day=$($1.tm_mday)
+				month=${__months[$($1.tm_mon)]:0:3}
+				year=$($1.tm_year)
+				hour=$($1.tm_hour)
+				min=$($1.tm_min)
+				sec=$($1.tm_sec)
+				fmt=${fmt//$ch/$week $day $month $year $hour:$min:$sec};;
+
+			%d) fmt=${fmt//$ch/$($1.tm_mday)};;
+			%m) fmt=${fmt//$ch/$($1.tm_mon)};;
+			%y) year=$($1.tm_year); fmt=${fmt//$ch/${year: -2}};;
+			%Y) fmt=${fmt//$ch/$($1.tm_year)};;
+			%H) fmt=${fmt//$ch/$($1.tm_hour)};;
+			%I) fmt=${fmt//$ch/$(($($1.tm_hour)%12))};;
+			%M) fmt=${fmt//$ch/$($1.tm_min)};;
+			%S) fmt=${fmt//$ch/$($1.tm_sec)};;
+			%j) fmt=${fmt//$ch/$($1.tm_yday)};;
+			%w) fmt=${fmt//$ch/$($1.tm_wday)};;
+			%z) fmt=${fmt//$ch/$($1.tm_isdst)};;
 		esac
 	done
 					
-	echo "$__fmt"
+	echo "$fmt"
 	
 	return 0	
 }

@@ -27,24 +27,6 @@ map.contains
 map.pop
 '
 
-# func map.clear <[map]name>
-#
-# Limpa todos os elementos de 'name'.
-#
-function map.clear()
-{
-	getopt.parse 1 "name:map:+:$1" ${@:2}
-
-	declare -n __map=$1
-	local __key
-	
-	for __key in "${!__map[@]}"; do
-		unset __map[$__key]
-	done
-
-	return 0
-}
-
 # func map.clone <[map]src> <[map]dest>
 #
 # Clona todos os elementos de 'src' para 'dest', sobrescrevendo todos
@@ -57,7 +39,7 @@ function map.clone()
 	declare -n __map1=$1 __map2=$2
 	local __key
 
-	map.clear $2
+	__map2=()
 	
 	for __key in "${!__map1[@]}"; do
 		__map2[$__key]=${__map1[$__key]}
