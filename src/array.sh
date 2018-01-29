@@ -13,7 +13,7 @@ readonly __ARRAY_SH=1
 
 source builtin.sh
 
-__SRC_TYPES[array.array]='
+__SRC_TYPES[array_t]='
 array.append 
 array.clear 
 array.copy 
@@ -355,7 +355,6 @@ function array.slice()
 	declare -n __arr=$1
 	local __slice __elem
 	
-	echo "-> $1 <-"
 	IFS=':' __slice=($2)
 
 	__slice[0]=${__slice[0]#-}
