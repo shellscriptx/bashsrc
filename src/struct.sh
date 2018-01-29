@@ -15,24 +15,65 @@ readonly __ERR_STRUCT_MEMBER_CONFLICT='conflito de membros na estrutura'
 
 __SRC_TYPES[struct_t]='
 struct.__init__
+struct.__add__
 struct.__members__
 struct.__copy__
 struct.__size__
 struct.__values__
 struct.__items__
+struct.__readonly__
 '
 
-# func struct.__init__ <[struct_t]name> <[str]member> ...
+
+# func struct.__init__ <[struct_t]name> <[struct_t]type>
 #
-# Inicializa a estrutura 'name' com 'N' members.
+# Inicializa 'name' com os membros da estrutura 'type' (valores são ignorados).
 #
-function struct.__init__(){
+function struct.__init__()
+{
+	getopt.parse 2 "new:struct_t:+:$1" "type:struct_t:+:$2" "${@:3}"
+
+	local member members
+
+	if [[ ${__STRUCT_MEMBERS[$1]} ]]; then	
+		error.__trace def 'new' "struct_t" "$1" "$__ERR_STRUCT_ALREADY_INIT"
+		return $?
+	fi
+
+	for member in ${__STRUCT_MEMBERS[$2]}; do
+		members+="${member#*.} "
+	done
+	
+	$1.__add__ $members
+
+	return 0	
+}
+
+# func struct.__readonly__ <[struct_t]name>
+#
+# Define o atributo somente-leitura para os membros da estrutura.
+#
+function struct.__readonly__()
+{
+	getopt.parse -1 "name:struct_t:+:$1" ... "${@:2}"
+
+	local struct
+	for struct in $@; do
+		readonly -f ${__STRUCT_MEMBERS[$struct]}
+	done
+}
+
+# func struct.__add__ <[struct_t]name> <[str]member> ...
+#
+# Adiciona 'N'membros a estrutura 'name'.
+#
+function struct.__add__(){
 	getopt.parse -1 "name:struct_t:+:$1" "member:str:+:$2" ... "${@:3}"
 
 	local member struct
 
 	if [[ ${__STRUCT_MEMBERS[$1]} ]]; then	
-		error.__trace def 'struct' "$1" "$member" "$__ERR_STRUCT_ALREADY_INIT"
+		error.__trace def 'new' "struct_t" "$1" "$__ERR_STRUCT_ALREADY_INIT"
 		return $?
 	fi
 
@@ -49,7 +90,7 @@ function struct.__init__(){
 		"$1" "$member" "$1" "$member"
 
 		eval "$struct" &>/dev/null || error.__trace def
-		__STRUCT_MEMBERS[$1]+="$member "
+		__STRUCT_MEMBERS[$1]+="$1.$member "
 	done
 	
 	return 0
@@ -62,7 +103,7 @@ function struct.__init__(){
 function struct.__members__()
 {
 	getopt.parse 1 "name:struct_t:+:$1" "${@:2}"
-	echo ${__STRUCT_MEMBERS[$1]}
+	printf '%s\n' ${__STRUCT_MEMBERS[$1]}
 
 	return 0
 }
@@ -75,15 +116,14 @@ function struct.__copy__()
 {
 	getopt.parse 2 "src:struct_t:+:$1" "dest:struct_t:+:$2" "${@:3}"
 	
-	local member
-	
-	$2.__init__ $($1.__members__)
+	local member members
 
 	for member in ${__STRUCT_MEMBERS[$1]}; do
-		__STRUCT_VAL_MEMBERS[$2.$member]=${__STRUCT_VAL_MEMBERS[$1.$member]}
+		members+="${member#*.} "
+		__STRUCT_VAL_MEMBERS[$2.${member#*.}]=${__STRUCT_VAL_MEMBERS[$member]}
 	done
-
-	__STRUCT_MEMBERS[$2]=${__STRUCT_MEMBERS[$1]}
+	
+	$2.__add__ $members
 
 	return 0
 }
@@ -96,8 +136,7 @@ function struct.__size__()
 {
 	getopt.parse 1 "name:struct_t:+:$1" "${@:2}"
 
-	local len
-	len=(${__STRUCT_MEMBERS[$1]})
+	local len=(${__STRUCT_MEMBERS[$1]})
 	echo ${#len[@]}
 
 	return 0	
@@ -112,8 +151,9 @@ function struct.__values__()
 	getopt.parse 1 "name:struct_t:+:$1" "${@:2}"
 
 	local member
+	
 	for member in ${__STRUCT_MEMBERS[$1]}; do
-		echo "${__STRUCT_VAL_MEMBERS[$1.$member]}"
+		echo "${__STRUCT_VAL_MEMBERS[$member]}"
 	done
 
 	return 0
@@ -130,8 +170,8 @@ function struct.__items__()
 
 	local member val
 	for member in ${__STRUCT_MEMBERS[$1]}; do
-		val=${__STRUCT_VAL_MEMBERS[$1.$member]}
-		echo "${#val}|$member|${val}"
+		val=${__STRUCT_VAL_MEMBERS[$member]}
+		echo "${#val}|$member|$val"
 	done
 
 	return 0

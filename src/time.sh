@@ -82,7 +82,7 @@ readonly -a __weekdays=(
 
 var st_time struct_t
 
-st_time.__init__	tm_mon \
+st_time.__add__		tm_mon \
 					tm_mday \
 					tm_hour \
 					tm_min \
@@ -91,6 +91,8 @@ st_time.__init__	tm_mon \
 					tm_yday \
 					tm_wday \
 					tm_isdst
+
+st_time.__readonly__
 
 # func time.today => [str]
 #
@@ -103,14 +105,12 @@ function time.today()
 	return 0	
 }
 
-# func time.gmtime <[map]datetime> <[uint]seconds>
+# func time.gmtime <[struct_t]st_time> <[uint]seconds>
 #
 # Salva em 'datetime' a estrutura data e hora convertidos
 # a partir do tempo em segundos especificado em 'seconds'.
 #
-# map[chave] 
-#
-# chaves:
+# Membros da estrutura:
 #
 # tm_sec    - Segundos (0-60)
 # tm_min    - Minutos (0-59)
@@ -125,12 +125,7 @@ function time.today()
 # Exemplo:
 #
 # #!/bin/bash
-# # script: datetime.sh
-#
 # source time.sh
-#
-# # Declara variável do tipo map.
-# declare -A dt
 #
 # # Salva em 'dt' a hora atual.
 # time.gmtime dt
@@ -149,11 +144,11 @@ function time.today()
 #
 function time.gmtime()
 {
-	getopt.parse 2 "st_time:struct.struct:+:$1" "seconds:uint:+:$2" ${@:3}
+	getopt.parse 2 "st_time:struct_t:+:$1" "seconds:uint:+:$2" ${@:3}
 	
 	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
-		
-	struct.__copy__ st_time $1
+	
+	$1.__init__ st_time	
 	
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}
@@ -174,13 +169,13 @@ function time.gmtime()
 #
 function time.mtime()
 {
-	getopt.parse 1 "st_time:struct.struct:+:$1" ${@:2}
+	getopt.parse 1 "st_time:struct_t:+:$1" ${@:2}
 	
 	local info_t
 
 	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T"))
 
-	struct.__copy__ st_time $1
+	$1.__init__ st_time
 	
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}
@@ -205,10 +200,6 @@ function time.mtime()
 # # script: datetime.sh
 #
 # source time.sh
-# source map.sh
-#
-# # Declarando o tipo map.
-# declare -A dt
 #
 # # Convertendo os segundos para a estrutura [map]datetime.
 # seg=$(time.time)
@@ -236,11 +227,11 @@ function time.mtime()
 #
 function time.localtime()
 {
-	getopt.parse 2 "st_time:struct.struct:+:$1" "seconds:uint:+:$2" ${@:3}
+	getopt.parse 2 "st_time:struct_t:+:$1" "seconds:uint:+:$2" ${@:3}
 	
 	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
-		
-	struct.__copy__ st_time $1
+
+	$1.__init__ st_time		
 
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}

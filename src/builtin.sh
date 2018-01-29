@@ -75,6 +75,7 @@ readonly __ERR_BUILTIN_METHOD_CONFLICT='conflito de métodos: o método já foi 
 readonly __ERR_BUILTIN_DEPS='o pacote requerido não está instalado'
 readonly __ERR_BUILTIN_TYPE='o identificador do tipo é inválido'
 readonly __ERR_BUILTIN_SRC_TYPE='o tipo do objeto é invalido'
+readonly __ERR_BUILTIN_DEL_OBJ='não foi possível deletar o objeto'
 
 readonly NULL=0
 
@@ -1049,19 +1050,27 @@ function del()
 	getopt.parse -1 "varname:var:+:$1" ... "${@:2}"
 
 	local var member
-	for var in $@; do
-		for member in ${__STRUCT_MEMBERS[$var]}; do
-			unset __STRUCT_VAL_MEMBERS[$var.$member]
-			unset -f $var.$member
-		done
-		unset -f ${__VAR_REG_LIST[$var]}
-		unset 	__VAR_REG_LIST[$var] \
-				__STRUCT_MEMBERS[$var] 
 
-	done &>/dev/null
+	for var in $@; do
+		if [[ ${__VAR_REG_LIST[$var]%%|*} == struct_t ]]; then
+			for member in ${__STRUCT_MEMBERS[$var]}; do
+				unset __STRUCT_VAL_MEMBERS[$member]
+			done
+		fi
+		if ! unset -f ${__VAR_REG_LIST[$var]} ${__STRUCT_MEMBERS[$var]} 2>/dev/null; then
+			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_DEL_OBJ"
+			return $?
+		fi			
+		unset 	__VAR_REG_LIST[$var]
+
+	done 
 	return 0
 }
 
+# func var <[var]varname> ... <[type]typename>
+#
+# Inicializa 'varname' implementandos os métodos de 'typename'.
+#
 function var()
 {
 	getopt.parse -1 "varname:var:+:$1" ... "${@:1:$((${#@}-1))}"
