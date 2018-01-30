@@ -14,7 +14,6 @@ readonly __GETOPT_SH=1
 source builtin.sh
 
 readonly __ERR_GETOPT_TYPE_ARG='o argumento esperado é do tipo'
-readonly __ERR_GETOPT_TYPE_INVALID='tipo do objeto inválido'
 readonly __ERR_GETOPT_FLAG='flag não suportada'
 readonly __ERR_GETOPT_DIR_NOT_FOUND='diretório não encontrado'
 readonly __ERR_GETOPT_FILE_NOT_FOUND='arquivo não encontrado'
@@ -180,8 +179,7 @@ function getopt.parse()
 				file) 		[[ -f $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
 				path) 		[[ -e $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
 				fd) 		[[ -e /dev/fd/$value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
-				*)			[[ ${__INIT_SRC_TYPES[$ctype]} ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_INVALID"; return $?; }
-							[[ ${__INIT_OBJ_TYPE[$value]} == $ctype ]];;
+				*)			[[ ${__INIT_OBJ_TYPE[$value]} == $ctype || ${__STRUCT_HANDLE[$value]} == $ctype ]];;
    	    	esac || {
 				error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG '$ctype'"
 				return $?
