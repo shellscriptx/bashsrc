@@ -12,7 +12,6 @@
 readonly __TIME_SH=1
 
 source builtin.sh
-source map.sh
 source struct.sh
 
 # arquivos
@@ -105,7 +104,7 @@ function time.today()
 	return 0	
 }
 
-# func time.gmtime <[struct_t]st_time> <[uint]seconds>
+# func time.gmtime <[st_time]struct> <[uint]seconds>
 #
 # Salva em 'datetime' a estrutura data e hora convertidos
 # a partir do tempo em segundos especificado em 'seconds'.
@@ -144,13 +143,8 @@ function time.today()
 #
 function time.gmtime()
 {
-	getopt.parse 2 "st_time:struct_t:+:$1" "seconds:uint:+:$2" "${@:3}"
+	getopt.parse 2 "struct:st_time:+:$1" "seconds:uint:+:$2" "${@:3}"
 	
-	if [[ $($1.__handle__) != st_time ]]; then
-		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_STRUCT_TYPE 'st_time'"
-		return $?
-	fi
-
 	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
 	
 	$1.tm_mon = ${info_t[0]}
@@ -166,21 +160,16 @@ function time.gmtime()
 	return 0
 }
 
-# func time.mtime <[struct]st_time>
+# func time.mtime <[st_time]struct>
 #
 # Converte a hora atual para um estrutura 'st_time'.
 #
 function time.mtime()
 {
-	getopt.parse 1 "st_time:struct_t:+:$1" "${@:2}"
+	getopt.parse 1 "struct:st_time:+:$1" "${@:2}"
 	
 	local info_t
 
-	if [[ $($1.__handle__) != st_time ]]; then
-		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_STRUCT_TYPE 'st_time'"
-		return $?
-	fi
-	
 	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T"))
 
 	$1.tm_mon = ${info_t[0]}
@@ -233,13 +222,8 @@ function time.mtime()
 #
 function time.localtime()
 {
-	getopt.parse 2 "st_time:struct_t:+:$1" "seconds:uint:+:$2" ${@:3}
+	getopt.parse 2 "struct:st_time:+:$1" "seconds:uint:+:$2" ${@:3}
 	
-	if [[ $($1.__handle__) != st_time ]]; then
-		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_STRUCT_TYPE 'st_time'"
-		return $?
-	fi
-
 	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
 
 	$1.tm_mon = ${info_t[0]}
@@ -317,7 +301,7 @@ function time.tzname()
 #
 function time.tzgmtime()
 {
-	getopt.parse 2 "name:struct.struct:+:$1" "tzname:str:+:$2" ${@:3}
+	getopt.parse 2 "name:st_time:+:$1" "tzname:str:+:$2" ${@:3}
 
 	time.tzinfo $2 1>/dev/null
 	export TZ=$2
@@ -522,13 +506,13 @@ function time.tzreset()
 	return 0
 }
 
-# func time.asctime <[struct_t]st_time> => [str]
+# func time.asctime <[st_time]struct> => [str]
 #
 # Converte a estrutura 'st_time' para string.
 #
 function time.asctime()
 {
-	getopt.parse 1 "st_time:struct_t:+:$1" ${@:2}
+	getopt.parse 1 "struct:st_time:+:$1" ${@:2}
 
 	if [[ $($1.__handle__) != st_time ]]; then
 		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_STRUCT_TYPE 'st_time'"
@@ -560,7 +544,7 @@ function time.asctime()
 	return 0
 }
 
-# func time.strftime <[strct_t]st_time> <[str]format> => [str]
+# func time.strftime <[st_time]struct> <[str]format> => [str]
 #
 # Converte a estrutura 'st_time' para o formato especificado em 'format'.
 #
@@ -585,7 +569,7 @@ function time.asctime()
 #
 function time.strftime()
 {
-	getopt.parse 2 "st_time:struct_t:+:$1" "format:str:+:$2" ${@:3}
+	getopt.parse 2 "struct:st_time:+:$1" "format:str:+:$2" ${@:3}
 
 	local ch fmt week day month year hour min sec i
 
