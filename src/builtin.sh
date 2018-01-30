@@ -29,6 +29,7 @@ declare -A	__INIT_SRC_TYPES \
 			__INIT_OBJ_TYPE
 
 declare -a	__NO_TYPE_BUILTIN_IMPLEMENTS
+
 declare  	__NO_BUILTIN_T__ \
 			__DEPS__
 
@@ -1096,7 +1097,7 @@ function var()
 	elif ! [[ $type =~ ^(${no_builtin// /|})$ ]]; then
 		builtin=${__INIT_SRC_TYPES[builtin_t]}
 	fi
-	
+
 	for var in ${@:1:$((${#@}-1))}; do
 
 		if [[ ${__INIT_OBJ_METHOD[$var]} ]]; then
@@ -1116,7 +1117,7 @@ function var()
 			else
 				func_call='%s(){ %s "$%s" "$@"; return $?; }'
 			fi
-
+			
 			if declare -Fp $var.${method##*.} &>/dev/null; then
 				error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
 				return $?
@@ -1126,6 +1127,7 @@ function var()
 			eval "$func_call" || error.__trace def
 			__INIT_OBJ_METHOD[$var]+="$var.${method##*.} "
 		done
+		[[ $type == struct_t ]] && __STRUCT_HANDLE[$var]=$var
 	done
 
 	return 0
@@ -1683,8 +1685,8 @@ function source.__INIT__()
 	
 	while IFS=' ' read _ _ func; do readonly -f $func; done < <(declare -Fp)
 	
-	unset 	__DEPS__ \
-			__NO_BUILTIN_T__ || error.__trace def
+	__DEPS__=''
+	__NO_BUILTIN_T__=''
 	
 	return 0
 }
