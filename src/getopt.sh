@@ -186,7 +186,7 @@ function getopt.parse()
 			}
 		fi
 		lparam="$name:$ctype:$flag"
-		[[ $app ]] && __GETOPT_PARSE+=("$name:$ctype:$flag:$value")
+		[[ $app ]] && __GETOPT_PARSE+=("$param")
 	done
 	
 	return $?
@@ -198,7 +198,7 @@ function getopt.parse()
 #
 function getopt.nargs()
 { 
-	getopt.parse 0 $@
+	getopt.parse 0 "$@"
 
 	echo ${#__GETOPT_PARSE[@]}
 	return 0
@@ -210,7 +210,7 @@ function getopt.nargs()
 #
 function getopt.args()
 {
-	getopt.parse 0 $@
+	getopt.parse 0 "$@"
 
 	local arg
 	for arg in "${__GETOPT_PARSE[@]}"; do
@@ -225,7 +225,7 @@ function getopt.args()
 #
 function getopt.values()
 {
-	getopt.parse 0 $@
+	getopt.parse 0 "$@"
 	
 	local val
 	for val in "${__GETOPT_PARSE[@]}"; do
@@ -240,7 +240,7 @@ function getopt.values()
 #
 function getopt.value()
 {
-	getopt.parse 1 "argname:str:+:$1" ${@:2}
+	getopt.parse 1 "argname:str:+:$1" "${@:2}"
 	getopt.__get_param $1 val
 	return $?
 }
@@ -251,7 +251,7 @@ function getopt.value()
 #
 function getopt.type()
 {
-	getopt.parse 1 "argname:str:+:$1" ${@:2}
+	getopt.parse 1 "argname:str:+:$1" "${@:2}"
 	getopt.__get_param $1 type
 	return $?
 }
@@ -262,7 +262,7 @@ function getopt.type()
 #
 function getopt.flag()
 {
-	getopt.parse 1 "argname:str:+:$1" ${@:2}
+	getopt.parse 1 "argname:str:+:$1" "${@:2}"
 	getopt.__get_param $1 flag
 	return $?
 }
@@ -295,7 +295,7 @@ function getopt.__get_param()
 #
 function getopt.params()
 {
-	getopt.parse 0 $@
+	getopt.parse 0 "$@"
 
 	local param name ctype flag
 	for param in "${__GETOPT_PARSE[@]}"; do
