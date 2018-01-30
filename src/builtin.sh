@@ -24,11 +24,14 @@ fi
 readonly __BUILTIN_SH=1
 
 declare -A	__INIT_SRC_TYPES \
-			__SRC_TYPES \
-			__VAR_REG_LIST 
+			__TYPE__ \
+			__INIT_OBJ_METHOD \
+			__INIT_OBJ_TYPE
 
-declare __SRC_DEPS
-			
+declare -a	__NO_TYPE_BUILTIN_IMPLEMENTS
+declare  	__NO_BUILTIN_T__ \
+			__DEPS__
+
 shopt -s	extglob \
 			globasciiranges \
 			expand_aliases \
@@ -37,7 +40,7 @@ shopt -s	extglob \
 
 shopt -u 	nocasematch
 
-__SRC_TYPES[builtin_t]='
+__TYPE__[builtin_t]='
 __type__
 __len__
 __quote__
@@ -64,6 +67,10 @@ __swapcase__
 __ins__
 __app__
 __sum__
+'
+
+__NO_BUILTIN_T__='
+builtin_t
 '
 
 # erros
@@ -1052,16 +1059,17 @@ function del()
 	local var member
 
 	for var in $@; do
-		if [[ ${__VAR_REG_LIST[$var]%%|*} == struct_t ]]; then
+		if [[ ${__INIT_OBJ_TYPE[$var]} == struct_t ]]; then
 			for member in ${__STRUCT_MEMBERS[$var]}; do
 				unset __STRUCT_VAL_MEMBERS[$member]
 			done
 		fi
-		if ! unset -f ${__VAR_REG_LIST[$var]} ${__STRUCT_MEMBERS[$var]} 2>/dev/null; then
+		if ! unset -f ${__INIT_OBJ_METHOD[$var]} ${__STRUCT_MEMBERS[$var]} 2>/dev/null; then
 			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_DEL_OBJ"
 			return $?
 		fi			
-		unset 	__VAR_REG_LIST[$var]
+		unset 	__INIT_OBJ_METHOD[$var] \
+				__INIT_OBJ_TYPE[$var]
 	done 
 
 	return 0
@@ -1075,30 +1083,28 @@ function var()
 {
 	getopt.parse -1 "varname:var:+:$1" ... "${@:1:$((${#@}-1))}"
 	
-	local type method proto func_ref func_type func_call var src_types builtin
+	local type method proto func_ref func_type func_call var src_types builtin no_builtin
 	
 	type=${@: -1}
-	
+
+	no_builtin=${__NO_TYPE_BUILTIN_IMPLEMENTS[@]}
 	src_types=${!__INIT_SRC_TYPES[@]}
 	
 	if ! [[ $type =~ ^(${src_types// /|})$ ]]; then
 		error.__trace def 'type' 'type' "$type" "$__ERR_BUILTIN_SRC_TYPE"
 		return $?
+	elif ! [[ $type =~ ^(${no_builtin// /|})$ ]]; then
+		builtin=${__INIT_SRC_TYPES[builtin_t]}
 	fi
-
-	case $type in
-		builtin_t|struct_t);;
-		*) builtin=${__INIT_SRC_TYPES[builtin_t]};;
-	esac
 	
 	for var in ${@:1:$((${#@}-1))}; do
 
-		if [[ ${__VAR_REG_LIST[$var]} ]]; then
+		if [[ ${__INIT_OBJ_METHOD[$var]} ]]; then
 			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"
 			return $?
 		fi
 		
-		__VAR_REG_LIST[$var]="$type|"
+		__INIT_OBJ_TYPE[$var]=$type
 
 		for method in ${__INIT_SRC_TYPES[$type]} $builtin; do
 		
@@ -1118,7 +1124,7 @@ function var()
 
 			printf -v func_call "$func_call" $var.${method##*.} $method $var
 			eval "$func_call" || error.__trace def
-			__VAR_REG_LIST[$var]+="$var.${method##*.} "
+			__INIT_OBJ_METHOD[$var]+="$var.${method##*.} "
 		done
 	done
 
@@ -1132,7 +1138,7 @@ function var()
 function __type__()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
-	echo "${__VAR_REG_LIST[$1]%%|*}"
+	echo "${__INIT_OBJ_TYPE[$1]}"
 	return 0
 }
 
@@ -1630,9 +1636,9 @@ function __iter__()
 
 function source.__INIT__()
 {
-	local attr type method inittype func pkg err deps
+	local attr type method inittype func pkg err deps no_type
 	
-	for pkg in ${__SRC_DEPS[@]}; do
+	for pkg in $__DEPS__; do
 		command -v $pkg &>/dev/null || { err=1; deps+="$pkg, "; }
 	done
 
@@ -1641,12 +1647,12 @@ function source.__INIT__()
 		return $?
 	fi
 
-	if IFS=' ' read _ attr _ < <(declare -p __SRC_TYPES 2>/dev/null) && ! [[ $attr =~ A ]]; then
-		error.__trace src '' "${BASH_SOURCE[-2]}" '' "'__SRC_TYPES' não é um array associativo"
+	if IFS=' ' read _ attr _ < <(declare -p __TYPE__ 2>/dev/null) && ! [[ $attr =~ A ]]; then
+		error.__trace src '' "${BASH_SOURCE[-2]}" '' "'__TYPE__' não é um array associativo"
 		return $?
 	fi	
 
-	for type in ${!__SRC_TYPES[@]}; do
+	for type in ${!__TYPE__[@]}; do
 		if ! [[ $type =~ ${__HASH_TYPE[srctype]} ]]; then
 			error.__trace def '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE"
 			return $?	
@@ -1657,19 +1663,28 @@ function source.__INIT__()
 				return $?
 			fi
 		done
-		for method in ${__SRC_TYPES[$type]}; do
+		for method in ${__TYPE__[$type]}; do
 			if ! declare -Fp $method &>/dev/null; then
 				error.__trace imp '' "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
 				return $?
 			fi
 		done
-		__INIT_SRC_TYPES[$type]=${__SRC_TYPES[$type]}
-		unset __SRC_TYPES[$type] || error.__trace def
+		__INIT_SRC_TYPES[$type]=${__TYPE__[$type]}
+		unset __TYPE__[$type] || error.__trace def
 	done
 
+	for no_type in ${__NO_BUILTIN_T__}; do
+		if ! [[ ${__INIT_SRC_TYPES[$no_type]} ]]; then
+			error.__trace src '' "${BASH_SOURCE[-2]}" "$no_type" "$__ERR_BUILTIN_TYPE"
+			return $?
+		fi
+		__NO_TYPE_BUILTIN_IMPLEMENTS+=($no_type)
+	done
+	
 	while IFS=' ' read _ _ func; do readonly -f $func; done < <(declare -Fp)
-
-	unset __SRC_DEPS || error.__trace def
+	
+	unset 	__DEPS__ \
+			__NO_BUILTIN_T__ || error.__trace def
 	
 	return 0
 }

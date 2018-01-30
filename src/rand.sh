@@ -13,15 +13,15 @@ readonly __RAND_SH=1
 
 source builtin.sh
 
-__SRC_TYPES[arand_t]='
+__TYPE__[arand_t]='
 rand.achoice
 '
 
-__SRC_TYPES[mrand_t]='
+__TYPE__[mrand_t]='
 rand.mchoice
 '
 
-__SRC_TYPES[srand_t]='
+__TYPE__[srand_t]='
 rand.cchoice
 rand.wchoice
 '

@@ -14,7 +14,7 @@ readonly __OS_SH=1
 source builtin.sh
 source time.sh
 
-__SRC_TYPES[file_t]='
+__TYPE__[file_t]='
 os.file.name
 os.file.stat
 os.file.fd
@@ -839,10 +839,11 @@ function os.file.close()
 	
 	IFS='|' read var _ _ _ _ <<< "${__OS_FD_OPEN[$1]}"
 	
-	unset -f ${__VAR_REG_LIST[$var]}
+	unset -f ${__INIT_OBJ_METHOD[$var]}
 
 	unset 	__OS_FD_OPEN[$1] \
-			__VAR_REG_LIST[$var]
+			__INIT_OBJ_METHOD[$var] \
+			__INIT_OBJ_TYPE[$var]
 	
 	return 0
 }

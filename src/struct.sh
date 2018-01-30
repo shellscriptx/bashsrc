@@ -8,14 +8,18 @@ source builtin.sh
 
 declare -A 	__STRUCT_VAL_MEMBERS \
 			__STRUCT_MEMBERS \
-			__STRUCT_TYPE
+			__STRUCT_HANDLE
 
 readonly __ERR_STRUCT_MEMBER_NAME='nome do membro da estrutura inválido'
 readonly __ERR_STRUCT_ALREADY_INIT='a estrutura já foi inicializada'
 readonly __ERR_STRUCT_MEMBER_CONFLICT='conflito de membros na estrutura'
 readonly __ERR_STRUCT_TYPE='requer estrutura do tipo'
 
-__SRC_TYPES[struct_t]='
+__NO_BUILTIN_T__='
+struct_t
+'
+
+__TYPE__[struct_t]='
 struct.__typedef__
 struct.__add__
 struct.__members__
@@ -25,6 +29,7 @@ struct.__values__
 struct.__items__
 struct.__readonly__
 struct.__handle__
+__type__
 '
 
 # func struct.__typedef__ <[struct_t]name> <[struct_t]type>
@@ -47,7 +52,7 @@ function struct.__typedef__()
 	done
 	
 	$1.__add__ $members
-	__STRUCT_TYPE[$1]=$2
+	__STRUCT_HANDLE[$1]=$2
 
 	return 0	
 }
@@ -94,9 +99,10 @@ function struct.__add__(){
 
 		eval "$struct" &>/dev/null || error.__trace def
 		__STRUCT_MEMBERS[$1]+="$1.$member "
-		__STRUCT_TYPE[$1]="$1"
 	done
 	
+	__STRUCT_HANDLE[$1]="$1"
+
 	return 0
 }
 
@@ -188,7 +194,7 @@ function struct.__items__()
 function struct.__handle__()
 {
 	getopt.parse 1 "name:struct_t:+:$1" "${@:2}"
-	echo "${__STRUCT_TYPE[$1]:-$1}"
+	echo "${__STRUCT_HANDLE[$1]:-$1}"
 	return 0
 }
 

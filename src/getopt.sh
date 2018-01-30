@@ -181,7 +181,7 @@ function getopt.parse()
 				path) 		[[ -e $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
 				fd) 		[[ -e /dev/fd/$value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
 				*)			[[ ${__INIT_SRC_TYPES[$ctype]} ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_INVALID"; return $?; }
-							[[ ${__VAR_REG_LIST[$value]%%|*} == $ctype ]];;
+							[[ ${__INIT_OBJ_TYPE[$value]} == $ctype ]];;
    	    	esac || {
 				error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG '$ctype'"
 				return $?
