@@ -269,68 +269,55 @@ function os.hostname()
 	return 0
 }
 
-# func os.chatime <[path]pathname> <[map]time> => [bool]
+# func os.chatime <[st_time]struct> <[path]pathname> => [bool]
 #
 # Altera o tempo de acesso do arquivo ou diretório especificado
 # em 'pathname' pelo tempo na estrutura 'time'. Se o valor de um membro
 # da estrutura for omitido, assume como padrão a data do sistema.
 #
-function os.chatime(){ os.__chtime -a "$1" "$2"; return $?; }
+function os.chatime(){ os.__chtime "$1" "$2" '-a'; return $?; }
 
-# func os.chmtime <[path]pathname> <[map]time> => [bool]
+# func os.chmtime <[st_time]struct> <[path]pathname> => [bool]
 #
 # Altera o tempo de modificação do arquivo ou diretório especificado
 # em 'pathname' pelo tempo na estrutura 'time'. Se o valor de um membro
 # da estrutura for omitido, assume como padrão a data do sistema.
 #
-function os.chmtime(){ os.__chtime -m "$1" "$2"; return $?; }
+function os.chmtime(){ os.__chtime "$1" "$2" '-m'; return $?; }
 
-# func os.chtime <[path]pathname> <[map]time> => [bool]
+# func os.chtime <[st_time]struct> <[path]pathname> => [bool]
 #
 # Altera o tempo de modificação e acesso do arquivo ou diretório especificado
 # em 'pathname' pelo tempo na estrutura 'time'. Se o valor de um membro
 # da estrutura for omitido, assume como padrão a data do sistema.
 #
-function os.chtime(){ os.__chtime '' "$1" "$2"; return $?; }
+function os.chtime(){ os.__chtime "$1" "$2" ''; return $?; }
 
 function os.__chtime()
 {
-	getopt.parse 3 "flag:str:-:$1" "pathname:path:+:$2" "time:map:+:$3" ${@:4}
+	getopt.parse 3 "struct:st_time:+:$1" "pathname:path:+:$2" "flag:str:-:$3"
 
-	declare -n __map_ref=$3
-	local __flag=$1
-	local __tm=($(printf "%(%_w %_d %_m %Y %_H %_M %_S %_j)T"))
-
-	__map_ref[tm_wday]=${__map_ref[tm_wday]:-${__tm[0]}}
-	__map_ref[tm_mday]=${__map_ref[tm_mday]:-${__tm[1]}}
-	__map_ref[tm_mon]=${__map_ref[tm_mon]:-${__tm[2]}}
-	__map_ref[tm_year]=${__map_ref[tm_year]:-${__tm[3]}}
-	__map_ref[tm_hour]=${__map_ref[tm_hour]:-${__tm[4]}}
-	__map_ref[tm_min]=${__map_ref[tm_min]:-${__tm[5]}}
-	__map_ref[tm_sec]=${__map_ref[tm_sec]:-${__tm[6]}}
-	__map_ref[tm_yday]=${__map_ref[tm_yday]:-${__tm[7]}}
-	
-	if ! (time.__check_time ${__map_ref[tm_hour]} \
-                            ${__map_ref[tm_min]} \
-                            ${__map_ref[tm_sec]} &&
-          time.__check_date ${__map_ref[tm_wday]} \
-                            ${__map_ref[tm_mday]} \
-                            ${__map_ref[tm_mon]} \
-                            ${__map_ref[tm_year]} \
-                            ${__map_ref[tm_yday]}); then
-        
-        error.__trace def 'time' 'map' "\n$(map.list $3)" "$__ERR_TIME_DATETIME"; return $?
+	if  ! (time.__check_time $($1.tm_hour) \
+								$($1.tm_min) \
+								$($1.tm_sec) &&
+			time.__check_date   $($1.tm_wday) \
+								$($1.tm_mday) \
+								$($1.tm_mon) \
+								$($1.tm_year) \
+								$($1.tm_yday)) 2>/dev/null; then
+        error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
+        return $?
     fi
 
-	touch $__flag \
+	touch $3 \
 			--no-create \
-			--date "${__weekdays[${__map_ref[tm_wday]}]}
-					${__map_ref[tm_mday]}
-					${__months[${__map_ref[tm_mon]}]}
-					${__map_ref[tm_year]}
-					${__map_ref[tm_hour]}:${__map_ref[tm_min]}:${__map_ref[tm_sec]}" \
-					"$2" &>/dev/null
-				
+			--date "${__weekdays[$($1.tm_wday)]}
+					$($1.tm_mday) 
+					${__months[$($1.tm_mon)]} 
+					$($1.tm_year) 
+					$($1.tm_hour):$($1.tm_min):$($1.tm_sec)" \
+			"$2" &>/dev/null
+	
 	return $?
 }
 
