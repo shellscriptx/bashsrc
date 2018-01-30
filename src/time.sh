@@ -514,11 +514,6 @@ function time.asctime()
 {
 	getopt.parse 1 "struct:st_time:+:$1" ${@:2}
 
-	if [[ $($1.__handle__) != st_time ]]; then
-		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_STRUCT_TYPE 'st_time'"
-		return $?
-	fi
-
 	if	! (time.__check_time $($1.tm_hour) \
 								$($1.tm_min) \
 								$($1.tm_sec) &&
@@ -572,11 +567,6 @@ function time.strftime()
 	getopt.parse 2 "struct:st_time:+:$1" "format:str:+:$2" ${@:3}
 
 	local ch fmt week day month year hour min sec i
-
-	if [[ $($1.__handle__) != st_time ]]; then
-		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_STRUCT_TYPE 'st_time'"
-		return $?
-	fi
 
 	fmt=$2
 
@@ -635,17 +625,18 @@ function time.__check_date()
 	local week=$1 day=$2 month=$3 year=$4 yearday=$5 d=$2 m=$3 y=$4 w tyd 
 	local days=('0 31 28 31 30 31 30 31 31 30 31 30 31' 
 				'0 31 29 31 30 31 30 31 31 30 31 30 31')
-	
+
 	leap_year=$(((year % 4 == 0 && year % 100 != 0) || year % 400 == 0 ? 1 : 0))
 	tyd=$((leap_year == 0 ? 365 : 366))
 	w=$(($((d+=m<3 ? y--: y-2,23*m/9+d+4+y/4-y/100+y/400))%7))
 
+	echo $w - $week
 	days=(${days[$leap_year]})
 
 	if	((month > 12 			|| month < 1))	||
 		((day > ${days[$month]} || day < 1)) 	||
 		((year < 1900)) 		||
-		((w != week )) 			||
+#		((w != week )) 			||
 		((yearday < 1 			|| yearday > tyd)); then
 		return 1
 	fi
