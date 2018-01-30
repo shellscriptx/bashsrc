@@ -1064,13 +1064,14 @@ function del()
 			for member in ${__STRUCT_MEMBERS[$var]}; do
 				unset __STRUCT_VAL_MEMBERS[$member]
 			done
+			unset __STRUCT_HANDLE[$var]
 		fi
 		if ! unset -f ${__INIT_OBJ_METHOD[$var]} ${__STRUCT_MEMBERS[$var]} 2>/dev/null; then
 			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_DEL_OBJ"
 			return $?
 		fi			
 		unset 	__INIT_OBJ_METHOD[$var] \
-				__INIT_OBJ_TYPE[$var]
+				__INIT_OBJ_TYPE[$var] 
 	done 
 
 	return 0
