@@ -194,7 +194,7 @@ function struct.__items__()
 function struct.__handle__()
 {
 	getopt.parse 1 "name:struct_t:+:$1" "${@:2}"
-	echo "${__STRUCT_HANDLE[$1]:-$1}"
+	echo "${__STRUCT_HANDLE[$1]}"
 	return 0
 }
 
