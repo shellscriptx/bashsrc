@@ -28,7 +28,7 @@ declare -A	__INIT_SRC_TYPES \
 			__INIT_OBJ_METHOD \
 			__INIT_OBJ_TYPE
 
-declare -a	__NO_TYPE_BUILTIN_IMPLEMENTS
+declare -a	__NO_BUILTIN_IMPLEMENTS
 
 declare  	__NO_BUILTIN_T__ \
 			__DEPS__
@@ -1089,7 +1089,7 @@ function var()
 	
 	type=${@: -1}
 
-	no_builtin=${__NO_TYPE_BUILTIN_IMPLEMENTS[@]}
+	no_builtin=${__NO_BUILTIN_IMPLEMENTS[@]}
 	src_types=${!__INIT_SRC_TYPES[@]}
 	
 	if ! [[ $type =~ ^(${src_types// /|})$ ]]; then
@@ -1681,7 +1681,7 @@ function source.__INIT__()
 			error.__trace src '' "${BASH_SOURCE[-2]}" "$no_type" "$__ERR_BUILTIN_TYPE"
 			return $?
 		fi
-		__NO_TYPE_BUILTIN_IMPLEMENTS+=($no_type)
+		__NO_BUILTIN_IMPLEMENTS+=($no_type)
 	done
 	
 	while IFS=' ' read _ _ func; do readonly -f $func; done < <(declare -Fp)
