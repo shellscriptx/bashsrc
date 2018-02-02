@@ -28,6 +28,10 @@ declare -A	__INIT_SRC_TYPES \
 			__INIT_OBJ_METHOD \
 			__INIT_OBJ_TYPE
 
+declare -A  __STRUCT_VAL_MEMBERS \
+            __STRUCT_MEMBERS \
+            __STRUCT_HANDLE
+
 declare -a	__NO_BUILTIN_IMPLEMENTS
 
 declare  	__NO_BUILTIN_T__ \
