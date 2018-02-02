@@ -26,101 +26,182 @@ readonly __ERR_GETOPT_ARG_REQUIRED='o argumento requerido'
 
 # func getopt.parse <[uint]nargs> <[str]name:type:flag:value> ... ${@:nargs+1} -> [bool]
 #
-# Trata a lista de parâmetros em 'name:type:flag:value' verificando as configurações
+#
+# Trata a lista de parâmetros em 'name:type:flag:$N' verificando as configurações
 # especificadas para cada argumento posicional e se possui 'N'args na chamada da função.
+# 
 # Retorna true se todos os argumentos satisfazem os critérios determinados, caso contrário
 # retorna false e finaliza a função.
 # 
-# nargs - número máximo de argumentos. (Utilize '-1' para definir uma função variádica).
+#  nargs    - O total de argumentos requeridos. Utilize -1 para funções variáticas.
+#  ${@:N+1} - Array de argumentos posicionais a partir do índice 'N+1', onde 'N' é o
+#             número do último argumento posicional. (É recomendado especificá-lo para 
+#             verificação da quantidade de argumentos recebidos para detecção de valores
+#             excedidos. 
+#  ...      - Argumentos variáticos, utilize somente quando 'nargs' for igual à -1. 
+# 
+# A configuração do argumento posicional é uma string contendo 4 parâmetros delimitados por 
+# ':' (dois-pontos), que especifica a forma como o argumento é tratado na chamada da função 
+# e que deve ser especificado no seguinte padrão: 
+# 
+# 'name:type:flag:$N'
+# 
+#  name - Nomenclatura do argumento. Caracteres suportados. [a-zA-Z0-9_=+-] 
+#  type - O tipo de dado suportado pelo argumento. Pode ser uma 'Flag type', 'Struct' ou um 
+#        'Objeto' de implementação válido. 
+#  flag - Atributo de prioridade que especifica se é obrigatório ou opcional ([-\ +]). Use 
+#         '-' (hífen) para opcional ou '+' para obrigatório. 
+#  $N   - Argumento posicional ($1, $2, $3 ...) cujo valor será verificado com base no tipo
+#         especificado. 
+# 
+# #### Flag type ####
+# 
+# O Flag type é um dado mapeado a partir de um expressão de comprimento variável cujo tipo 
+# é determinado pela aplicação de um padrão (regex).
+# 
+# A nomenclatura indica o tipo de dado suportado pelo argumento cujo valor precisa atender
+# aos critérios de validação.
+# 
+#  Flag/Critérios 
 #
-# name - nomenclatura do parâmetro. Caracteres suportados. [a-zA-Z0-9_=-]
-#
-# type - tipo de dado aceito pelo parâmetro.
-#
-# flag - atributo que determina o comportamento do parâmetro. Utilize o 
-# caractere '-' (hifen) para especificar que o argumento é opcional
-# ou '+' para obrigatório.
-#            
-# value - valor a ser verificado pela função com base no tipo definido.
-#
-# ${@:total_args+1} - array de argumentos posicionais a partir do índice 'total_args + 1'.
-#
-# types:
-#
-# uint		- inteiro sem sinal.
-# int		- inteiro com sinal.
-# zone		- fuso horário.
-# char		- caractere único.
-# str		- uma cadeia de caracteres.
-# bool		- booleano (true ou false).
-# var		- identificador de uma variável válida.
-# array		- array indexado.
-# map		- array associativo.
-# func		- identificador de uma função válida.
-# funcname	- identificador válido suportado para referênciar uma função.
-# bin		- número binário (base 2).
-# hex		- número hexadecimal (base 16).
-# oct		- número octal (base 8).
-# size		- unidade de armazenamento. (12KB, 1MB, 10G, 2TB ...)
-# 12h		- hora no formato 12 horas. (HH:MM -> 1..12)
-# 24h		- hora no formato 24 horas. (HH:MM -> 0..23)
-# date		- data. (DD/MM/YYYY) 
-# hour		- hora. (0..23)
-# min		- minutos. (0..59)
-# sec		- segundos. (0..59)
-# mday		- dia do mês. (1..31)
-# mon		- dia da semana. (1..12)
-# year		- ano. inteiro positivo com 4 ou mais digitos.
-# yday		- dias do ano. (1..366)
-# wday		- dias da semana. (1..7)
-# url		- endereço web. (http|https|ftp|smtp)://....
-# email		- endereço de email.
-# ipv4		- protocolo ipv4 (32 bits)
-# ipv6		- protocolo ipv6 (128 bits)
-# mac		- endereço MAC Address (xx:xx:xx:xx:xx:xx)
-# slice		- intervalo númerico positivo. (x:x)
-# uslice    - intervalo número. (x:x)
-# keyword	- palavra chave.
-# dir		- diretório válido.
-# file		- arquivo padrão.
-# path		- caminho válido.
-# fd		- inteiro positivo que representa um descritor de arquivo.
-# type		- objeto de implementação válido.
+#  uint     - Inteiro sem sinal. 
+#  int      - Inteiro com sinal. 
+#  zone     - Fuso horário. 
+#  char     - Caractere único. 
+#  str      - Uma cadeia de caracteres. 
+#  bool     - Booleano (true ou false). 
+#  var      - Identificador de uma variável válida. 
+#  array    - Array indexado. 
+#  map      - Array associativo. 
+#  funcname - Nomenclatura de função válida. 
+#| func     - Identificador de uma função válida. 
+#  bin      - Número binário (base 2). 
+#  hex      - Número hexadecimal (base 16). 
+#  oct      - Número octal (base 8). 
+#  size     - Unidade de armazenamento. (12KB, 1MB, 10G, 2TB ...) 
+#  12h      - Hora no formato 12 horas. (HH:MM -> 1..12) 
+#  24h      - Hora no formato 24 horas. (HH:MM -> 0..23) 
+#  date     - Data no formato. (DD/MM/YYYY) 
+#  hour     - Hora. (0..23) 
+#  min      - Minutos. (0..59) 
+#  sec      - Segundos. (0..59) 
+#  mday     - Dia do mês. (1..31) 
+#  mon      - Dia da semana. (1..12) 
+#  year     - Ano. inteiro positivo com 4 ou mais dígitos.
+#  yday     - Dias do ano. (1..366) 
+#  wday     - Dias da semana. (1..7) 
+#  url      - Endereço web. (http https ftp smtp)://.... 
+#  email    - Endereço de email. 
+#  ipv4     - protocolo ipv4 (32 bits) 
+#  ipv6     - protocolo ipv6 (128 bits) 
+#  mac      - Endereço MAC Address (xx:xx:xx:xx:xx:xx) 
+#  slice    - Intervalo numérico. ([-]N:[-]N) 
+#  uslice   - Intervalo numérico positivo (N:N) 
+#  keyword  - Palavra chave que indica que 'type' tem que ser igual a 'name'. 
+#  dir      - Diretório válido. 
+#  file     - Arquivo padrão. 
+#  path     - Caminho válido. 
+#  fd       - Inteiro positivo que representa um descritor de arquivo. 
+# 
 #
 # Exemplo 1:
-#
+# 
+# Criando a função soma que recebe dois inteiros.
+# 
 # #!/bin/bash
-# # script: soma.sh
-#
+# 
 # source getopt.sh
-#
+# 
 # soma()
 # {
-#     # verifica os valores passados na função
-#     getopt.parse 2 "x:int:+:$1" "y:int:+:$2" ${@:3}
-#
+#     getopt.parse 2 "x:int:+:$1" "y:int:+:$2" "${@:3}"
+# 
+#     # Retorno da soma
 #     echo $(($1+$2))
 # }
-#
+# 
+# # chama a função
 # soma 10 20
-# soma 10 af
-# # FIM
 #
-# $ ./soma.sh
+# Saída:
+#
 # 30
-# ./teste.sh: erro: linha 14: soma: y: 'af' o argumento esperado é do tipo int
-#
-#
+# 
 # Exemplo 2:
+# 
+# Criando uma função variática 'soma' que irá receber uma quantidade
+# indeterminada de inteiros.
+# 
+# #!/bin/bash
+# 
+# source getopt.sh
+# 
+# soma(){
+#     getopt.parse -1 "num:int:+:$1" ... "${@:2}"
+# 
+#     for num in $@; do
+#         total=$((total+$num))
+#     done
+# 
+#     echo "$total"
+# }
+# 
+# # Chama a função
+# soma 10 20 30 40 50 60 70 80
 #
-# # Protótipo da função variádica 'sum' que realiza a soma de todos os elementos e
-# # que recebe uma quantidade indeterminada de argumentos inteiros.
+# Saída:
 #
-# $ getopt.parse -1 "num:int:+:$1" ... "${@:2}"
+# 360
 #
-# # O nome, flag e tipo dos argumentos variádicos subsequentes serão iguais ao 
-# # argumento que precede as reticências '...'
+# O atributo do argumento posicional subsequente será igual ao atributo do
+# último argumento especificado: "num:int:+:"
+# 
+# Exemplo 3:
+# 
+# Criando uma função que reverte a sequência de caracteres e que recebe como 
+# argumento um objeto implementado por 'string_t'.
+# 
+# #!/bin/bash
+# 
+# source getopt.sh
+# source string.sh
+# 
+# reverter(){
+#     getopt.parse 1 "meu_objeto:string_t:+:$1" "${@:2}"
+# 
+#     # Chama o método 'reverse' do objeto.
+#     $1.reverse
+# }
+# 
+# # Implementa 'texto' com o tipo 'string_t'
+# var texto string_t
+# 
+# texto='Seja Livre, use Linux !!'
+# 
+# # chama a função passando o objeto implementado.
+# reverter texto
 #
+# Saída:
+#
+# !! xuniL esu ,erviL ajeS
+#
+# Se na chamada da função for especificado um objeto que não é implementado por
+# 'string_t', será retornada uma mensagem de erro:
+# 
+# ------------------------
+# (Pilha de rastreamento)
+# Script: script.sh
+# 
+# Chamada interna: error.__trace
+# Função: getopt.parse
+# 
+# Pilha: [0:main] => [19:reverter]
+# Argumento: <meu_objeto>
+# Tipo: [string_t]
+# Valor: 'texto'
+# Erro: o argumento esperado é do tipo 'string_t'
+# ------------------------
+# 
 function getopt.parse()
 {
 	local name ctype flag value flags attr param app vargs lparam rep
