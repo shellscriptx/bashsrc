@@ -10,6 +10,7 @@ readonly __ERR_STRUCT_MEMBER_NAME='nome do membro da estrutura inválido'
 readonly __ERR_STRUCT_ALREADY_INIT='a estrutura já foi inicializada'
 readonly __ERR_STRUCT_MEMBER_CONFLICT='conflito de membros na estrutura'
 readonly __ERR_STRUCT_TYPE='requer estrutura do tipo'
+readonly __ERR_STRUCT_NOT_FOUND='nome da estrutura inválida'
 
 __NO_BUILTIN_T__='
 struct_t
@@ -69,12 +70,12 @@ function struct.__readonly__()
 
 # func struct.__add__ <[struct_t]name> <[str]member> ...
 #
-# Adiciona 'N'membros a estrutura 'name'.
+# Adiciona 'N' membros a estrutura 'name'.
 #
 function struct.__add__(){
 	getopt.parse -1 "name:struct_t:+:$1" "member:str:+:$2" ... "${@:3}"
 
-	local member struct
+	local member struct stsub stcomp
 
 	if [[ ${__STRUCT_MEMBERS[$1]} ]]; then	
 		error.__trace def 'new' "struct_t" "$1" "$__ERR_STRUCT_ALREADY_INIT"
@@ -82,19 +83,37 @@ function struct.__add__(){
 	fi
 
 	for member in ${@:2}; do
-		if ! [[ $member =~ ${__HASH_TYPE[st_member]} ]]; then
+		if [[ $member == struct_t ]]; then
+			stcomp=1
+			continue
+		elif ! [[ $member =~ ${__HASH_TYPE[st_member]} ]]; then
 			error.__trace def '' '' "$member" "$__ERR_STRUCT_MEMBER_NAME"
 			return $?
 		elif declare -Fp $1.$member &>/dev/null; then
 			error.__trace def 'member' 'str' "$member" "$__ERR_STRUCT_MEMBER_CONFLICT"
 			return $?
 		fi
+		
+		if [[ $stcomp ]]; then
+			if ! [[ ${__STRUCT_HANDLE[$member]} ]]; then	
+				error.__trace def 'member' "struct_t" "$member" "$__ERR_STRUCT_NOT_FOUND"
+				return $?
+			fi
+			for stsub in $($member.__members__); do
+				printf -v struct '%s.%s(){ struct.__set_and_get "%s" "%s" "$@"; return 0; }' \
+				"$1" "$stsub" "$1" "$stsub"
 
-		printf -v struct '%s.%s(){ struct.__set_and_get "%s" "%s" "$@"; return 0; }' \
-		"$1" "$member" "$1" "$member"
+				eval "$struct" &>/dev/null || error.__trace def
+				__STRUCT_MEMBERS[$1]+="$1.$stsub "
+			done
+			stcomp=''
+		else
+			printf -v struct '%s.%s(){ struct.__set_and_get "%s" "%s" "$@"; return 0; }' \
+			"$1" "$member" "$1" "$member"
 
-		eval "$struct" &>/dev/null || error.__trace def
-		__STRUCT_MEMBERS[$1]+="$1.$member "
+			eval "$struct" &>/dev/null || error.__trace def
+			__STRUCT_MEMBERS[$1]+="$1.$member "
+		fi
 	done
 	
 	__STRUCT_HANDLE[$1]="$1"
