@@ -60,7 +60,7 @@ function rand.int()
 	return 0
 }
 
-# func rand.long => [ulong]
+# func rand.long => [uint]
 #
 # Retorna um número positivo longo pseudo-aleatório.
 #
