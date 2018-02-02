@@ -6,10 +6,6 @@ readonly __STRUCT_SH=1
 
 source builtin.sh
 
-declare -A 	__STRUCT_VAL_MEMBERS \
-			__STRUCT_MEMBERS \
-			__STRUCT_HANDLE
-
 readonly __ERR_STRUCT_MEMBER_NAME='nome do membro da estrutura inválido'
 readonly __ERR_STRUCT_ALREADY_INIT='a estrutura já foi inicializada'
 readonly __ERR_STRUCT_MEMBER_CONFLICT='conflito de membros na estrutura'
@@ -114,7 +110,6 @@ function struct.__members__()
 {
 	getopt.parse 1 "name:struct_t:+:$1" "${@:2}"
 	printf '%s\n' ${__STRUCT_MEMBERS[$1]}
-
 	return 0
 }
 
