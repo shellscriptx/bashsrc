@@ -539,6 +539,27 @@ function time.asctime()
 	return 0
 }
 
+# func time.isvalid <[st_time]struct> => [bool]
+#
+# Retorna 'true' se a data e hora contida na estrutura 'st_time' é valida, caso
+# contrário retorna 'false'.
+#
+function time.isvalid()
+{
+	getopt.parse 1 "struct:st_time:+:$1" ${@:2}
+
+	time.__check_time 	$($1.tm_hour) \
+						$($1.tm_min) \
+						$($1.tm_sec) &&
+	time.__check_date 	$($1.tm_wday) \
+						$($1.tm_mday) \
+						$($1.tm_mon) \
+						$($1.tm_year) \
+						$($1.tm_yday)
+
+	return $?
+}
+
 # func time.strftime <[st_time]struct> <[str]format> => [str]
 #
 # Converte a estrutura 'st_time' para o formato especificado em 'format'.
@@ -621,7 +642,6 @@ function time.strftime()
 
 function time.__check_date()
 {
-	# time.__check_date <week> <day> <month> <year> <yearday>
 	local week=$1 day=$2 month=$3 year=$4 yearday=$5 d=$2 m=$3 y=$4 w tyd 
 	local days=('0 31 28 31 30 31 30 31 31 30 31 30 31' 
 				'0 31 29 31 30 31 30 31 31 30 31 30 31')
