@@ -145,7 +145,7 @@ function time.gmtime()
 {
 	getopt.parse 2 "struct:st_time:+:$1" "seconds:uint:+:$2" "${@:3}"
 	
-	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
+	info_t=($(printf "%(%m %d %H %M %S %Y %j %w %z)T" $2))
 	
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}
@@ -170,7 +170,7 @@ function time.mtime()
 	
 	local info_t
 
-	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T"))
+	info_t=($(printf "%(%m %d %H %M %S %Y %j %w %z)T"))
 
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}
@@ -224,7 +224,7 @@ function time.localtime()
 {
 	getopt.parse 2 "struct:st_time:+:$1" "seconds:uint:+:$2" ${@:3}
 	
-	info_t=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
+	info_t=($(printf "%(%m %d %H %M %S %Y %j %w %z)T" $2))
 
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}
@@ -353,7 +353,7 @@ function time.date()
 function time.hour()
 {
 	getopt.parse 0 ${@:1}
-	printf "%(%_H)T\n"
+	printf "%(%H)T\n"
 	return 0
 }
 
@@ -364,7 +364,7 @@ function time.hour()
 function time.minute()
 {
 	getopt.parse 0 ${@:1}
-	printf "%(%_M)T\n"
+	printf "%(%M)T\n"
 	return 0
 }
 
@@ -375,7 +375,7 @@ function time.minute()
 function time.second()
 {
 	getopt.parse 0 ${@:1}
-	printf "%(%_S)T\n"
+	printf "%(%S)T\n"
 	return 0
 }
 
@@ -387,18 +387,18 @@ function time.second()
 function time.month()
 {
 	getopt.parse 0 ${@:1}
-	printf "%(%_m)T\n"
+	printf "%(%m)T\n"
 	return 0
 }
 
-# func time.month.str => [str]
+# func time.month.string => [str]
 #
 # Retorna a nomenclatura que representa o mês atual.
 #
 function time.month.string
 {
 	getopt.parse 0 ${@:1}
-	echo "${__months[$(printf "%(%_m)T")]}"
+	echo "${__months[$(printf "%(%m)T")]}"
 	return 0
 }
 
@@ -414,7 +414,7 @@ function time.weekday()
 	return 0
 }
 
-# func time.weekday.str => [str]
+# func time.weekday.string => [str]
 #
 # Retorna a nomenclatura que representa dia da semana atual.
 #
@@ -444,7 +444,7 @@ function time.year()
 function time.yearday()
 {
 	getopt.parse 0 ${@:1}
-	printf "%(%_j)T\n"
+	printf "%(%j)T\n"
 	return 0
 }
 
@@ -456,7 +456,7 @@ function time.yearday()
 function time.day()
 {
 	getopt.parse 0 ${@:1}
-	printf "%(%_d)T\n"
+	printf "%(%d)T\n"
 	return 0
 }
 
@@ -630,13 +630,12 @@ function time.__check_date()
 	tyd=$((leap_year == 0 ? 365 : 366))
 	w=$(($((d+=m<3 ? y--: y-2,23*m/9+d+4+y/4-y/100+y/400))%7))
 
-	echo $w - $week
 	days=(${days[$leap_year]})
 
 	if	((month > 12 			|| month < 1))	||
 		((day > ${days[$month]} || day < 1)) 	||
 		((year < 1900)) 		||
-#		((w != week )) 			||
+		((w != week )) 			||
 		((yearday < 1 			|| yearday > tyd)); then
 		return 1
 	fi
