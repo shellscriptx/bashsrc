@@ -13,6 +13,8 @@ source builtin.sh
 
 readonly __ERROR_SH=1
 
+declare __EXIT_TRACE_ERROR=1
+
 function error.__trace()
 {
 	local i l t fn
@@ -141,11 +143,11 @@ function error.__trace()
 #
 function error.resume()
 {
-	getopt.parse 1 "flag:str:+:$1" ${@:2}
+	getopt.parse 1 "flag:str:+:$1" "${@:2}"
 	
 	case $1 in
-		on)		exec 2<&-; declare -g __EXIT_TRACE_ERROR=0;;
-		off)	exec 2>/dev/tty; declare -g __EXIT_TRACE_ERROR=1;;
+		on)		exec 2<&-; __EXIT_TRACE_ERROR=0;;
+		off)	exec 2>/dev/tty; __EXIT_TRACE_ERROR=1;;
 		*)		error.__trace def 'flag' 'str' "$1" "flag inválida"; return $?;;
 	esac
 
