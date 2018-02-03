@@ -106,40 +106,8 @@ function time.today()
 
 # func time.gmtime <[st_time]struct> <[uint]seconds>
 #
-# Salva em 'datetime' a estrutura data e hora convertidos
+# Salva em 'struct' a estrutura data e hora convertidos
 # a partir do tempo em segundos especificado em 'seconds'.
-#
-# Membros da estrutura:
-#
-# tm_sec    - Segundos (0-60)
-# tm_min    - Minutos (0-59)
-# tm_hour   - Horas	(0-23)
-# tm_mday   - Dia do mês (1-31)
-# tm_mon    - Mês (1-12)
-# tm_year   - Ano (1900)
-# tm_wday   - Dia da semana (0-6, domingo = 0)
-# tm_yday   - Dia do ano (0-365)
-# tm_isdst  - Fuso horário
-#
-# Exemplo:
-#
-# #!/bin/bash
-# source time.sh
-#
-# # Salva em 'dt' a hora atual.
-# time.gmtime dt
-#
-# # Exibindo os campos da hora.
-# echo 'Horas:' ${dt[tm_hour]}
-# echo 'Minutos:' ${dt[tm_min]}
-# echo 'Segundos:' ${dt[tm_sec]}
-#
-# # FIM
-#
-# $ ./datetime.sh
-# Horas: 11
-# Minutos: 52
-# Segundos: 57
 #
 function time.gmtime()
 {
@@ -185,40 +153,9 @@ function time.mtime()
 	return 0
 }
 
-# func time.localtime <[uint]seconds> => [map]
+# func time.localtime <[st_time]struct> <[uint]seconds> 
 # 
 # Converte o tempo em segundos para uma estrutura datetime.
-#
-# Exemplo:
-#
-# #!/bin/bash
-# # script: datetime.sh
-#
-# source time.sh
-#
-# # Convertendo os segundos para a estrutura [map]datetime.
-# seg=$(time.time)
-# echo 'Segundos:' $seg
-# time.localtime dt $seg
-#
-# echo 'Listando estrutura:'
-# map.list dt
-#
-# # FIM
-#
-# $ ./datetime.sh
-# Segundos: 1511404409
-# Listando estrutura:
-#
-# tm_wday|4
-# tm_mon|11
-# tm_sec|29
-# tm_hour|0
-# tm_isdst|-0200
-# tm_min|33
-# tm_mday|23
-# tm_yday|327
-# tm_year|2017
 #
 function time.localtime()
 {
@@ -391,11 +328,11 @@ function time.month()
 	return 0
 }
 
-# func time.month.string => [str]
+# func time.month.str => [str]
 #
 # Retorna a nomenclatura que representa o mês atual.
 #
-function time.month.string
+function time.month.str
 {
 	getopt.parse 0 ${@:1}
 	echo "${__months[$(printf "%(%m)T")]}"
@@ -414,11 +351,11 @@ function time.weekday()
 	return 0
 }
 
-# func time.weekday.string => [str]
+# func time.weekday.str => [str]
 #
 # Retorna a nomenclatura que representa dia da semana atual.
 #
-function time.weekday.string()
+function time.weekday.str()
 {
 	getopt.parse 0 ${@:1}
 	echo "${__weekdays[$(time.weekday)]}"
@@ -463,7 +400,7 @@ function time.day()
 # func time.time => [uint]
 #
 # Retorna um inteiro positivo representando os segundos desde:
-# qua dez 31 21:00:00 1969.
+# 00:00:00 de 1 de janeiro de 1970 (Hora Universal Sincronizada - UTC)
 #
 function time.time()
 {
@@ -638,6 +575,36 @@ function time.strftime()
 	echo "$fmt"
 	
 	return 0	
+}
+
+# func time.format <[str]format> <[uint]seconds> => [str]
+#
+# Retorna uma string substituindo os códigos de formatação contidos 
+# em 'format' pela data e hora padrão convertidos de 'seconds'.
+#
+# Código de formato:
+#
+# %a - nome do dia da semana abreviado.
+# %A - nome do dia da semana completo.
+# %b - nome do mês abreviado.
+# %B - nome do mês completo.
+# %c - data e Hora local.
+# %d - dia do mês.
+# %m - mês.
+# %y - último dois digitos do ano.
+# %Y - ano.
+# %H - hora (00..23)
+# %I - hora (01..12)
+# %M - minuto (00..59)
+# %S - segundos (00..59)
+# %j - dia do ano (001...366)
+# %w - dia da semana (1..7)
+# %z - fuso horário.
+#
+function time.format(){
+	getopt.parse 2 "format:str:+:$1" "seconds:uint:+:$2" ${@:3}
+	printf "%($1)T\n" $2
+	return 0
 }
 
 function time.__check_date()
