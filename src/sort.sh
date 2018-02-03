@@ -11,86 +11,110 @@
 
 readonly __SORT_SH=1
 
-# func sort.int <[array]name> => [int]
+source builtin.sh
+
+__TYPE__[asort_t]='
+sort.array.int
+sort.array.str
+sort.array.intsorted
+sort.array.strsorted
+sort.array.intrev
+sort.array.strrev
+'
+
+__TYPE__[szsort_t]='
+sort.size
+sort.size.rev
+sort.size.sorted
+'
+
+__TYPE__[ssort_t]='
+sort.str
+sort.str.rev
+sort.str.int
+sort.str.intrev
+'
+
+# func sort.array.int <[array]name> => [int]
 #
 # Retorna uma cópia dos elementos de 'name' em uma
 # lista iterável em ordem crescente.
 #
-function sort.int()
+function sort.array.int()
 {
 	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
-	declare -n __arr=$1
+	local -n __arr=$1
 	printf "%d\n" "${__arr[@]}" | sort -n
 	return 0
 }
 
-# func sort.str <[array]name> => [str]
+# func sort.array.str <[array]name> => [str]
 #
 # Retorna uma cópia dos elementos de 'name' em uma
 # lista iterável em ordem alfabética.
 #
-function sort.str()
+function sort.array.str()
 {
 	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
-	declare -n __arr=$1
+	local -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -d
 	return 0
 }
 
-# func sort.intsorted <[array]name> => [bool]
+# func sort.array.intsorted <[array]name> => [bool]
 #
 # Retorna 'true' se os elementos em 'name' estão em ordem crescente.
 # Caso contrário 'false'.
 #
-function sort.intsorted()
+function sort.array.intsorted()
 {
 	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
-	declare -n __arr=$1
-	printf "%s\n" "${__arr[@]}" | sort -nC
+	local -n __arr=$1
+	printf "%s\n" "${__arr[@]}" | sort -C
 	return $?
 }
 
-# func sort.strsorted <[array]name> => [bool]
+# func sort.array.strsorted <[array]name> => [bool]
 #
 # Retorna 'true' se os elementos em 'name' estão em ordem alfabética.
 # Caso contrário 'false'.
 #
-function sort.strsorted()
+function sort.array.strsorted()
 {
 	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
-	declare -n __arr=$1
-	printf "%s\n" "${__arr[@]}" | sort -dC
+	local -n __arr=$1
+	printf "%s\n" "${__arr[@]}" | sort -C
 	return $?
 }
 
-# func sort.intrev <[array]name> => [int]
+# func sort.array.intrev <[array]name> => [int]
 #
 # Retorna uma cópia dos elementos de 'name' em uma lista iterável em
 # ordem decrescente.
 #
-function sort.intrev()
+function sort.array.intrev()
 {
 	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
-	declare -n __arr=$1
+	local -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -nr
 	return 0
 }
 
-# func sort.strrev <[array]name> => [str]
+# func sort.array.strrev <[array]name> => [str]
 #
 # Retorna uma cópia dos elementos de 'name' em uma lista iterável em
 # ordem alfabética inversa.
 #
-function sort.strrev()
+function sort.array.strrev()
 {
 	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
-	declare -n __arr=$1
+	local -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -dr
 	return 0
 }
@@ -106,82 +130,82 @@ function sort.size()
 {
 	getopt.parse 1 "name:array:+:$1" ${@:2}
 
-	declare -n __arr=$1
+	local -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -h
 	return 0
 }
 
-# func sort.sizerev <[array]name> => [size]
+# func sort.size.rev <[array]name> => [size]
 #
 # Retorna uma cópia dos elementos de 'name' em uma lista iterável em
 # ordem computacional decrescente.
 #
-function sort.sizerev()
+function sort.size.rev()
 {
 	getopt.parse 1 "name:array:+:$1" ${@:2}
 
-	declare -n __arr=$1
+	local -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -hr
 	return 0
 }
 
-# func sort.sizesorted <[array]name> => [bool]
+# func sort.size.sorted <[array]name> => [bool]
 #
 # Retorna 'true' se os elementos de 'name' estão em ordem
 # computacional crescente. Caso contrário 'false'.
 #
 # Exemplo: 10K, 1M, 5G, 2T ...
 #
-function sort.sizesorted()
+function sort.size.sorted()
 {
 	getopt.parse 1 "name:array:+:$1" ${@:2}
 
-	declare -n __arr=$1
+	local -n __arr=$1
 	printf "%s\n" "${__arr[@]}" | sort -hr
 	return 0
 }
 
-# func sort.expstr <[str]exp> => [str]
+# func sort.str <[str]exp> => [str]
 #
 # Retorna uma cópia de 'exp' com a sequência em ordem alfabética.
 #
-function sort.expstr()
+function sort.str()
 {
 	getopt.parse 1 "exp:str:-:$1" ${@:2}
-	echo $(printf "%s\n" $1 | sort -d)
+	echo $(printf '%s\n' $1 | sort -d)
 	return 0
 }
 
-# func sort.expstrrev <[str]exp> => [str]
+# func sort.str.rev <[str]exp> => [str]
 #
 # Retorna uma cópia de 'exp' com a sequência em ordem alfabética inversa.
 #
-function sort.expstrrev()
+function sort.str.rev()
 {
 	getopt.parse 1 "exp:str:-:$1" ${@:2}
-	echo $(printf "%s\n" $1 | sort -dr)
+	echo $(printf '%s\n' $1 | sort -dr)
 	return 0
 }
 
-# func sort.expint <[str]exp> => [str]
+# func sort.str.int <[str]exp> => [str]
 #
 # Retorna uma cópia de 'exp' com a sequência de números em ordem crescente.
 #
-function sort.expint()
+function sort.str.int()
 {
 	getopt.parse 1 "exp:str:-:$1" ${@:2}
-	echo $(printf "%s\n" $1 | sort -n)
+	echo $(printf '%s\n' $1 | sort -n)
 	return 0
 }
 
-# func sort.expintrev <[str]exp> => [str]
+# func sort.str.intrev <[str]exp> => [str]
 #
 # Retorna uma cópia de 'exp' com a sequência de números em ordem decrescente.
 #
-function sort.expintrev()
+function sort.str.intrev()
 {
 	getopt.parse 1 "exp:str:-:$1" ${@:2}
-	echo $(printf "%s\n" $1 | sort -nr)
+	echo $(printf '%s\n' $1 | sort -nr)
 	return 0
 }
 
