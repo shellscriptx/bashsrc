@@ -75,7 +75,7 @@ function struct.__readonly__()
 function struct.__add__(){
 	getopt.parse -1 "name:struct_t:+:$1" "member:str:+:$2" ... "${@:3}"
 
-	local member struct stsub stcomp
+	local member struct smember stcomp
 
 	if [[ ${__STRUCT_MEMBERS[$1]} ]]; then	
 		error.__trace def 'new' "struct_t" "$1" "$__ERR_STRUCT_ALREADY_INIT"
@@ -99,12 +99,12 @@ function struct.__add__(){
 				error.__trace def 'member' "struct_t" "$member" "$__ERR_STRUCT_NOT_FOUND"
 				return $?
 			fi
-			for stsub in $($member.__members__); do
+			for smember in $($member.__members__); do
 				printf -v struct '%s.%s(){ struct.__set_and_get "%s" "%s" "$@"; return 0; }' \
-				"$1" "$stsub" "$1" "$stsub"
+				"$1" "$smember" "$1" "$smember"
 
 				eval "$struct" &>/dev/null || error.__trace def
-				__STRUCT_MEMBERS[$1]+="$1.$stsub "
+				__STRUCT_MEMBERS[$1]+="$1.$smember "
 			done
 			stcomp=''
 		else
