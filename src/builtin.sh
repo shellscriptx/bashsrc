@@ -28,14 +28,7 @@ declare -A	__INIT_SRC_TYPES \
 			__INIT_OBJ_METHOD \
 			__INIT_OBJ_TYPE
 
-declare -A  __STRUCT_VAL_MEMBERS \
-            __STRUCT_MEMBERS \
-            __STRUCT_HANDLE
-
-declare -a	__NO_BUILTIN_IMPLEMENTS
-
-declare  	__NO_BUILTIN_T__ \
-			__DEPS__
+declare 	__DEPS__
 
 shopt -s	extglob \
 			globasciiranges \
@@ -74,10 +67,6 @@ __app__
 __sum__
 '
 
-__NO_BUILTIN_T__='
-builtin_t
-'
-
 # erros
 readonly __ERR_BUILTIN_FUNC_EXISTS='a função já existe ou é um comando interno'
 readonly __ERR_BUILTIN_ALREADY_INIT='o objeto já foi implementado'
@@ -92,6 +81,7 @@ readonly __ERR_BUILTIN_DEL_OBJ='não foi possível deletar o objeto'
 readonly NULL=0
 
 readonly -A __HASH_TYPE=(
+[ptr]='^\*'
 [funcname]='^[a-zA-Z0-9_.-]+$'
 [varname]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$'
 [srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]$'
@@ -1061,78 +1051,93 @@ function del()
 {
 	getopt.parse -1 "varname:var:+:$1" ... "${@:2}"
 
-	local var member
+	local var method
 
 	for var in $@; do
-		if [[ ${__INIT_OBJ_TYPE[$var]} == struct_t ]]; then
-			for member in ${__STRUCT_MEMBERS[$var]}; do
-				unset __STRUCT_VAL_MEMBERS[$member]
-			done
-			unset __STRUCT_HANDLE[$var]
-		fi
-		if ! unset -f ${__INIT_OBJ_METHOD[$var]} ${__STRUCT_MEMBERS[$var]} 2>/dev/null; then
-			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_DEL_OBJ"
-			return $?
-		fi			
+		for method in ${__INIT_OBJ_METHOD[$var]}; do
+			unset __STRUCT_VAL_MEMBERS[$method]
+		done
+		unset -f ${__INIT_OBJ_METHOD[$var]}
 		unset 	__INIT_OBJ_METHOD[$var] \
 				__INIT_OBJ_TYPE[$var] 
-	done 
+	done || error.__trace def
 
 	return 0
 }
 
 # func var <[var]varname> ... <[type]typename>
 #
-# Inicializa 'varname' implementandos os métodos de 'typename'.
+# Implementa 'varname' com 'typename'
 #
 function var()
 {
 	getopt.parse -1 "varname:var:+:$1" ... "${@:1:$((${#@}-1))}"
 	
-	local type method proto func_ref func_type func_call var src_types builtin no_builtin
+	local type method proto func_ref func_type func_call var src_types member struct err_msg
 	
 	type=${@: -1}
 
-	no_builtin=${__NO_BUILTIN_IMPLEMENTS[@]}
 	src_types=${!__INIT_SRC_TYPES[@]}
 	
 	if ! [[ $type =~ ^(${src_types// /|})$ ]]; then
 		error.__trace def 'type' 'type' "$type" "$__ERR_BUILTIN_SRC_TYPE"
 		return $?
-	elif ! [[ $type =~ ^(${no_builtin// /|})$ ]]; then
-		builtin=${__INIT_SRC_TYPES[builtin_t]}
 	fi
 
 	for var in ${@:1:$((${#@}-1))}; do
 
 		if [[ ${__INIT_OBJ_METHOD[$var]} ]]; then
-			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"
+			[[ $type == struct_t ]] && err_msg=$__ERR_STRUCT_ALREADY_INIT
+			error.__trace def 'varname' 'var' "$var" "${err_msg:-$__ERR_BUILTIN_ALREADY_INIT}"
 			return $?
 		fi
 		
-		__INIT_OBJ_TYPE[$var]=$type
-
-		for method in ${__INIT_SRC_TYPES[$type]} $builtin; do
-		
-			func_type=$(declare -fp $method 2>/dev/null)
-			func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|${src_types// /|}):[+-]:[^\"']+[\"']"
-			
-			if [[ $func_type =~ $func_ref ]]; then
-				func_call='%s(){ %s "%s" "$@"; return $?; }'
-			else
-				func_call='%s(){ %s "$%s" "$@"; return $?; }'
-			fi
-			
-			if declare -Fp $var.${method##*.} &>/dev/null; then
-				error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
+		if [[ $type == struct_t ]]; then
+			if ! [[ $var =~ ${__HASH_TYPE[srctype]} ]]; then
+				error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_TYPE"
+				return $?	
+			elif [[ ${__INIT_SRC_TYPES[$var]} ]]; then
+				error.__trace src 'varname' 'var' "$var" "$__ERR_BUILTIN_TYPE_CONFLICT"
 				return $?
+			else
+				__INIT_SRC_TYPES[$var]=''
 			fi
+		fi	
+			
+		for method in ${__INIT_SRC_TYPES[$type]}; do
+			
+			if [[ ${__INIT_OBJ_TYPE[$type]} == struct_t ]]; then
+				if declare -Fp $var.${method#*.} &>/dev/null; then
+					error.__trace imp "" "$var" "${method#*.}" "$__ERR_BUILTIN_METHOD_CONFLICT"
+					return $?
+				fi
 
-			printf -v func_call "$func_call" $var.${method##*.} $method $var
-			eval "$func_call" || error.__trace def
-			__INIT_OBJ_METHOD[$var]+="$var.${method##*.} "
+				printf -v struct '%s.%s(){ struct.__set_and_get "%s" "%s" "$@"; return 0; }' \
+				"$var" "${method#*.}" "$var" "${method#*.}"
+
+				eval "$struct" &>/dev/null || error.__trace def
+				__INIT_OBJ_METHOD[$var]+="$var.${method#*.} "
+			else
+				func_type=$(declare -fp $method 2>/dev/null)
+				func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|${src_types// /|}):[+-]:[^\"']+[\"']"
+		
+				if [[ $func_type =~ $func_ref ]]; then
+					func_call='%s(){ %s "%s" "$@"; return $?; }'
+				else
+					func_call='%s(){ %s "$%s" "$@"; return $?; }'
+				fi
+				
+				if declare -Fp $var.${method##*.} &>/dev/null; then
+					error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
+					return $?
+				fi
+				
+				printf -v func_call "$func_call" $var.${method##*.} $method $var
+				eval "$func_call" || error.__trace def
+				__INIT_OBJ_METHOD[$var]+="$var.${method##*.} "
+			fi
 		done
-		[[ $type == struct_t ]] && __STRUCT_HANDLE[$var]=$var
+		__INIT_OBJ_TYPE[$var]=$type
 	done
 
 	return 0
@@ -1643,7 +1648,7 @@ function __iter__()
 
 function source.__INIT__()
 {
-	local attr type method inittype func pkg err deps no_type
+	local attr type method inittype func pkg err deps
 	
 	for pkg in $__DEPS__; do
 		command -v $pkg &>/dev/null || { err=1; deps+="$pkg, "; }
@@ -1680,18 +1685,9 @@ function source.__INIT__()
 		unset __TYPE__[$type] || error.__trace def
 	done
 
-	for no_type in ${__NO_BUILTIN_T__}; do
-		if ! [[ ${__INIT_SRC_TYPES[$no_type]} ]]; then
-			error.__trace src '' "${BASH_SOURCE[-2]}" "$no_type" "$__ERR_BUILTIN_TYPE"
-			return $?
-		fi
-		__NO_BUILTIN_IMPLEMENTS+=($no_type)
-	done
-	
 	while IFS=' ' read _ _ func; do readonly -f $func; done < <(declare -Fp)
 	
 	__DEPS__=''
-	__NO_BUILTIN_T__=''
 	
 	return 0
 }
