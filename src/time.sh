@@ -79,9 +79,9 @@ readonly -a __weekdays=(
 'Saturday'
 )
 
-var st_time struct_t
+var time_t struct_t
 
-st_time.__add__		tm_mon \
+time_t.__add__		tm_mon \
 					tm_mday \
 					tm_hour \
 					tm_min \
@@ -91,7 +91,6 @@ st_time.__add__		tm_mon \
 					tm_wday \
 					tm_isdst
 
-st_time.__readonly__
 
 # func time.today => [str]
 #
@@ -104,14 +103,14 @@ function time.today()
 	return 0	
 }
 
-# func time.gmtime <[st_time]struct> <[uint]seconds>
+# func time.gmtime <[time_t]struct> <[uint]seconds>
 #
 # Salva em 'struct' a estrutura data e hora convertidos
 # a partir do tempo em segundos especificado em 'seconds'.
 #
 function time.gmtime()
 {
-	getopt.parse 2 "struct:st_time:+:$1" "seconds:uint:+:$2" "${@:3}"
+	getopt.parse 2 "struct:time_t:+:$1" "seconds:uint:+:$2" "${@:3}"
 	
 	info_t=($(printf "%(%m %d %H %M %S %Y %j %w %z)T" $2))
 	
@@ -128,13 +127,13 @@ function time.gmtime()
 	return 0
 }
 
-# func time.mtime <[st_time]struct>
+# func time.mtime <[time_t]struct>
 #
-# Converte a hora atual para um estrutura 'st_time'.
+# Converte a hora atual para um estrutura 'time_t'.
 #
 function time.mtime()
 {
-	getopt.parse 1 "struct:st_time:+:$1" "${@:2}"
+	getopt.parse 1 "struct:time_t:+:$1" "${@:2}"
 	
 	local info_t
 
@@ -153,13 +152,13 @@ function time.mtime()
 	return 0
 }
 
-# func time.localtime <[st_time]struct> <[uint]seconds> 
+# func time.localtime <[time_t]struct> <[uint]seconds> 
 # 
 # Converte o tempo em segundos para uma estrutura datetime.
 #
 function time.localtime()
 {
-	getopt.parse 2 "struct:st_time:+:$1" "seconds:uint:+:$2" ${@:3}
+	getopt.parse 2 "struct:time_t:+:$1" "seconds:uint:+:$2" ${@:3}
 	
 	info_t=($(printf "%(%m %d %H %M %S %Y %j %w %z)T" $2))
 
@@ -238,7 +237,7 @@ function time.tzname()
 #
 function time.tzgmtime()
 {
-	getopt.parse 2 "name:st_time:+:$1" "tzname:str:+:$2" ${@:3}
+	getopt.parse 2 "name:time_t:+:$1" "tzname:str:+:$2" ${@:3}
 
 	time.tzinfo $2 1>/dev/null
 	export TZ=$2
@@ -443,13 +442,13 @@ function time.tzreset()
 	return 0
 }
 
-# func time.asctime <[st_time]struct> => [str]
+# func time.asctime <[time_t]struct> => [str]
 #
-# Converte a estrutura 'st_time' para string.
+# Converte a estrutura 'time_t' para string.
 #
 function time.asctime()
 {
-	getopt.parse 1 "struct:st_time:+:$1" ${@:2}
+	getopt.parse 1 "struct:time_t:+:$1" ${@:2}
 
 	if	! (time.__check_time $($1.tm_hour) \
 								$($1.tm_min) \
@@ -459,7 +458,7 @@ function time.asctime()
 								$($1.tm_mon) \
 								$($1.tm_year) \
 								$($1.tm_yday)) 2>/dev/null; then
-		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
+		error.__trace def 'time_t' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
 		return $?
 	fi
 
@@ -476,14 +475,14 @@ function time.asctime()
 	return 0
 }
 
-# func time.isvalid <[st_time]struct> => [bool]
+# func time.isvalid <[time_t]struct> => [bool]
 #
-# Retorna 'true' se a data e hora contida na estrutura 'st_time' é valida, caso
+# Retorna 'true' se a data e hora contida na estrutura 'time_t' é valida, caso
 # contrário retorna 'false'.
 #
 function time.isvalid()
 {
-	getopt.parse 1 "struct:st_time:+:$1" ${@:2}
+	getopt.parse 1 "struct:time_t:+:$1" ${@:2}
 
 	time.__check_time 	$($1.tm_hour) \
 						$($1.tm_min) \
@@ -497,9 +496,9 @@ function time.isvalid()
 	return $?
 }
 
-# func time.strftime <[st_time]struct> <[str]format> => [str]
+# func time.strftime <[time_t]struct> <[str]format> => [str]
 #
-# Converte a estrutura 'st_time' para o formato especificado em 'format'.
+# Converte a estrutura 'time_t' para o formato especificado em 'format'.
 #
 # Códigos de formato:
 #
@@ -522,7 +521,7 @@ function time.isvalid()
 #
 function time.strftime()
 {
-	getopt.parse 2 "struct:st_time:+:$1" "format:str:+:$2" ${@:3}
+	getopt.parse 2 "struct:time_t:+:$1" "format:str:+:$2" ${@:3}
 
 	local ch fmt week day month year hour min sec i
 
@@ -536,7 +535,7 @@ function time.strftime()
 								$($1.tm_mon) \
 								$($1.tm_year) \
 								$($1.tm_yday)) 2>/dev/null; then
-		error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
+		error.__trace def 'time_t' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
 		return $?
 	fi
 
