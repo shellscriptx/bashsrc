@@ -260,7 +260,7 @@ function getopt.parse()
 				file) 		[[ -f $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
 				path) 		[[ -e $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
 				fd) 		[[ -e /dev/fd/$value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
-				*)			[[ ${__INIT_OBJ_TYPE[$value]} == $ctype || ${__STRUCT_HANDLE[$value]} == $ctype ]];;
+				*)			[[ ${__INIT_OBJ_TYPE[$value]} == $ctype ]];;
    	    	esac || {
 				error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG '$ctype'"
 				return $?
