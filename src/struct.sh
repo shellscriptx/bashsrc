@@ -6,7 +6,8 @@ readonly __STRUCT_SH=1
 
 source builtin.sh
 
-declare -A  __STRUCT_VAL_MEMBERS
+declare -A  __STRUCT_VAL_MEMBERS \
+			__INIT_STRUCT
 
 readonly __ERR_STRUCT_MEMBER_NAME='nome do membro da estrutura inválido'
 readonly __ERR_STRUCT_ALREADY_INIT='a estrutura já foi inicializada'
@@ -26,23 +27,20 @@ __type__
 # Adiciona 'N' membros a estrutura 'name'.
 #
 function struct.__add__(){
-	getopt.parse -1 "name:struct_t:+:$1" "member:str:+:$2" ... "${@:3}"
+	getopt.parse -1 "name:struct_t:+:$1" "member:st_member:+:$2" ... "${@:3}"
 
 	local member smember stcomp st_type
 
-	 if [[ ${__INIT_SRC_TYPES[$1]} ]]; then
-        error.__trace def 'new' "struct_t" "$1" "$__ERR_STRUCT_ALREADY_INIT"
-        return $?
-    fi
+	if [[ ${__INIT_STRUCT[$1]} ]]; then
+		error.__trace def 'new' "struct_t" "$1" "$__ERR_STRUCT_ALREADY_INIT"
+		return $?
+	fi
 
 	for member in ${@:2}; do
 		if [[ $member =~ ${__HASH_TYPE[ptr]} ]]; then
 			st_type=${member:1}
 			st_comp=1
 			continue
-		elif ! [[ $member =~ ${__HASH_TYPE[st_member]} ]]; then
-			error.__trace def 'member' 'str' "$member" "$__ERR_STRUCT_MEMBER_NAME"
-			return $?
 		elif declare -Fp $1.$member &>/dev/null; then
 			error.__trace def 'member' 'str' "$member" "$__ERR_STRUCT_MEMBER_CONFLICT"
 			return $?
@@ -59,6 +57,7 @@ function struct.__add__(){
 		else
 			__INIT_SRC_TYPES[$1]+="$1.$member "
 		fi
+		__INIT_STRUCT[$1]=true
 	done
 	
 	return 0
