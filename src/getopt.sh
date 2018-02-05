@@ -251,7 +251,7 @@ function getopt.parse()
 				min|sec|mday|mon| \
 				year|yday|wday|url| \
 				email|ipv4|ipv6|mac| \
-				slice|uslice|funcname) [[ $value =~ ${__HASH_TYPE[$ctype]} ]];;
+				slice|uslice|funcname|st_member) [[ $value =~ ${__HASH_TYPE[$ctype]} ]];;
 				map)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null); [[ $attr =~ A ]];;
 				array)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null); [[ $attr =~ a ]];;
    	        	func) 		declare -Fp "$value" &>/dev/null;;
