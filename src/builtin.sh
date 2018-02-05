@@ -26,7 +26,9 @@ readonly __BUILTIN_SH=1
 declare -A	__INIT_SRC_TYPES \
 			__TYPE__ \
 			__INIT_OBJ_METHOD \
-			__INIT_OBJ_TYPE
+			__INIT_OBJ_TYPE \
+			__INIT_OBJ
+		
 
 declare 	__DEPS__
 
@@ -85,7 +87,7 @@ readonly -A __HASH_TYPE=(
 [funcname]='^[a-zA-Z0-9_.-]+$'
 [varname]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$'
 [srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]$'
-[st_member]='^[a-zA-Z0-9_.]+$'
+[st_member]='^\*?[a-zA-Z0-9_.]+$'
 [getopt_nargs]='^(-1|0|[1-9][0-9]*)$'
 [getopt_pname]='^[a-zA-Z0-9_=+-]+$'
 [getopt_flag]='^(\+|-)$'
@@ -1059,7 +1061,10 @@ function del()
 		done
 		unset -f ${__INIT_OBJ_METHOD[$var]}
 		unset 	__INIT_OBJ_METHOD[$var] \
-				__INIT_OBJ_TYPE[$var] 
+				__INIT_OBJ_TYPE[$var] \
+				__INIT_OBJ[$var] \
+				__INIT_STRUCT[$var]
+
 	done || error.__trace def
 
 	return 0
@@ -1073,7 +1078,7 @@ function var()
 {
 	getopt.parse -1 "varname:var:+:$1" ... "${@:1:$((${#@}-1))}"
 	
-	local type method proto func_ref func_type func_call var src_types member struct err_msg
+	local type method proto func_ref func_type func_call var src_types member struct
 	
 	type=${@: -1}
 
@@ -1086,9 +1091,8 @@ function var()
 
 	for var in ${@:1:$((${#@}-1))}; do
 
-		if [[ ${__INIT_OBJ_METHOD[$var]} ]]; then
-			[[ $type == struct_t ]] && err_msg=$__ERR_STRUCT_ALREADY_INIT
-			error.__trace def 'varname' 'var' "$var" "${err_msg:-$__ERR_BUILTIN_ALREADY_INIT}"
+		if [[ ${__INIT_OBJ[$var]} ]]; then
+			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"
 			return $?
 		fi
 		
@@ -1099,8 +1103,6 @@ function var()
 			elif [[ ${__INIT_SRC_TYPES[$var]} ]]; then
 				error.__trace src 'varname' 'var' "$var" "$__ERR_BUILTIN_TYPE_CONFLICT"
 				return $?
-			else
-				__INIT_SRC_TYPES[$var]=''
 			fi
 		fi	
 			
@@ -1138,6 +1140,7 @@ function var()
 			fi
 		done
 		__INIT_OBJ_TYPE[$var]=$type
+		__INIT_OBJ[$var]=true
 	done
 
 	return 0
