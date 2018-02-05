@@ -1064,9 +1064,9 @@ function string.field()
 	
 	local i line field
 	while read line; do
-		IFS="$2" read -a field <<< "$line"
+		IFS="$2" read -a field <<< "${2}${line}"
 		for i in ${@:3}; do
-			echo -n "${field[$(($i-1))]} "
+			echo -n "${field[$i]} "
 		done; echo
 	done <<< "$1"
 
