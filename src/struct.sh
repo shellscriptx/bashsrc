@@ -57,8 +57,9 @@ function struct.__add__(){
 		else
 			__INIT_SRC_TYPES[$1]+="$1.$member "
 		fi
-		__INIT_STRUCT[$1]=true
 	done
+	
+	__INIT_STRUCT[$1]=true
 	
 	return 0
 }
