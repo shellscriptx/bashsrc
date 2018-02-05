@@ -1039,7 +1039,7 @@ function builtin.__iter_cond_any_all()
 				fi
 		done
 		[[ $((${bits%$2})) -eq 1 ]] && echo "$iter"
-		unset bits
+		bits=''
 	done <<< "$1"
 
 	return 0	
