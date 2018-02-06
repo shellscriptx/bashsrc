@@ -828,11 +828,12 @@ function string.repeat()
 {
 	getopt.parse 2 "exp:str:-:$1" "count:uint:+:$2" "${@:3}"
 
-	local str	
+	local str tmp	
 	while read str; do
 		for ((i=0; i < $2; i++)); do
-			echo -n "${str:- }"
-		done; echo
+			tmp+=$str
+		done
+		echo "$tmp"
 	done <<< "$1"
 	
 #	for ((i=0; i < $2; i++)); do echo -n "$1"; done; echo
