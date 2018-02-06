@@ -344,7 +344,7 @@ function regex.fngroups()
 					done
 				fi
 				exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
-				i=$(($i+${#new}))
+				i=$(($i+${#new}-1))
 				[[ $((++c)) -eq $4 || ${1:0:1} == ^ ]] && break
 			fi
 		done
@@ -396,7 +396,7 @@ function regex.fnngroups()
 						done
 					fi
 					exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
-					i=$(($i+${#new}))
+					i=$(($i+${#new}-1))
 				fi
 			fi
 		done
@@ -549,7 +549,7 @@ function regex.replace()
 					done
 				fi
 				exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
-				i=$(($i+${#new}))
+				i=$(($i+${#new}-1))
 				[[ $((++c)) -eq $4 || ${1:0:1} == ^ ]] && break
 			fi
 		done
@@ -629,7 +629,7 @@ function regex.nreplace()
 						done
 					fi
 					exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
-					i=$(($i+${#new}))
+					i=$(($i+${#new}-1))
 				fi
 			fi
 		done
@@ -724,7 +724,7 @@ function regex.fnreplace()
 			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
 				new=$($5 "$BASH_REMATCH" "${@:6}")
 				exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
-				i=$(($i+${#new}))
+				i=$(($i+${#new}-1))
 				[[ $((++c)) -eq $3 || ${1:0:1} == ^ ]] && break
 			fi
 		done
@@ -827,7 +827,7 @@ function regex.fnnreplace()
 				if [[ $((++c)) -eq $3 ]]; then
 					new=$($5 "$BASH_REMATCH" "${@:6}")
 					exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
-					i=$(($i+${#new}))
+					i=$(($i+${#new}-1))
 				fi
 			fi
 		done
