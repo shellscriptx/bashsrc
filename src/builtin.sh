@@ -1651,7 +1651,9 @@ function __iter__()
 
 function source.__INIT__()
 {
-	local attr type method inittype func pkg err deps
+	local attr type method init_types func pkg err deps
+
+	init_types=${!__INIT_SRC_TYPES[@]}
 	
 	for pkg in $__DEPS__; do
 		command -v $pkg &>/dev/null || { err=1; deps+="$pkg, "; }
@@ -1671,13 +1673,10 @@ function source.__INIT__()
 		if ! [[ $type =~ ${__HASH_TYPE[srctype]} ]]; then
 			error.__trace def '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE"
 			return $?	
+		elif [[ $type =~ ^${init_types// /|}$ ]]; then
+			error.__trace src '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE_CONFLICT"
+			return $?
 		fi
-		for inittype in ${!__INIT_SRC_TYPES[@]}; do
-			if [[ $type == $inittype ]]; then
-				error.__trace src '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE_CONFLICT"
-				return $?
-			fi
-		done
 		for method in ${__TYPE__[$type]}; do
 			if ! declare -Fp $method &>/dev/null; then
 				error.__trace imp '' "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
