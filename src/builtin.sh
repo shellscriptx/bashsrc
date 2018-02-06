@@ -1651,7 +1651,7 @@ function __iter__()
 
 function source.__INIT__()
 {
-	local attr type method init_types func pkg err deps
+	local attr type_name method init_types func pkg err deps
 
 	init_types=${!__INIT_SRC_TYPES[@]}
 	
@@ -1669,22 +1669,22 @@ function source.__INIT__()
 		return $?
 	fi	
 
-	for type in ${!__TYPE__[@]}; do
-		if ! [[ $type =~ ${__HASH_TYPE[srctype]} ]]; then
-			error.__trace def '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE"
+	for type_name in ${!__TYPE__[@]}; do
+		if ! [[ $type_name =~ ${__HASH_TYPE[srctype]} ]]; then
+			error.__trace def '' "${BASH_SOURCE[-2]}" "$type_name" "$__ERR_BUILTIN_TYPE"
 			return $?	
-		elif [[ $type =~ ^${init_types// /|}$ ]]; then
-			error.__trace src '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE_CONFLICT"
+		elif [[ $type_name =~ ^${init_types// /|}$ ]]; then
+			error.__trace src '' "${BASH_SOURCE[-2]}" "$type_name" "$__ERR_BUILTIN_TYPE_CONFLICT"
 			return $?
 		fi
-		for method in ${__TYPE__[$type]}; do
+		for method in ${__TYPE__[$type_name]}; do
 			if ! declare -Fp $method &>/dev/null; then
-				error.__trace imp '' "$type" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
+				error.__trace imp '' "$type_name" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
 				return $?
 			fi
 		done
-		__INIT_SRC_TYPES[$type]=${__TYPE__[$type]}
-		unset __TYPE__[$type] || error.__trace def
+		__INIT_SRC_TYPES[$type_name]=${__TYPE__[$type_name]}
+		unset __TYPE__[$type_name] || error.__trace def
 	done
 
 	while IFS=' ' read _ _ func; do readonly -f $func; done < <(declare -Fp)
