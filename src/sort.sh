@@ -28,11 +28,11 @@ sort.size.rev
 sort.size.sorted
 '
 
-__TYPE__[ssort_t]='
+__TYPE__[sort_t]='
 sort.str
-sort.str.rev
-sort.str.int
-sort.str.intrev
+sort.strrev
+sort.int
+sort.intrev
 '
 
 # func sort.array.int <[array]name> => [int]
@@ -176,33 +176,33 @@ function sort.str()
 	return 0
 }
 
-# func sort.str.rev <[str]exp> => [str]
+# func sort.strrev <[str]exp> => [str]
 #
 # Retorna uma cópia de 'exp' com a sequência em ordem alfabética inversa.
 #
-function sort.str.rev()
+function sort.strrev()
 {
 	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo $(printf '%s\n' $1 | sort -dr)
 	return 0
 }
 
-# func sort.str.int <[str]exp> => [str]
+# func sort.int <[str]exp> => [str]
 #
 # Retorna uma cópia de 'exp' com a sequência de números em ordem crescente.
 #
-function sort.str.int()
+function sort.int()
 {
 	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo $(printf '%s\n' $1 | sort -n)
 	return 0
 }
 
-# func sort.str.intrev <[str]exp> => [str]
+# func sort.intrev <[str]exp> => [str]
 #
 # Retorna uma cópia de 'exp' com a sequência de números em ordem decrescente.
 #
-function sort.str.intrev()
+function sort.intrev()
 {
 	getopt.parse 1 "exp:str:-:$1" ${@:2}
 	echo $(printf '%s\n' $1 | sort -nr)
