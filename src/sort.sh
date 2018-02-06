@@ -6,6 +6,7 @@
 # Desenvolvido por: Juliano Santos [SHAMAN]
 # E-mail:           shellscriptx@gmail.com
 #----------------------------------------------#
+#
 
 [[ $__SORT_SH ]] && return 0
 
