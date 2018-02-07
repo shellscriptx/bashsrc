@@ -1057,7 +1057,8 @@ function del()
 
 	for var in $@; do
 		for method in ${__INIT_OBJ_METHOD[$var]}; do
-			unset __STRUCT_VAL_MEMBERS[$method]
+			unset __STRUCT_VAL_MEMBERS[$method] \
+				  __STRUCT_MEMBER_TYPE[$method]
 		done
 		unset -f ${__INIT_OBJ_METHOD[$var]}
 		unset 	__INIT_OBJ_METHOD[$var] \
@@ -1115,11 +1116,11 @@ function var()
 				fi
 
 				printf -v struct '%s.%s(){ 
-								 getopt.parse 2 "=:keyword:-:$1" "value:str:-:$2" "${@:3}"; 
+								 getopt.parse 2 "=:keyword:-:$1" "value:%s:-:$2" "${@:3}"; 
 								 [[ -n $1 ]] && __STRUCT_VAL_MEMBERS[$FUNCNAME]=$2 || 
 								 echo "${__STRUCT_VAL_MEMBERS[$FUNCNAME]}"; 
 								 return 0;
-								 }' "$var" "${method#*.}"
+								 }' "$var" "${method#*.}" "${__STRUCT_MEMBER_TYPE[$type.${method#*.}]}"
 
 				eval "$struct" &>/dev/null || error.__trace def
 				__INIT_OBJ_METHOD[$var]+="$var.${method#*.} "
