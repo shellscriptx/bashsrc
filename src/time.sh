@@ -81,15 +81,16 @@ readonly -a __weekdays=(
 
 var time_t struct_t
 
-time_t.__add__		tm_mon \
-					tm_mday \
-					tm_hour \
-					tm_min \
-					tm_sec \
-					tm_year \
-					tm_yday \
-					tm_wday \
-					tm_isdst
+time_t.__add__ \
+		tm_mon 		month \
+		tm_mday 	mday \
+		tm_hour 	hour \
+		tm_min 		min \
+		tm_sec 		sec \
+		tm_year 	year \
+		tm_yday 	yday \
+		tm_wday 	wday \
+		tm_isdst 	zone
 
 
 # func time.today => [str]
