@@ -244,14 +244,6 @@ function getopt.parse()
 
 		if [[ $flag == + ]] || [[ $flag == - && $value ]]; then
 			case $ctype in
-				uint|int|zone|char|str| \
-				bool|var| \
-				bin|hex|oct|size| \
-				12h|24h|date|hour| \
-				min|sec|mday|mon| \
-				year|yday|wday|url| \
-				email|ipv4|ipv6|mac| \
-				slice|uslice|funcname|st_member) [[ $value =~ ${__HASH_TYPE[$ctype]} ]];;
 				map)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null); [[ $attr =~ A ]];;
 				array)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null); [[ $attr =~ a ]];;
    	        	func) 		declare -Fp "$value" &>/dev/null;;
@@ -260,11 +252,18 @@ function getopt.parse()
 				file) 		[[ -f $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
 				path) 		[[ -e $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
 				fd) 		[[ -e /dev/fd/$value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
-				*)			[[ ${__INIT_OBJ_TYPE[$value]} == $ctype ]];;
+				*)	if [[ ${__HASH_TYPE[$ctype]} ]]; then
+						[[ $value =~ ${__HASH_TYPE[$ctype]} ]]
+					elif [[ ${__INIT_OBJ_TYPE[$value]} ]]; then
+						[[ ${__INIT_OBJ_TYPE[$value]} == $ctype ]]
+					else
+						false
+					fi
+					;;
    	    	esac || {
 				error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG '$ctype'"
 				return $?
-			}
+			}			
 		fi
 		lparam="$name:$ctype:$flag"
 		[[ $app ]] && __GETOPT_PARSE+=("$param")
