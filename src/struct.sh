@@ -92,16 +92,5 @@ function struct.__len__()
 	return 0	
 }
 
-function struct.__set_and_get()
-{
-	getopt.parse 4 "struct_name:str:+:$1" "member:str:+:$2" "=:keyword:-:$3" "value:str:-:$4" "${@:5}"
-	
-	case ${#@} in
-		2)		echo "${__STRUCT_VAL_MEMBERS[$1.$2]}";;
-		3|4) 	__STRUCT_VAL_MEMBERS[$1.$2]=$4;;
-	esac
-	return 0
-}
-
 source.__INIT__
 # /* __STRUCT_SH */
