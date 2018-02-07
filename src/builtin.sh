@@ -1114,8 +1114,12 @@ function var()
 					return $?
 				fi
 
-				printf -v struct '%s.%s(){ struct.__set_and_get "%s" "%s" "$@"; return 0; }' \
-				"$var" "${method#*.}" "$var" "${method#*.}"
+				printf -v struct '%s.%s(){ 
+								 getopt.parse 2 "=:keyword:-:$1" "value:str:-:$2" "${@:3}"; 
+								 [[ -n $1 ]] && __STRUCT_VAL_MEMBERS[$FUNCNAME]=$2 || 
+								 echo "${__STRUCT_VAL_MEMBERS[$FUNCNAME]}"; 
+								 return 0;
+								 }' "$var" "${method#*.}"
 
 				eval "$struct" &>/dev/null || error.__trace def
 				__INIT_OBJ_METHOD[$var]+="$var.${method#*.} "
