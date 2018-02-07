@@ -75,6 +75,11 @@ function error.__trace()
 					echo "Source: $3"
 					echo "Dependência(s): $4"
 					;;
+				st)
+					echo "Estrutura: <$2>"
+					echo "Membro: [$3]"
+					echo "Tipo: $4"
+				;;
 			esac
 			echo "Erro: ${5:-erro desconhecido}"
 			echo "------------------------"
