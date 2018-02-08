@@ -82,14 +82,14 @@ readonly __ERR_BUILTIN_DEL_OBJ='não foi possível deletar o objeto'
 
 readonly NULL=0
 
-readonly -A __HASH_TYPE=(
+readonly -A __FLAG_TYPE=(
 [ptr]='^\*'
-[file]='.+'
-[dir]='.+'
-[path]='.+'
-[func]='.+'
-[map]='.+'
-[array]='.+'
+[file]='.'
+[dir]='.'
+[path]='.'
+[func]='.'
+[map]='.'
+[array]='.'
 [funcname]='^[a-zA-Z0-9_.-]+$'
 [varname]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$'
 [srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]$'
@@ -103,7 +103,7 @@ readonly -A __HASH_TYPE=(
 [char]='^.$'
 [str]='^.+$'
 [bool]='^(true|false)$'
-[var]=${__HASH_TYPE[varname]}
+[var]=${__FLAG_TYPE[varname]}
 [zone]='^[+-][0-9]+$'
 [bin]='^[01]+$'
 [hex]='^(0x)?[0-9a-fA-F]+$'
@@ -1103,7 +1103,7 @@ function var()
 		fi
 		
 		if [[ $type == struct_t ]]; then
-			if ! [[ $var =~ ${__HASH_TYPE[srctype]} ]]; then
+			if ! [[ $var =~ ${__FLAG_TYPE[srctype]} ]]; then
 				error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_TYPE"
 				return $?	
 			elif [[ ${__INIT_SRC_TYPES[$var]} ]]; then
@@ -1216,7 +1216,7 @@ function __typeval__()
 
 	for	__elem in "${!__byref[@]}"; do
 		for __type in int float string; do
-			[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[$__type]} ]] && break
+			[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[$__type]} ]] && break
 		done
 		echo "$__elem|$__type"
 	done
@@ -1237,7 +1237,7 @@ function __isnum__()
 	local __elem __bit
 
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]]
+		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]]
 		__bit+="$?|"
 	done
 
@@ -1270,7 +1270,7 @@ function __in__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] && ((__byref[$__elem]++))
+		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] && ((__byref[$__elem]++))
 	done
 	
 	return $?
@@ -1292,7 +1292,7 @@ function __sum__()
 	__nums=${__tmp[@]}
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] && 
+		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] && 
 		__byref[$__elem]=$((${__byref[$__elem]}+${__nums// /+}))
 	done
 
@@ -1312,7 +1312,7 @@ function __dec__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] && ((__byref[$__elem]--))
+		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] && ((__byref[$__elem]--))
 	done
 }
 
@@ -1329,7 +1329,7 @@ function __eq__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] &&
+		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] &&
 		[[ ${__byref[$__elem]} -eq $2 ]] ||
 		[[ "${__byref[$__elem]}" == "$2" ]] && return 0
 	done
@@ -1350,7 +1350,7 @@ function __ne__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do	
-		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] &&
+		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] &&
 		[[ ${__byref[$__elem]} -ne $2 ]] ||
 		[[ ${__byref[$__elem]} != $2 ]] && return 0
 	done
@@ -1370,7 +1370,7 @@ function __gt__()
 	local __elem
 
 	for __elem in "${!__byref[@]}"; do	
-		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] &&
+		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] &&
 		[[ ${__byref[$__elem]} -gt $2 ]] ||
 		[[ ${__byref[$__elem]} > $2 ]] && return 0
 	done
@@ -1390,7 +1390,7 @@ function __ge__()
 	local __elem
 
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] &&
+		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] &&
 		[[ ${__byref[$__elem]} -ge $2 ]] &&
 		return 0
 	done
@@ -1410,7 +1410,7 @@ function __lt__()
 	local __elem
 
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[@]} =~ ${__HASH_TYPE[int]} ]] &&
+		[[ ${__byref[@]} =~ ${__FLAG_TYPE[int]} ]] &&
 		[[ ${__byref[$__elem]} -lt $2 ]] ||
 		[[ ${__byref[$__elem]} < $2 ]] && return 0
 	done
@@ -1430,7 +1430,7 @@ function __le__()
 	local __elem
 
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] && 
+		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] && 
 		[[ ${__byref[$__elem]} -le $2 ]] && return 0
 	done
 	return 1
@@ -1449,7 +1449,7 @@ function __float__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} =~ ${__HASH_TYPE[int]} ]] &&
+		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] &&
 		printf -v __byref[$__elem] "%0.2f" "${__byref[$__elem]}"
 	done
 	return $?
@@ -1680,7 +1680,7 @@ function source.__INIT__()
 	fi	
 
 	for type_name in ${!__TYPE__[@]}; do
-		if ! [[ $type_name =~ ${__HASH_TYPE[srctype]} ]]; then
+		if ! [[ $type_name =~ ${__FLAG_TYPE[srctype]} ]]; then
 			error.__trace def '' "${BASH_SOURCE[-2]}" "$type_name" "$__ERR_BUILTIN_TYPE"
 			return $?	
 		elif [[ $type_name =~ ^${init_types// /|}$ ]]; then

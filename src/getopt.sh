@@ -206,7 +206,7 @@ function getopt.parse()
 {
 	local name ctype flag value flags attr param app vargs lparam rep
 	
-	if ! [[ $1 =~ ${__HASH_TYPE[getopt_nargs]} ]]; then
+	if ! [[ $1 =~ ${__FLAG_TYPE[getopt_nargs]} ]]; then
 		error.__trace def "nargs" "int" "$1" "$__ERR_GETOPT_TYPE_ARG 'int'"
 		return $?
 	elif [[ $1 -eq -1 ]]; then
@@ -231,10 +231,10 @@ function getopt.parse()
 			continue
 		fi
 		
-		if ! [[ $name =~ ${__HASH_TYPE[getopt_pname]} ]]; then
+		if ! [[ $name =~ ${__FLAG_TYPE[getopt_pname]} ]]; then
 			error.__trace def "name" 'str' "$name" "$__ERR_GETOPT_ARG_NAME"
 			return $?
-		elif ! [[ $flag =~ ${__HASH_TYPE[getopt_flag]} ]]; then
+		elif ! [[ $flag =~ ${__FLAG_TYPE[getopt_flag]} ]]; then
 			error.__trace def "flag" 'str' "$flag" "$__ERR_GETOPT_FLAG"
 			return $?
 		elif [[ $flag == + && ! $value ]]; then
@@ -252,8 +252,8 @@ function getopt.parse()
 				file) 		[[ -f $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
 				path) 		[[ -e $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
 				fd) 		[[ -e /dev/fd/$value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
-				*)	if [[ ${__HASH_TYPE[$ctype]} ]]; then
-						[[ $value =~ ${__HASH_TYPE[$ctype]} ]]
+				*)	if [[ ${__FLAG_TYPE[$ctype]} ]]; then
+						[[ $value =~ ${__FLAG_TYPE[$ctype]} ]]
 					elif [[ ${__INIT_OBJ_TYPE[$value]} ]]; then
 						[[ ${__INIT_OBJ_TYPE[$value]} == $ctype ]]
 					else

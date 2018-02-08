@@ -82,14 +82,14 @@ readonly -a __weekdays=(
 var time_t struct_t
 
 time_t.__add__ \
-		tm_mon 		month \
-		tm_mday 	mday \
-		tm_hour 	hour \
-		tm_min 		min \
-		tm_sec 		sec \
-		tm_year 	year \
-		tm_yday 	yday \
-		tm_wday 	wday \
+		tm_mon 		uint \
+		tm_mday 	uint \
+		tm_hour 	uint \
+		tm_min 		uint \
+		tm_sec 		uint \
+		tm_year 	uint \
+		tm_yday 	uint \
+		tm_wday 	uint \
 		tm_isdst 	zone
 
 
@@ -113,7 +113,7 @@ function time.gmtime()
 {
 	getopt.parse 2 "struct:time_t:+:$1" "seconds:uint:+:$2" "${@:3}"
 	
-	info_t=($(printf "%(%m %d %H %M %S %Y %j %w %z)T" $2))
+	info_t=($(printf "%(%_m %_d %_H %_M %_S %_Y %_j %_w %z)T" $2))
 	
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}
@@ -138,7 +138,7 @@ function time.mtime()
 	
 	local info_t
 
-	info_t=($(printf "%(%m %d %H %M %S %Y %j %w %z)T"))
+	info_t=($(printf "%(%_m %_d %_H %_M %_S %_Y %_j %_w %z)T"))
 
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}
@@ -161,7 +161,7 @@ function time.localtime()
 {
 	getopt.parse 2 "struct:time_t:+:$1" "seconds:uint:+:$2" ${@:3}
 	
-	info_t=($(printf "%(%m %d %H %M %S %Y %j %w %z)T" $2))
+	info_t=($(printf "%(%_m %_d %_H %_M %_S %_Y %_j %_w %z)T" $2))
 
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}
@@ -409,7 +409,7 @@ function time.time()
 	return 0
 }
 
-# func time.ctime => [str]
+# func time.ctime <[uint]seconds> => [str]
 #
 # Converte o tempo em segundos para uma string data e hora local.
 #
