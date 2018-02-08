@@ -90,10 +90,11 @@ readonly -A __FLAG_TYPE=(
 [func]='.'
 [map]='.'
 [array]='.'
+[flag]='^[a-zA-Z]+$'
 [funcname]='^[a-zA-Z0-9_.-]+$'
 [varname]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$'
 [srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]$'
-[st_member]='^\*?[a-zA-Z0-9_.]+$'
+[st_member]='^[a-zA-Z0-9_.]+$'
 [getopt_nargs]='^(-1|0|[1-9][0-9]*)$'
 [getopt_pname]='^[a-zA-Z0-9_=+-]+$'
 [getopt_flag]='^(\+|-)$'
@@ -161,7 +162,7 @@ function has()
 #
 function swap(){
 	
-	getopt.parse 2 "varname1:str:+:$1" "varname2:str:+:$2" ${@:3}
+	getopt.parse 2 "varname1:var:+:$1" "varname2:var:+:$2" ${@:3}
 
 	declare -n __ref1=$1 __ref2=$2
 	local __tmp
@@ -1069,7 +1070,7 @@ function del()
 		unset 	__INIT_OBJ_METHOD[$var] \
 				__INIT_OBJ_TYPE[$var] \
 				__INIT_OBJ[$var] \
-				__INIT_STRUCT[$var]
+				__STRUCT_INIT[$var]
 
 	done || error.__trace def
 
