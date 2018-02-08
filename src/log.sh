@@ -22,6 +22,7 @@ readonly LOG_SECS=6
 
 var logfile_t struct_t
 var log_t struct_t
+var logwarn_t struct_t
 
 log_t.__add__ \
 	code 	uint \
@@ -32,12 +33,16 @@ logfile_t.__add__ \
 	log 	log_t \
     file 	str
 
+logwarn_t.__add__ \
+	msg		str \
+	flag	uint
+
 # func log.format <[flag]flag> <[str]msg> => [str]
 #
 # Exibe 'fmt' na saída padrão precedida por 'flag'.
 #
-# flag - Palavra chave personalizada que informa a flag da mensagem
-#        de log e deve conter os seguintes caracteres: [a-zA-Z_].
+# flag - Palavra chave personalizada que informa a flag de log e 
+#        deve conter os seguintes caracteres: [a-zA-Z_].
 #        Se 'flag' for igual 'warn' ou 'WARN', aplica a paleta de cor vermelha.
 # msg  - Mensagem a ser exibida. São suportados códigos de formato 'datetime'.
 #        %d, %m, %Y e etc.
@@ -66,10 +71,8 @@ function log.format()
 
 # func log.fatalf <[log_t]struct> <[str]exp> ... => [str]
 #
-# Exibe a mensagem com os atributos especificados na estrutura 'log_t'
-# substituindo os caracteres de formato por 'exp' (opcional).
-#
-# O script é finalizado com o código de status da estrutura.
+# Finaliza o script com 'code' status exibindo o log com os atributos
+# de 'log_t', substituindo os caracteres de formato por 'exp' (opcional).
 #
 function log.fatalf()
 {
@@ -78,13 +81,43 @@ function log.fatalf()
 	exit $($1.code)
 }
 
+# func log.fatal <[log_t]struct> => [str]
+#
+# Finaliza o script com 'code' status exibindo o log com os atributos
+# da estrutura 'log_t'.
+#
 function log.fatal()
 {
 	getopt.parse 1 "struct:log_t:+:$1" ${@:2}
 	log.__format $1 FATAL false
-	exit 1
+	exit $($1.code)
 }
 
+# func log.out <[log_t]struct> => [str]
+#
+# Exibe o log com os atributos da estrutura 'log_t'.
+#
+# Exemplo:
+#
+# #!/bin/bash
+#
+# source log.sh
+#
+# # Implementa 'log_t'
+# var meu_log log_t
+#
+# # Define os atributos.
+# meu_log.msg = 'registrando mensagem de log.'
+# meu_log.flag = $LOG_SDATE   # data e hora no formato curto.
+# meu_log.code = 1            # código do log.
+#
+# # Exibe o log
+# log.out meu_log
+#
+# Saída:
+#
+# script.sh: LOG: 08/02/2018 18:49:46: 1: registrando mensagem de log.
+#
 function log.out()
 {
 	getopt.parse 1 "struct:log_t:+:$1" ${@:2}
@@ -92,6 +125,11 @@ function log.out()
 	return 0
 }
 
+# func log.outf <[log_t]struct> <[str]exp> => [str]
+#
+# Exibe o log com os atributos da estrutura 'log_t', substituindo
+# os caracteres de formato por 'exp' (opcional).
+#
 function log.outf()
 {
 	getopt.parse -1 "struct:log_t:+:$1" "exp:str:-:$2" ... "${@:3}"
@@ -99,26 +137,46 @@ function log.outf()
 	return 0
 }
 
+# func log.warn <[logwarn_t]struct> => [str]
+#
+# Exibe o log com os atributos da estrutura 'logwarn_t', retornando
+# o código de status '1'.
+#
 function log.warn()
 {
-	getopt.parse 1 "struct:log_t:+:$1" ${@:2}
+	getopt.parse 1 "struct:logwarn_t:+:$1" ${@:2}
 	log.__format $1 WARN false
-	return 0
+	return 1
 }
 
+# func log.warnf <[logwarn_t]struct> <[str]exp> ... => [str]
+#
+# Exibe o log com os atributos da estrutura 'logwarn_t' substituindo
+# os caracteres de formato por 'exp' (opcional), retornando 
+# o código de status '1'.
+#
 function log.warnf()
 {
-	getopt.parse -1 "struct:log_t:+:$1" "exp:str:-:$2" ... "${@:3}"
+	getopt.parse -1 "struct:logwarn_t:+:$1" "exp:str:-:$2" ... "${@:3}"
 	log.__format $1 WARN true "${@:2}"
 	return 0
 }
 
+# func log.file <[logfile_t]struct>
+#
+# Grava os atributos do log contidos na estrutura 'logfile_t'.
+#
 function log.file()
 {
 	getopt.parse 1 "struct:logfile_t:+:$1" ${@:2}
 	log.__format $1 LOG false
 }
 
+# func log.filef <[logfile_t]struct> <[str]exp> ...
+#
+# Grava os atributos do log contidos na estrutura 'logfile_t',
+# substituindo os caracteres de formato por 'exp' (opcional).
+#
 function log.filef()
 {
 	getopt.parse -1 "struct:logfile_t:+:$1" "exp:str:-:$2" ... "${@:3}"
@@ -132,6 +190,10 @@ function log.__format()
 	type=$(__type__ $1)
 
 	case $type in
+		logwarn_t)
+			msg=$($1.msg)
+			flag=$($1.flag)
+			;;
 		log_t)
 			msg=$($1.msg) 
 			flag=$($1.flag) 
@@ -142,7 +204,7 @@ function log.__format()
 			flag=$($1.log.flag)
 			code=$($1.log.code)
 			logfile=$($1.file)
-			wfile=true
+			[[ $logfile ]] || { error.__trace st "$1" 'file' 'str' "$__ERR_STRUCT_VAL_MEMBER"; return $?; }
 			;;
 		*)
 			error.__trace def
@@ -151,8 +213,8 @@ function log.__format()
 	esac
 
 	[[ $msg ]] || error.__trace st "$1" 'msg' 'str' "$__ERR_STRUCT_VAL_MEMBER"
-	[[ $code ]] || error.__trace st "$1" 'code' 'uint' "$__ERR_STRUCT_VAL_MEMBER"
 	[[ $flag ]] || error.__trace st "$1" 'flag' 'uint' "$__ERR_STRUCT_VAL_MEMBER"
+	[[ $type == @(log_t|logfile_t) && ! $code ]] && error.__trace st "$1" 'code' 'uint' "$__ERR_STRUCT_VAL_MEMBER"
 
 	case $flag in
 		1) fmt='%(%A, %d de %B de %Y %T)T';;
