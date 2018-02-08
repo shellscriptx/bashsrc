@@ -116,40 +116,18 @@ function log.warnf()
 function log.file()
 {
 	getopt.parse 1 "struct:logfile_t:+:$1" ${@:2}
-	log.__file $1 false
+	log.__format $1 LOG false
 }
 
 function log.filef()
 {
 	getopt.parse -1 "struct:logfile_t:+:$1" "exp:str:-:$2" ... "${@:3}"
-	log.__file $1 true "${@:2}"
-}
-
-function log.__file()
-{
-	[[ $(__type__ $1) != logfile_t ]] && { error.__trace def; return $?; }
-	
-    local logfile=$($1.file)
-
-    if ! [[ -f "$logfile" ]]; then
-        error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_NOFILE"
-        return $?
-    elif [[ -e "$logfile" && ! -w "$logfile" ]]; then
-        error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_NOWFILE"
-        return $?
-    fi
-	
-	log.__format $1 LOG $2 "${@:3}" >> "$logfile" || {
-		error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_WFILE"
-		return $?
-	}
-
-    return 0
+	log.__format $1 LOG true "${@:2}"
 }
 
 function log.__format()
 {
-	local msg flag code type fmt date
+	local msg flag code type fmt date logfile wfile
 	
 	type=$(__type__ $1)
 
@@ -163,6 +141,8 @@ function log.__format()
 			msg=$($1.log.msg)
 			flag=$($1.log.flag)
 			code=$($1.log.code)
+			logfile=$($1.file)
+			wfile=true
 			;;
 		*)
 			error.__trace def
@@ -186,13 +166,23 @@ function log.__format()
 
 	[[ $2 == WARN ]] && printf '\033[0;31m'	
 	[[ $3 == true ]] && printf -v msg "$msg" "${@:4}"
-	
+
+	if [[ $wfile ]]; then
+    	if [[ -e "$logfile" && ! -f "$logfile" ]]; then
+        	error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_NOFILE"
+        	return $?
+    	elif [[ -e "$logfile" && ! -w "$logfile" ]]; then
+        	error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_NOWFILE"
+        	return $?
+    	fi
+	fi
+
 	printf -v date "$fmt"
 	printf '%s: %s: %s: %s: %s\n'  "${0##*/}" \
 									"$2" \
                                     "$date" \
                                     "${code:--}" \
-                                    "${msg:--}"
+                                    "${msg:--}" >> "${logfile:-/dev/stdout}"
 
 	printf '\033[0;m'
 
