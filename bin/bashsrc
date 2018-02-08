@@ -21,6 +21,20 @@ elif [[ ! -d "$BASHSRC_PATH" ]]; then
 	exit 1
 fi
 
+declare -A pattern=(
+[funcname]='^\s*[a-zA-Z0-9_.]+'
+[varname]='(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*'
+[comm]='^\s*#\s*\*'
+[func]='^\s*#\s*func\s+'
+[ntype]='(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]'
+[type]="^[^#]*\s*__TYPE__\[(${pattern[ntype]})\]"
+[objtype]='^[^#]*\s*__TYPE__\[([^]]+)\]='
+[const]='^\s*(readonly|declare -[^rf]*r[^rf]*)\s+[a-zA-Z][a-zA-Z0-9_]+='
+[struct]="^[^#]*\s*var\s+(${pattern[varname]})\s+struct_t"
+[nocomm]='^[^#]+'
+[spc]='^\s*$'
+)
+
 function usage()
 {
 	echo "$BASENAME: ferramenta para consulta de documentação e ambiente."
@@ -51,7 +65,7 @@ function view_doc()
 	local srcname=(${1/./ })
 	local srcfile=${srcname[0]}.sh
 	local srcdir=$BASHSRC_PATH/src
-	local line flags match prefix ver type
+	local line match prefix ver
 
 	if [[ ${#@} -eq 0 ]]; then
 		echo "$BASENAME: requer nome da biblioteca" 1>&2
@@ -64,42 +78,27 @@ function view_doc()
 	shopt -s extglob globasciiranges
 	set -f
 	
-	flags=(
-'*( )+(#)*( )+(\*)*(*)'
-'*( )+(#)*( )@(func)+( )*(*)'
-'*( )@(__TYPE__)\[+([a-zA-Z0-9._])\]=*(*)'
-'*( )@(readonly)+( )?(-[aA]+( ))+([a-zA-Z])*([a-zA-Z0-9_])?(=*(*))'
-'*( )@(declare)+( )?(-*([^r])r*([^r])+( ))+([a-zA-Z])*([a-zA-Z0-9_])?(=*(*))'
-'*( )+(#)*( )@(func)+( )'
-'*( )+([^#])'
-'*( )@(__TYPE__)'
-'*( )+([a-zA-Z0-9_.])'
-'*( )'
-)
-	
 	if [[ ${#srcname[@]} -eq 1 ]]; then
 		while read line; do
-			case $line in
-				${flags[0]}) echo "${line#${flags[0]}}";;
-				${flags[1]}) echo "${line#+(#)}";;
-				${flags[2]}) [[ $line =~ \[([^]]+)\] ]] && echo "type ${BASH_REMATCH[1]}";;
-				${flags[3]}|${flags[4]}) echo "$line";;
-			esac
+			if [[ $line =~ ${pattern[comm]} ]]; then echo "${line#+(#)}"
+			elif [[ $line =~ ${pattern[func]} ]]; then echo "${line#+(#)}"
+			elif [[ $line =~ ${pattern[type]} ]]; then echo "type ${BASH_REMATCH[1]}"
+			elif [[ $line =~ ${pattern[const]} ]]; then echo "$line"
+			elif [[ $line =~ ${pattern[struct]} ]]; then echo "struct ${BASH_REMATCH[1]}"
+			fi
 		done < "$srcdir/$srcfile"
 	else
 		prefix=${1#builtin.}; prefix=${prefix##*/}
 		while read line; do
-			[[ $ver -eq 1 && $line == ${flags[6]} ]] || 
-			[[ $ver -eq 2 && $line == ${flags[9]} ]] && break
+			[[ $ver -eq 1 && $line =~ ${pattern[nocomm]} ]] || 
+			[[ $ver -eq 2 && $line =~ ${pattern[spc]} ]] && break
 
-			if [[ $line == @(${flags[5]}${prefix}*(+( )*(*))) ]]; then
+			if [[ $line =~ ${pattern[func]}${prefix} ]]; then
 				ver=1; match=1
-			elif [[ $line == ${flags[7]}\[@(${1#*.})\]*(*) ]]; then
-				[[ $line =~ \[([^]]+)\] ]] 
-				type=${BASH_REMATCH[1]}
-				echo "type $type"
+			elif [[ $line =~ __TYPE__\[(${1#*.})\] ]]; then
+				echo "type ${BASH_REMATCH[1]}"
 				echo
-				echo "Implementa o(s) método(s) do objeto '$type'."
+				echo "Implementa o(s) método(s) do objeto '${BASH_REMATCH[1]}'."
 				echo
 				echo "'S' é o identificador da variável implementada."
 				echo
@@ -111,7 +110,8 @@ function view_doc()
 			
 			case $ver in
 				1) 	echo "${line#+(#)}";;
-				2)	[[ $line == ${flags[8]} ]] && echo "S.${line##*.}";;
+				2)	[[ $line =~ ${pattern[funcname]} ]] && 
+					! [[ $line =~ __TYPE__ ]] && echo "S.${line##*.}";;
 			esac
 		done < "$srcdir/$srcfile"
 		
@@ -127,11 +127,10 @@ function view_doc()
 function check_conflicts()
 {
    local srcfile cur old line
-   local re='^[^#]*__TYPE__\[([^]]+)\]='
 
 	while read srcfile; do
 		while read line; do
-			[[ "$line" =~ $re ]] && echo "${BASH_REMATCH[1]}|$srcfile"
+			[[ "$line" =~ ${pattern[objtype]} ]] && echo "${BASH_REMATCH[1]}|$srcfile"
 		done < "$srcfile"
 	done < <(list_sources) | sort -d -t'|' -k1 | while read cur; do
 		if [[ "${old%|*}" == "${cur%|*}" ]]; then
