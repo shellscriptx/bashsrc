@@ -8,7 +8,7 @@ source builtin.sh
 
 declare -A  __STRUCT_VAL_MEMBERS \
 			__STRUCT_MEMBER_TYPE \
-			__INIT_STRUCT
+			__STRUCT_INIT
 
 readonly __ERR_STRUCT_MEMBER_NAME='nome do membro da estrutura inválido'
 readonly __ERR_STRUCT_ALREADY_INIT='a estrutura já foi inicializada'
@@ -22,6 +22,7 @@ __TYPE__[struct_t]='
 struct.__add__
 struct.__members__
 struct.__len__
+struct.__attr__
 __type__
 '
 
@@ -35,7 +36,7 @@ function struct.__add__(){
 	local struct=$1
 	local mem
 
-	if [[ ${__INIT_STRUCT[$struct]} ]]; then
+	if [[ ${__STRUCT_INIT[$struct]} ]]; then
 		error.__trace st "$struct" '' '' "$__ERR_STRUCT_ALREADY_INIT"
 		return $?
 	fi
@@ -69,7 +70,7 @@ function struct.__add__(){
 		shift 2
 	done	
 
-	__INIT_STRUCT[$struct]=true
+	__STRUCT_INIT[$struct]=true
 	
 	return 0
 }
@@ -100,6 +101,24 @@ function struct.__len__()
 	echo ${#len[@]}
 
 	return 0	
+}
+
+# func struct.__attr__ <[struct_t]name> => [str|str]
+#
+# Retorna o atributo dos membros da estrutura.
+# padrão: membro|tipo
+#
+function struct.__attr__()
+{
+	getopt.parse 1 "name:struct_t:+:$1" "${@:2}"
+
+	local mem
+	
+	for mem in ${__INIT_SRC_TYPES[$1]}; do
+		echo "${mem#*.}|${__STRUCT_MEMBER_TYPE[$1.${mem#*.}]}"
+	done
+
+	return 0
 }
 
 source.__INIT__
