@@ -7,6 +7,12 @@ readonly __LOG_SH=1
 source builtin.sh
 source struct.sh
 
+readonly __ERR_STRUCT_VAL_MEMBER='valor do membro da estrutura requerido'
+readonly __ERR_STRUCT_FLAG='flag de log inválida'
+readonly __ERR_STRUCT_WFILE='erro ao gravar no arquivo de log'
+readonly __ERR_STRUCT_NOFILE='nẽo é um arquivo comum'
+readonly __ERR_STRUCT_NOWFILE='acesso negado: não é possível gravar no arquivo'
+
 readonly LOG_LDATE=1
 readonly LOG_SDATE=2
 readonly LOG_HOUR=3
@@ -26,7 +32,28 @@ logfile_t.__add__ \
 	log 	log_t \
     file 	str
 
-
+# func log.format <[flag]flag> <[str]msg> => [str]
+#
+# Exibe 'fmt' na saída padrão precedida por 'flag'.
+#
+# flag - Palavra chave personalizada que informa a flag da mensagem
+#        de log e deve conter os seguintes caracteres: [a-zA-Z_].
+#        Se 'flag' for igual 'warn' ou 'WARN', aplica a paleta de cor vermelha.
+# msg  - Mensagem a ser exibida. São suportados códigos de formato 'datetime'.
+#        %d, %m, %Y e etc.
+#
+# Exemplo:
+#
+# #!/bin/bash
+#
+# source log.sh
+#
+# log.format registro_msg "mensagem registrada às %H:%M:%S"
+#
+# Saída:
+#
+# script.sh: registro_msg: mensagem registrada às 13:59:19
+#
 function log.format()
 {
 	getopt.parse 2 "flag:flag:+:$1" "fmt:str:+:$2" "${@:3}"
@@ -37,11 +64,18 @@ function log.format()
 	return 0
 }
 
+# func log.fatalf <[log_t]struct> <[str]exp> ... => [str]
+#
+# Exibe a mensagem com os atributos especificados na estrutura 'log_t'
+# substituindo os caracteres de formato por 'exp' (opcional).
+#
+# O script é finalizado com o código de status da estrutura.
+#
 function log.fatalf()
 {
 	getopt.parse -1 "struct:log_t:+:$1" "exp:str:-:$2" ... "${@:3}"
 	log.__format $1 FATAL true "${@:2}"
-	exit 1
+	exit $($1.code)
 }
 
 function log.fatal()
@@ -97,16 +131,16 @@ function log.__file()
 	
     local logfile=$($1.file)
 
-    if [[ -d "$logfile" ]]; then
-        error.__trace def 'struct' 'file' "$logfile" 'não é um arquivo válido'
+    if ! [[ -f "$logfile" ]]; then
+        error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_NOFILE"
         return $?
     elif [[ -e "$logfile" && ! -w "$logfile" ]]; then
-        error.__trace def 'struct' 'file' "$logfile" "permissão negada: não é possível gravar no arquivo"
+        error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_NOWFILE"
         return $?
     fi
 	
 	log.__format $1 LOG $2 "${@:3}" >> "$logfile" || {
-		error.__trace def 'struct' 'file' "$logfile" 'erro ao gravar no arquivo de log'
+		error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_WFILE"
 		return $?
 	}
 
@@ -136,6 +170,10 @@ function log.__format()
 			;;
 	esac
 
+	[[ $msg ]] || error.__trace st "$1" 'msg' 'str' "$__ERR_STRUCT_VAL_MEMBER"
+	[[ $code ]] || error.__trace st "$1" 'code' 'uint' "$__ERR_STRUCT_VAL_MEMBER"
+	[[ $flag ]] || error.__trace st "$1" 'flag' 'uint' "$__ERR_STRUCT_VAL_MEMBER"
+
 	case $flag in
 		1) fmt='%(%A, %d de %B de %Y %T)T';;
 		2) fmt='%(%d/%m/%Y %T)T';;
@@ -143,7 +181,7 @@ function log.__format()
 		4) fmt='%(%d/%m/%Y)T';;
 		5) fmt='%(%d%m%Y%H%M%S)T';;
 		6) fmt='%(%s)T';;
-		*) error.__trace def 'struct' 'flag' "$flag" "flag de log inválida"; return $?;;
+		*) error.__trace def "$1" 'flag' "$flag" "$__ERR_STRUCT_FLAG"; return $?;;
 	esac
 
 	[[ $2 == WARN ]] && printf '\033[0;31m'	
