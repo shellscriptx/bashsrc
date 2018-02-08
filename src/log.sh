@@ -168,13 +168,13 @@ function log.__format()
 	[[ $3 == true ]] && printf -v msg "$msg" "${@:4}"
 
 	if [[ $wfile ]]; then
-    	if [[ -e "$logfile" && ! -f "$logfile" ]]; then
-        	error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_NOFILE"
-        	return $?
-    	elif [[ -e "$logfile" && ! -w "$logfile" ]]; then
-        	error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_NOWFILE"
-        	return $?
-    	fi
+		if [[ -e "$logfile" && ! -f "$logfile" ]]; then
+			error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_NOFILE"
+			return $?
+		elif [[ -e "$logfile" && ! -w "$logfile" ]]; then
+			error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_NOWFILE"
+			return $?
+		fi
 	fi
 
 	printf -v date "$fmt"
