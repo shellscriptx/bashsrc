@@ -15,7 +15,7 @@ readonly __ERR_STRUCT_ALREADY_INIT='a estrutura já foi inicializada'
 readonly __ERR_STRUCT_MEMBER_CONFLICT='conflito de membros na estrutura'
 readonly __ERR_STRUCT_TYPE='requer estrutura do tipo'
 readonly __ERR_STRUCT_NOT_FOUND='nome da estrutura inválida'
-readonly __ERR_STRUCT_MEM_TYPE='tipo do membro do inválido'
+readonly __ERR_STRUCT_MEM_TYPE='tipo do membro é inválido'
 readonly __ERR_STRUCT_MEM_TYPE_REQUIRED='tipo do membro da estrutura requerido'
 readonly __ERR_STRUCT_VAL_MEMBER='valor do membro da estrutura requerido'
 
