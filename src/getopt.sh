@@ -260,7 +260,16 @@ function getopt.parse()
 						false
 					fi
 					;;
-   	    	esac || {
+   	    	esac && {
+				__ERR__=
+				__ERR_STACK__=
+				__ERR_ARG__=
+				__ERR_TYPE__=
+				__ERR_VAL__=
+				__ERR_MSG__=
+				__ERR_FUNC__=
+				__ERR_LINE__=
+			} || {
 				error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG '$ctype'"
 				return $?
 			}			
@@ -268,6 +277,7 @@ function getopt.parse()
 		lparam="$name:$ctype:$flag"
 		[[ $app ]] && __GETOPT_PARSE+=("$param")
 	done
+
 	
 	return $?
 }
