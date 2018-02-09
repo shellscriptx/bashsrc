@@ -269,6 +269,7 @@ function getopt.parse()
 				__ERR_MSG__=
 				__ERR_FUNC__=
 				__ERR_LINE__=
+				__ERR_ARGS__=
 			} || {
 				error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG '$ctype'"
 				return $?

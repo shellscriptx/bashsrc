@@ -41,7 +41,8 @@ declare __ERR__ \
 		__ERR_VAL__ \
 		__ERR_MSG__ \
 		__ERR_FUNC__ \
-		__ERR_LINE__
+		__ERR_LINE__ \
+		__ERR_ARGS__
 
 shopt -s	extglob \
 			globasciiranges \
