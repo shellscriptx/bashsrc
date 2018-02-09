@@ -15,7 +15,6 @@ source struct.sh
 readonly __ERROR_SH=1
 
 var error_t struct_t
-var trace_t struct_t
 
 error_t.__add__ \
 	code 		uint \
