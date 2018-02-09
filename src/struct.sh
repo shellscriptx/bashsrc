@@ -58,7 +58,7 @@ function struct.__add__(){
 				__STRUCT_MEMBER_TYPE[$struct.$1.$mem]=${__STRUCT_MEMBER_TYPE[$2.$mem]}
 			done
 		else
-			if ! [[ ${__FLAG_TYPE[$2]} ]]; then
+			if ! [[ ${__INIT_OBJ[$2]:-${__FLAG_TYPE[$2]}} ]]; then
 				error.trace st "$struct" "$1" "$2" "$__ERR_STRUCT_MEM_TYPE"
 				return $?
 			elif [[ ${__STRUCT_MEMBER_TYPE[$struct.$1]} ]]; then
