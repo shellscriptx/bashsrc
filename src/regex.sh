@@ -59,7 +59,7 @@ function regex.findall()
 	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -93,7 +93,7 @@ function regex.fullmatch()
 	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -123,7 +123,7 @@ function regex.match()
 	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
@@ -157,7 +157,7 @@ function regex.search()
 	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -195,7 +195,7 @@ function regex.split()
 	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -229,7 +229,7 @@ function regex.ismatch()
 	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -258,7 +258,7 @@ function regex.groups()
 	case $3 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${def} nocasematch
@@ -325,7 +325,7 @@ function regex.fngroups()
 	case $5 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
@@ -376,7 +376,7 @@ function regex.fnngroups()
 	case $5 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
@@ -462,7 +462,7 @@ function regex.savegroups()
 	case $3 in
 		0) __def='u';;
 		2) __def='s';;
-		*) error.__trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 
 	shopt -q${__def} nocasematch
@@ -530,7 +530,7 @@ function regex.replace()
 	case $5 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
@@ -609,7 +609,7 @@ function regex.nreplace()
 	case $5 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
@@ -712,7 +712,7 @@ function regex.fnreplace()
 	case $4 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$4" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$4" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch
@@ -814,7 +814,7 @@ function regex.fnnreplace()
 	case $4 in
 		0) def='u';;
 		2) def='s';;
-		*) error.__trace def "flag" "uint" "$4" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
+		*) error.trace def "flag" "uint" "$4" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
 	esac	
 	
 	shopt -q${def} nocasematch

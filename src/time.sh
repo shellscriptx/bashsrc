@@ -212,7 +212,7 @@ function time.tzinfo()
 		echo "${tzname}|${__timezones[$tzname]}|${utc}"
 		unset TZ
 	else	
-		error.__trace def "tzname" "str" "$tzname" "$__ERR_TIME_TZNAME"; return $?
+		error.trace def "tzname" "str" "$tzname" "$__ERR_TIME_TZNAME"; return $?
 	fi
 
 	return 0
@@ -459,7 +459,7 @@ function time.asctime()
 								$($1.tm_mon) \
 								$($1.tm_year) \
 								$($1.tm_yday)) 2>/dev/null; then
-		error.__trace def 'time_t' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
+		error.trace def 'time_t' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
 		return $?
 	fi
 
@@ -536,7 +536,7 @@ function time.strftime()
 								$($1.tm_mon) \
 								$($1.tm_year) \
 								$($1.tm_yday)) 2>/dev/null; then
-		error.__trace def 'time_t' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
+		error.trace def 'time_t' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
 		return $?
 	fi
 
@@ -649,9 +649,9 @@ function time.__check_time()
 function time.__init()
 {
 	if [[ ! -e $__TIME_TZFILE ]]; then
-		error.__trace def '' '' '' "$__ERR_TIME_TZFILE '$__TIME_TZFILE'"; return $?
+		error.trace def '' '' '' "$__ERR_TIME_TZFILE '$__TIME_TZFILE'"; return $?
 	elif [[ ! -e $__TIME_CTZFILE ]]; then
-		error.__trace def '' '' '' "$__ERR_TIME_TZFILE '$__TIME_CTZFILE'"; return $?
+		error.trace def '' '' '' "$__ERR_TIME_TZFILE '$__TIME_CTZFILE'"; return $?
 	fi
 
 	declare -Ag __timezones

@@ -90,7 +90,7 @@ function os.chmod()
 	getopt.parse 2 "path:path:+:$1" "mode:uint:+:$2" ${@:3}
 	
 	if ! [[ $2 =~ ^[0-7]{3,4}$ ]]; then
-		error.__trace def 'mode' 'uint' "$2" "$__ERR_OS_MODE_PERM"; return $?
+		error.trace def 'mode' 'uint' "$2" "$__ERR_OS_MODE_PERM"; return $?
 	fi
 	chmod "$2" "$1" &>/dev/null
 	return $?
@@ -108,7 +108,7 @@ function os.stackdir()
 	local __dir=$2
 	
 	if [ ! -d "$__dir" ]; then
-		error.__trace def 'dir' 'str' "$__dir" "$__ERR_OS_DIR_NOT_FOUND"
+		error.trace def 'dir' 'str' "$__dir" "$__ERR_OS_DIR_NOT_FOUND"
 		return $?
 	fi
 	__stack_dir+=("$__dir")
@@ -305,7 +305,7 @@ function os.__chtime()
 								$($1.tm_mon) \
 								$($1.tm_year) \
 								$($1.tm_yday)) 2>/dev/null; then
-        error.__trace def 'st_time' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
+        error.trace def 'st_time' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
         return $?
     fi
 
@@ -332,7 +332,7 @@ function os.mkdir()
 	getopt.parse 2 "dir:str:+:$1" "mode:uint:+:$2" ${@:3}
 	
 	if ! [[ $2 =~ ^[0-7]{3,4}$ ]]; then
-		error.__trace def 'mode' 'uint' "$2" "$__ERR_OS_MODE_PERM"; return $?
+		error.trace def 'mode' 'uint' "$2" "$__ERR_OS_MODE_PERM"; return $?
 	fi
 	mkdir --parents --mode=$2 "$1" &>/dev/null
 	return $?
@@ -479,9 +479,9 @@ function os.open()
 	declare -n __fdref=$1
 
 	if [ ! -d /dev/fd ]; then
-		error.__trace def '' '' '' "'/dev/fd' diretório FIFOs para método I/O não encontrado"; return $?
+		error.trace def '' '' '' "'/dev/fd' diretório FIFOs para método I/O não encontrado"; return $?
 	elif [ -d "$__file" ]; then
-		error.__trace def 'filename' 'str' "$__file" 'é um diretório'; return $?
+		error.trace def 'filename' 'str' "$__file" 'é um diretório'; return $?
 	fi
 
 	for ((__fd=3; __fd <= __FD_MAX; __fd++)); do
@@ -489,37 +489,37 @@ function os.open()
 	done
 
 	if [ $__av -eq 0 ]; then
-		error.__trace def 'file' 'fd' "$__file" "$__ERR_OS_FD_OPEN_MAX"; return $?
+		error.trace def 'file' 'fd' "$__file" "$__ERR_OS_FD_OPEN_MAX"; return $?
 	fi
 	
 	case $__mode in
 		0)
 			if [[ ! -e "$__file" ]]; then
-				error.__trace def 'file' 'str' "$__file" "$__ERR_OS_FILE_NOT_FOUND"; return $?
+				error.trace def 'file' 'str' "$__file" "$__ERR_OS_FILE_NOT_FOUND"; return $?
 			elif [[ ! -r "$__file" ]]; then
-				error.__trace def 'file' 'str' "$__file" "$__ERR_OS_FILE_NOT_READ"; return $?
+				error.trace def 'file' 'str' "$__file" "$__ERR_OS_FILE_NOT_READ"; return $?
 			fi
 			__parse="$__fd<'$__file'"
 			;;
 
 		1)
 			if [[ -e "$__file" && ! -w "$__file" ]]; then
-				error.__trace def 'file' 'str' "$__file" "$__ERR_OS_FILE_NOT_WRITE"; return $?
+				error.trace def 'file' 'str' "$__file" "$__ERR_OS_FILE_NOT_WRITE"; return $?
 			fi
 			__parse="$__fd>>'$__file'"
 			;;
 
 		2) 
 			if [[ -e "$__file" ]] && [[ ! -w "$__file" || ! -r "$__file" ]]; then
-				error.__trace def 'file' 'str' "$__file" "$__ERR_OS_FILE_NOT_RW"; return $?
+				error.trace def 'file' 'str' "$__file" "$__ERR_OS_FILE_NOT_RW"; return $?
 			fi
 			__parse="$__fd<>'$__file'"
 			;;
-		*) error.__trace def 'flag' 'uint' "$__mode" "$__ERR_OS_OPEN_FLAG"; return $?;;
+		*) error.trace def 'flag' 'uint' "$__mode" "$__ERR_OS_OPEN_FLAG"; return $?;;
 	esac
 
 	if ! eval exec "$__parse" 2>/dev/null; then
-		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_CREATE '$__fd'"
+		error.trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_CREATE '$__fd'"
 		return $?
 	fi
 
@@ -670,7 +670,7 @@ function os.file.readlines()
 		bytes=$((bytes+${#line}))
 		echo "$line"
 	done <&$1 2>/dev/null; then
-		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$1'"
+		error.trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$1'"
 		return $?
 	fi
 	
@@ -705,7 +705,7 @@ function os.file.readline()
 	local line
 
 	if ! read line <&$1 2>/dev/null; then
-		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$1'"
+		error.trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$1'"
 		return $?
 	fi
 
@@ -746,7 +746,7 @@ function os.file.read()
 		echo -n "${ch:- }"
 		(($((++bytes)) == $2)) && break
 	done <&$1 2>/dev/null; then
-		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$1'"
+		error.trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$1'"
 		return $?
 	fi
 
@@ -767,7 +767,7 @@ function os.file.writeline()
 	getopt.parse 2 "descriptor:fd:+:$1" "exp:str:-:$2" ${@:3}
 	
 	if ! echo "$2" >&$1 2>/dev/null; then
-		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_WRITE '$1'"
+		error.trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_WRITE '$1'"
 		return $?
 	fi
 	
@@ -802,7 +802,7 @@ function os.file.write()
 	(($3 == 0)) && return 0
 
 	if ! echo "${2:0:$3}" >&$1 2>/dev/null; then
-		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_WRITE '$1'"
+		error.trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_WRITE '$1'"
 		return $?
 	fi
 	
@@ -820,7 +820,7 @@ function os.file.close()
 	local var
 
 	if ! eval exec "$1<&-"; then
-		error.__trace def 'descriptor' 'fd' "$1" "$__ERR_OS_FILE_CLOSE"
+		error.trace def 'descriptor' 'fd' "$1" "$__ERR_OS_FILE_CLOSE"
 		return $?
 	fi
 	
@@ -903,7 +903,7 @@ function os.file.seek()
 		1) 	eval exec "$1>>'$filename'";;
 		2)	eval exec "$1<>'$filename'";;
 	esac 2>/dev/null || {
-		error.__trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$fd'"
+		error.trace def 'descriptor' "fd" '-' "$__ERR_OS_FD_READ '$fd'"
 		return $?
 	}
 
@@ -913,7 +913,7 @@ function os.file.seek()
 		0)	os.file.read $1 $2;;
 		1) 	os.file.read $1 $(($cur+$2));;
 		2)	os.file.read $1 $(os.file.size $1);;
-		*) 	error.__trace def 'whence' 'uint' "$3" "$__ERR_OS_SEEK_FLAG"; return $?;;
+		*) 	error.trace def 'whence' 'uint' "$3" "$__ERR_OS_SEEK_FLAG"; return $?;;
 	esac 1>/dev/null
 
 	return 0

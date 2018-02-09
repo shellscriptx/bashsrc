@@ -108,10 +108,10 @@ function grp.__get_info()
 			printf '%s\n' $info
 
 		else
-			error.__trace def 'group' 'str' "$1" "$__ERR_GRP_GROUP_NOT_FOUND"; return $?
+			error.trace def 'group' 'str' "$1" "$__ERR_GRP_GROUP_NOT_FOUND"; return $?
 		fi	
 	else
-		error.__trace def '' '' "$__GRP_PATH" "$__ERR_GRP_READ_GROUP_FILE"; return $?
+		error.trace def '' '' "$__GRP_PATH" "$__ERR_GRP_READ_GROUP_FILE"; return $?
 	fi
 
 	return $?

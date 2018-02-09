@@ -17,6 +17,7 @@ readonly __ERR_STRUCT_TYPE='requer estrutura do tipo'
 readonly __ERR_STRUCT_NOT_FOUND='nome da estrutura inválida'
 readonly __ERR_STRUCT_MEM_TYPE='tipo do membro do inválido'
 readonly __ERR_STRUCT_MEM_TYPE_REQUIRED='tipo do membro da estrutura requerido'
+readonly __ERR_STRUCT_VAL_MEMBER='valor do membro da estrutura requerido'
 
 __TYPE__[struct_t]='
 struct.__add__
@@ -37,7 +38,7 @@ function struct.__add__(){
 	local mem
 
 	if [[ ${__STRUCT_INIT[$struct]} ]]; then
-		error.__trace st "$struct" '' '' "$__ERR_STRUCT_ALREADY_INIT"
+		error.trace st "$struct" '' '' "$__ERR_STRUCT_ALREADY_INIT"
 		return $?
 	fi
 
@@ -45,12 +46,12 @@ function struct.__add__(){
 
 	while [[ ${#@} -gt 0 ]]; do
 		if ! [[ $2 ]]; then
-			error.__trace def "$struct" "$1" '' "$__ERR_STRUCT_MEM_TYPE_REQUIRED"
+			error.trace def "$struct" "$1" '' "$__ERR_STRUCT_MEM_TYPE_REQUIRED"
 			return $?
 		elif [[ ${__INIT_OBJ_TYPE[$2]} == struct_t ]]; then
 			for mem in $($2.__members__); do
 				if [[ ${__STRUCT_MEMBER_TYPE[$struct.$1.$mem]} ]]; then
-					error.__trace st "$struct" "$1" "$2" "$__ERR_STRUCT_MEMBER_CONFLICT"
+					error.trace st "$struct" "$1" "$2" "$__ERR_STRUCT_MEMBER_CONFLICT"
 					return $?
 				fi
 				__INIT_SRC_TYPES[$struct]+="$struct.$1.$mem "
@@ -58,10 +59,10 @@ function struct.__add__(){
 			done
 		else
 			if ! [[ ${__FLAG_TYPE[$2]} ]]; then
-				error.__trace st "$struct" "$1" "$2" "$__ERR_STRUCT_MEM_TYPE"
+				error.trace st "$struct" "$1" "$2" "$__ERR_STRUCT_MEM_TYPE"
 				return $?
 			elif [[ ${__STRUCT_MEMBER_TYPE[$struct.$1]} ]]; then
-				error.__trace st "$struct" "$1" "$2" "$__ERR_STRUCT_MEMBER_CONFLICT"
+				error.trace st "$struct" "$1" "$2" "$__ERR_STRUCT_MEMBER_CONFLICT"
 				return $?
 			fi
 			__INIT_SRC_TYPES[$struct]+="$struct.$1 "

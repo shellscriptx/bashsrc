@@ -1023,7 +1023,7 @@ function string.filter()
 	for flag in ${@:2}; do	
 		case $flag in
 			alnum|alpha|cntrl|digit|graph|lower|print|punct|upper|xdigit|space) flags+="[:$flag:]";;
-			*) error.__trace def "flag" "str" "$flag" "$__ERR_STR_FLAG_CHAR_INVALID"; return $?;;
+			*) error.trace def "flag" "str" "$flag" "$__ERR_STR_FLAG_CHAR_INVALID"; return $?;;
 		esac
 	done
 	

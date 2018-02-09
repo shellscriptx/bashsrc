@@ -192,7 +192,7 @@ readonly __ERR_GETOPT_ARG_REQUIRED='o argumento requerido'
 # (Pilha de rastreamento)
 # Script: script.sh
 # 
-# Chamada interna: error.__trace
+# Chamada interna: error.trace
 # Função: getopt.parse
 # 
 # Pilha: [0:main] => [19:reverter]
@@ -207,12 +207,12 @@ function getopt.parse()
 	local name ctype flag value flags attr param app vargs lparam rep
 	
 	if ! [[ $1 =~ ${__FLAG_TYPE[getopt_nargs]} ]]; then
-		error.__trace def "nargs" "int" "$1" "$__ERR_GETOPT_TYPE_ARG 'int'"
+		error.trace def "nargs" "int" "$1" "$__ERR_GETOPT_TYPE_ARG 'int'"
 		return $?
 	elif [[ $1 -eq -1 ]]; then
 		vargs=1
 	elif [[ $((${#@}-1)) -gt $1 ]]; then
-		error.__trace exa '' '' "${*:$(($1+2))}" "$__ERR_GETOPT_TOO_MANY_ARGS"
+		error.trace exa '' '' "${*:$(($1+2))}" "$__ERR_GETOPT_TOO_MANY_ARGS"
 		return $?
 	fi
 
@@ -232,13 +232,13 @@ function getopt.parse()
 		fi
 		
 		if ! [[ $name =~ ${__FLAG_TYPE[getopt_pname]} ]]; then
-			error.__trace def "name" 'str' "$name" "$__ERR_GETOPT_ARG_NAME"
+			error.trace def "name" 'str' "$name" "$__ERR_GETOPT_ARG_NAME"
 			return $?
 		elif ! [[ $flag =~ ${__FLAG_TYPE[getopt_flag]} ]]; then
-			error.__trace def "flag" 'str' "$flag" "$__ERR_GETOPT_FLAG"
+			error.trace def "flag" 'str' "$flag" "$__ERR_GETOPT_FLAG"
 			return $?
 		elif [[ $flag == + && ! $value ]]; then
-			error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_ARG_REQUIRED"
+			error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_ARG_REQUIRED"
 			return $?
 		fi
 
@@ -247,11 +247,11 @@ function getopt.parse()
 				map)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null); [[ $attr =~ A ]];;
 				array)		IFS=' ' read _ attr _ < <(declare -p $value 2>/dev/null); [[ $attr =~ a ]];;
    	        	func) 		declare -Fp "$value" &>/dev/null;;
-				keyword) 	[[ $value == $name ]] || { error.__trace def "$name" "$ctype" "$value" "'$name' $__ERR_GETOPT_KEYWORD"; return $?; };;
-				dir) 		[[ -d $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_DIR_NOT_FOUND"; return $?; };;
-				file) 		[[ -f $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
-				path) 		[[ -e $value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
-				fd) 		[[ -e /dev/fd/$value ]] || { error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
+				keyword) 	[[ $value == $name ]] || { error.trace def "$name" "$ctype" "$value" "'$name' $__ERR_GETOPT_KEYWORD"; return $?; };;
+				dir) 		[[ -d $value ]] || { error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_DIR_NOT_FOUND"; return $?; };;
+				file) 		[[ -f $value ]] || { error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
+				path) 		[[ -e $value ]] || { error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
+				fd) 		[[ -e /dev/fd/$value ]] || { error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
 				*)	if [[ ${__FLAG_TYPE[$ctype]} ]]; then
 						[[ $value =~ ${__FLAG_TYPE[$ctype]} ]]
 					elif [[ ${__INIT_OBJ_TYPE[$value]} ]]; then
@@ -261,7 +261,7 @@ function getopt.parse()
 					fi
 					;;
    	    	esac || {
-				error.__trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG '$ctype'"
+				error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_TYPE_ARG '$ctype'"
 				return $?
 			}			
 		fi
@@ -364,7 +364,7 @@ function getopt.__get_param()
 		fi
 	done
 
-	error.__trace def 'argname' 'str' "$1" "$__ERR_GETOPT_ARG_NAME"
+	error.trace def 'argname' 'str' "$1" "$__ERR_GETOPT_ARG_NAME"
 
 	return $?
 }

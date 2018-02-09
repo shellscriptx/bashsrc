@@ -32,6 +32,8 @@ declare -A	__INIT_SRC_TYPES \
 
 declare 	__DEPS__
 
+declare __ON_ERROR_RESUME=false
+
 shopt -s	extglob \
 			globasciiranges \
 			expand_aliases \
@@ -608,7 +610,7 @@ function fndef()
 	getopt.parse 2 "funcname:func:+:$1" "new:funcname:+:$2" ${@:3}
 
 	if which $2 &>/dev/null || declare -fp $2 &>/dev/null; then
-		error.__trace def "newtype" "funcname" "$2" "$__ERR_BUILTIN_FUNC_EXISTS"; return $?
+		error.trace def "newtype" "funcname" "$2" "$__ERR_BUILTIN_FUNC_EXISTS"; return $?
 	elif [[ $(declare -fp $1) =~ \{.*\} ]]; then
 		eval "$2()$BASH_REMATCH"
 	fi
@@ -1040,7 +1042,7 @@ function builtin.__iter_cond_any_all()
 				bits+=" $bit $2"
 				
 				if [[ $err ]]; then
-					error.__trace def 'cond' 'str' "$cond" 'instrução condicional inválida'
+					error.trace def 'cond' 'str' "$cond" 'instrução condicional inválida'
 					return $?
 				fi
 		done
@@ -1072,7 +1074,7 @@ function del()
 				__INIT_OBJ[$var] \
 				__STRUCT_INIT[$var]
 
-	done || error.__trace def
+	done || error.trace def
 
 	return 0
 }
@@ -1092,23 +1094,23 @@ function var()
 	src_types=${!__INIT_SRC_TYPES[@]}
 	
 	if ! [[ $type =~ ^(${src_types// /|})$ ]]; then
-		error.__trace def 'type' 'type' "$type" "$__ERR_BUILTIN_SRC_TYPE"
+		error.trace def 'type' 'type' "$type" "$__ERR_BUILTIN_SRC_TYPE"
 		return $?
 	fi
 
 	for var in ${@:1:$((${#@}-1))}; do
 
 		if [[ ${__INIT_OBJ[$var]} ]]; then
-			error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"
+			error.trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"
 			return $?
 		fi
 		
 		if [[ $type == struct_t ]]; then
 			if ! [[ $var =~ ${__FLAG_TYPE[srctype]} ]]; then
-				error.__trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_TYPE"
+				error.trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_TYPE"
 				return $?	
 			elif [[ ${__INIT_SRC_TYPES[$var]} ]]; then
-				error.__trace src 'varname' 'var' "$var" "$__ERR_BUILTIN_TYPE_CONFLICT"
+				error.trace src 'varname' 'var' "$var" "$__ERR_BUILTIN_TYPE_CONFLICT"
 				return $?
 			fi
 		fi	
@@ -1117,7 +1119,7 @@ function var()
 			
 			if [[ ${__INIT_OBJ_TYPE[$type]} == struct_t ]]; then
 				if declare -Fp $var.${method#*.} &>/dev/null; then
-					error.__trace imp "" "$var" "${method#*.}" "$__ERR_BUILTIN_METHOD_CONFLICT"
+					error.trace imp "" "$var" "${method#*.}" "$__ERR_BUILTIN_METHOD_CONFLICT"
 					return $?
 				fi
 
@@ -1128,7 +1130,7 @@ function var()
 								 return 0;
 								 }' "$var" "${method#*.}" "${__STRUCT_MEMBER_TYPE[$type.${method#*.}]}"
 
-				eval "$struct" &>/dev/null || error.__trace def
+				eval "$struct" &>/dev/null || error.trace def
 				__INIT_OBJ_METHOD[$var]+="$var.${method#*.} "
 			else
 				func_type=$(declare -fp $method 2>/dev/null)
@@ -1141,12 +1143,12 @@ function var()
 				fi
 				
 				if declare -Fp $var.${method##*.} &>/dev/null; then
-					error.__trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
+					error.trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
 					return $?
 				fi
 				
 				printf -v func_call "$func_call" $var.${method##*.} $method $var
-				eval "$func_call" || error.__trace def
+				eval "$func_call" || error.trace def
 				__INIT_OBJ_METHOD[$var]+="$var.${method##*.} "
 			fi
 		done
@@ -1671,31 +1673,31 @@ function source.__INIT__()
 	done
 
 	if [[ $err ]]; then
-		error.__trace deps '' "${BASH_SOURCE[-2]}" "${deps%, }" "$__ERR_BUILTIN_DEPS"
+		error.trace deps '' "${BASH_SOURCE[-2]}" "${deps%, }" "$__ERR_BUILTIN_DEPS"
 		return $?
 	fi
 
 	if IFS=' ' read _ attr _ < <(declare -p __TYPE__ 2>/dev/null) && ! [[ $attr =~ A ]]; then
-		error.__trace src '' "${BASH_SOURCE[-2]}" '' "'__TYPE__' não é um array associativo"
+		error.trace src '' "${BASH_SOURCE[-2]}" '' "'__TYPE__' não é um array associativo"
 		return $?
 	fi	
 
 	for type_name in ${!__TYPE__[@]}; do
 		if ! [[ $type_name =~ ${__FLAG_TYPE[srctype]} ]]; then
-			error.__trace def '' "${BASH_SOURCE[-2]}" "$type_name" "$__ERR_BUILTIN_TYPE"
+			error.trace def '' "${BASH_SOURCE[-2]}" "$type_name" "$__ERR_BUILTIN_TYPE"
 			return $?	
 		elif [[ $type_name =~ ^${init_types// /|}$ ]]; then
-			error.__trace src '' "${BASH_SOURCE[-2]}" "$type_name" "$__ERR_BUILTIN_TYPE_CONFLICT"
+			error.trace src '' "${BASH_SOURCE[-2]}" "$type_name" "$__ERR_BUILTIN_TYPE_CONFLICT"
 			return $?
 		fi
 		for method in ${__TYPE__[$type_name]}; do
 			if ! declare -Fp $method &>/dev/null; then
-				error.__trace imp '' "$type_name" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
+				error.trace imp '' "$type_name" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
 				return $?
 			fi
 		done
 		__INIT_SRC_TYPES[$type_name]=${__TYPE__[$type_name]}
-		unset __TYPE__[$type_name] || error.__trace def
+		unset __TYPE__[$type_name] || error.trace def
 	done
 
 	while IFS=' ' read _ _ func; do readonly -f $func; done < <(declare -Fp)
@@ -1705,8 +1707,8 @@ function source.__INIT__()
 	return 0
 }
 
-source error.sh
 source getopt.sh
+source error.sh
 
 source.__INIT__
 # /* BUILTIN_SH */

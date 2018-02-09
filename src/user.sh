@@ -138,10 +138,10 @@ function user.__get_info()
 			
 			printf '%s\n' "$info"
 		else
-			error.__trace def 'user' 'str' "$1" "$__ERR_USER_USER_NOT_FOUND"; return $?
+			error.trace def 'user' 'str' "$1" "$__ERR_USER_USER_NOT_FOUND"; return $?
 		fi	
 	else
-		error.__trace def '' '' "$__USER_PATH_PASSWD" "$__ERR_USER_READ_PASS_FILE"; return $?
+		error.trace def '' '' "$__USER_PATH_PASSWD" "$__ERR_USER_READ_PASS_FILE"; return $?
 	fi
 
 	return $?
