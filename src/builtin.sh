@@ -30,9 +30,18 @@ declare -A	__INIT_SRC_TYPES \
 			__INIT_OBJ
 		
 
-declare 	__DEPS__
+declare	__DEPS__
 
 declare __ON_ERROR_RESUME=false
+
+declare __ERR__ \
+		__ERR_STACK__ \
+		__ERR_ARG__ \
+		__ERR_TYPE_ \
+		__ERR_VAL__ \
+		__ERR_MSG__ \
+		__ERR_FUNC__ \
+		__ERR_LINE__
 
 shopt -s	extglob \
 			globasciiranges \
