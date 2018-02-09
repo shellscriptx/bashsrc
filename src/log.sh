@@ -41,11 +41,54 @@ logwarn_t.__add__ \
 #
 # Exibe 'fmt' na saída padrão precedida por 'flag'.
 #
-# flag - Palavra chave personalizada que informa a flag de log e 
+# flag - Palavra chave personalizada que especifica a flag de log e que
 #        deve conter os seguintes caracteres: [a-zA-Z_].
 #        Se 'flag' for igual 'warn' ou 'WARN', aplica a paleta de cor vermelha.
-# msg  - Mensagem a ser exibida. São suportados códigos de formato 'datetime'.
-#        %d, %m, %Y e etc.
+# msg  - Mensagem a ser exibida. São suportados códigos de formato.
+#
+# Código de formato:
+#
+# %%   um % literal
+# %a   nome abreviado do dia de semana da localidade (por exemplo, Sáb)
+# %A   nome completo do dia de semana na localidade (por exemplo, Sábado)
+# %b   nome abreviado do mês na localidade (por exemplo, Jan)
+# %B   nome completo do mês na localidade (por exemplo, Janeiro)
+# %c   data e hora na localidade (por exemplo, Sáb 08 Mar 2008 18:34:17 BRT)
+# %C   século; como %Y, mas omite os dois últimos dígitos (por exemplo, 21)
+# %d   dia do mês (por exemplo, 01)
+# %D   data no formato estado-unidense; o mesmo que %d/%m/%y
+# %e   dia do mês, preenchido com espaço; o mesmo que %_d
+# %F   data completa; o mesmo que %Y-%m-%d
+# %g   os últimos dois dígitos do ano do número ISO da semana (veja %G)
+# %G   ano do número ISO da semana ISO (veja %V); normalmente útil só com %V
+# %h   o mesmo que %b
+# %H   hora (00..23)
+# %I   hora (01..12)
+# %j   dia do ano (001..366)
+# %k   hora, com preenchimento de espaço ( 0..23); o mesmo que %_H
+# %l   hora, com preenchimento de espaço ( 1..12); o mesmo que %_I
+# %m   mês (01..12)
+# %M   minuto (00..59)
+# %n   um caractere de nova-linha
+# %N   nanosegundos (000000000..999999999)
+# %p   o equivalente na localidade para AM ou PM; em branco se desconhecido
+# %P   como %p, mas em minúsculas
+# %r   a hora no relógio de 12 horas na localidade (por exemplo, 11:11:04 PM)
+# %R   hora e minuto no estilo 24 horas; o mesmo que %H:%M
+# %s   segundos desde 1970-01-01 00:00:00 UTC
+# %S   segundo (00..60)
+# %t   uma tabulação
+# %T   as horas; o mesmo que %H:%M:%S
+# %u   dia da semana (1..7); 1 é segunda-feira
+# %U   número da semana no ano, sendo domingo o início da semana (00..53)
+# %V   número ISO da semana, sendo segunda-feira o início da semana (01..53)
+# %w   dia da semana (0..6); 0 é domingo
+# %W   número da semana no ano, sendo segunda-feira o início da semana (00..53)
+# %x   representação da data na localidade (por exemplo, 31/12/99)
+# %X   representação da hora na localidade (por exemplo, 23:13:48)
+# %y   os últimos dois dígitos do ano (00..99)
+# %Y   ano
+# %z   fuso horário numérico +hhmm (por exemplo, -0400)
 #
 # Exemplo:
 #
@@ -130,6 +173,28 @@ function log.out()
 # Exibe o log com os atributos da estrutura 'log_t', substituindo
 # os caracteres de formato por 'exp' (opcional).
 #
+# Exemplo:
+#
+# #!/bin/bash
+#
+# source log.sh
+#
+# # Implementa 'log_t'
+# var info log_t
+#
+# # Define a mensagem do log, acrescentando os caracteres de formato '%s'.
+# info.msg = "usuário '%s' conectou-se ao host '%s' no dia %s."
+# info.code = 2
+# info.flag = $LOG_HOUR
+#
+# # Exibe o log substituindo os caracteres de formato contidos
+# # na mensagem pelos argumentos passados.
+# log.outf info 'josé' 'estacao01' 17
+#
+# Saída:
+#
+# script: LOG: 23:37:45: 2: usuário 'josé' conectou-se ao host 'estacao01' no dia 17.
+#
 function log.outf()
 {
 	getopt.parse -1 "struct:log_t:+:$1" "exp:str:-:$2" ... "${@:3}"
@@ -159,12 +224,37 @@ function log.warnf()
 {
 	getopt.parse -1 "struct:logwarn_t:+:$1" "exp:str:-:$2" ... "${@:3}"
 	log.__format $1 WARN true "${@:2}"
-	return 0
+	return 1
 }
 
 # func log.file <[logfile_t]struct>
 #
-# Grava os atributos do log contidos na estrutura 'logfile_t'.
+# Grava a estrutura 'logfile_t' no arquivo especificado em 'file'.
+#
+# Exemplo:
+#
+# #!/bin/bash
+#
+# source log.sh
+#
+# # Implementa 'logfile_t'
+# var info logfile_t
+#
+# # Define os atributos
+# info.log.msg = "gravando arquivo de log"
+# info.log.code = 2
+# info.log.flag = $LOG_HOUR
+#
+# # Define o arquivo.
+# info.file = '/tmp/evento.log'
+#
+# # Gravando log
+# log.file info
+#
+# Saida:
+#
+# $ cat /tmp/evento.log 
+# script.sh: LOG: 23:46:48: 2: gravando arquivo de log
 #
 function log.file()
 {
@@ -174,7 +264,7 @@ function log.file()
 
 # func log.filef <[logfile_t]struct> <[str]exp> ...
 #
-# Grava os atributos do log contidos na estrutura 'logfile_t',
+# Grava a estrutura 'logfile_t' no arquivo especificado em 'file',
 # substituindo os caracteres de formato por 'exp' (opcional).
 #
 function log.filef()
@@ -185,7 +275,7 @@ function log.filef()
 
 function log.__format()
 {
-	local msg flag code type fmt date logfile wfile
+	local msg flag code type fmt date logfile
 	
 	type=$(__type__ $1)
 
@@ -212,9 +302,9 @@ function log.__format()
 			;;
 	esac
 
-	[[ $msg ]] || error.__trace st "$1" 'msg' 'str' "$__ERR_STRUCT_VAL_MEMBER"
-	[[ $flag ]] || error.__trace st "$1" 'flag' 'uint' "$__ERR_STRUCT_VAL_MEMBER"
-	[[ $type == @(log_t|logfile_t) && ! $code ]] && error.__trace st "$1" 'code' 'uint' "$__ERR_STRUCT_VAL_MEMBER"
+	[[ $msg ]] || { error.__trace st "$1" 'msg' 'str' "$__ERR_STRUCT_VAL_MEMBER"; return $?; }
+	[[ $flag ]] || { error.__trace st "$1" 'flag' 'uint' "$__ERR_STRUCT_VAL_MEMBER"; return $?; }
+	[[ $type == @(log_t|logfile_t) && ! $code ]] && { error.__trace st "$1" 'code' 'uint' "$__ERR_STRUCT_VAL_MEMBER"; return $?; }
 
 	case $flag in
 		1) fmt='%(%A, %d de %B de %Y %T)T';;
@@ -229,7 +319,7 @@ function log.__format()
 	[[ $2 == WARN ]] && printf '\033[0;31m'	
 	[[ $3 == true ]] && printf -v msg "$msg" "${@:4}"
 
-	if [[ $wfile ]]; then
+	if [[ $logfile ]]; then
 		if [[ -e "$logfile" && ! -f "$logfile" ]]; then
 			error.__trace def 'struct' 'file' "$logfile" "$__ERR_STRUCT_NOFILE"
 			return $?
