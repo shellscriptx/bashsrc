@@ -178,6 +178,7 @@ function error.trace()
 			__ERR_MSG__=${5:-erro desconhecido}
 			__ERR_FUNC__=${FUNCNAME[$fn]}
 			__ERR_LINE__=${BASH_LINENO[$fn]}
+			__ERR_ARGS__=${*:6}
 			;;
 		false)
 			exec 1>&2
@@ -237,6 +238,7 @@ error.value(){ getopt.parse 0 "$@"; echo "$__ERR_VAL__"; return 0; }
 error.msg(){ getopt.parse 0 "$@"; echo "$__ERR_MSG__"; return 0; }
 error.func(){ getopt.parse 0 "$@"; echo "$__ERR_FUNC__"; return 0; }
 error.line(){ getopt.parse 0 "$@"; echo "$__ERR_LINE__"; return 0; }
+error.args(){ getopt.parse 0 "$@"; echo "$__ERR_ARGS__"; return 0; }
 
 source.__INIT__
 # /* __ERROR_SH */
