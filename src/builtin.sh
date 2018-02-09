@@ -1707,7 +1707,6 @@ function source.__INIT__()
 			fi
 		done
 		__INIT_SRC_TYPES[$type_name]=${__TYPE__[$type_name]}
-		__INIT_OBJ[$type_name]=true
 		unset __TYPE__[$type_name] || error.trace def
 	done
 
