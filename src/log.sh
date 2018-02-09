@@ -22,7 +22,6 @@ readonly LOG_SECS=6
 
 var logfile_t struct_t
 var log_t struct_t
-var logwarn_t struct_t
 
 log_t.__add__ \
 	code 	uint \
@@ -32,10 +31,6 @@ log_t.__add__ \
 logfile_t.__add__ \
 	log 	log_t \
     file 	str
-
-logwarn_t.__add__ \
-	msg		str \
-	flag	uint
 
 # func log.format <[flag]flag> <[str]msg> => [str]
 #
@@ -205,26 +200,26 @@ function log.outf()
 # func log.warn <[logwarn_t]struct> => [str]
 #
 # Exibe o log com os atributos da estrutura 'logwarn_t', retornando
-# o código de status '1'.
+# 'code' status
 #
 function log.warn()
 {
-	getopt.parse 1 "struct:logwarn_t:+:$1" ${@:2}
+	getopt.parse 1 "struct:log_t:+:$1" ${@:2}
 	log.__format $1 WARN false
-	return 1
+	return $($1.code)
 }
 
 # func log.warnf <[logwarn_t]struct> <[str]exp> ... => [str]
 #
 # Exibe o log com os atributos da estrutura 'logwarn_t' substituindo
 # os caracteres de formato por 'exp' (opcional), retornando 
-# o código de status '1'.
+# 'code' status
 #
 function log.warnf()
 {
-	getopt.parse -1 "struct:logwarn_t:+:$1" "exp:str:-:$2" ... "${@:3}"
+	getopt.parse -1 "struct:log_t:+:$1" "exp:str:-:$2" ... "${@:3}"
 	log.__format $1 WARN true "${@:2}"
-	return 1
+	return $($1.code)
 }
 
 # func log.file <[logfile_t]struct>
@@ -280,13 +275,9 @@ function log.__format()
 	type=$(__type__ $1)
 
 	case $type in
-		logwarn_t)
+		log_t)
 			msg=$($1.msg)
 			flag=$($1.flag)
-			;;
-		log_t)
-			msg=$($1.msg) 
-			flag=$($1.flag) 
 			code=$($1.code)
 			;;
 		logfile_t)
@@ -304,7 +295,7 @@ function log.__format()
 
 	[[ $msg ]] || { error.__trace st "$1" 'msg' 'str' "$__ERR_STRUCT_VAL_MEMBER"; return $?; }
 	[[ $flag ]] || { error.__trace st "$1" 'flag' 'uint' "$__ERR_STRUCT_VAL_MEMBER"; return $?; }
-	[[ $type == @(log_t|logfile_t) && ! $code ]] && { error.__trace st "$1" 'code' 'uint' "$__ERR_STRUCT_VAL_MEMBER"; return $?; }
+	[[ $code ]] || { error.__trace st "$1" 'code' 'uint' "$__ERR_STRUCT_VAL_MEMBER"; return $?; }
 
 	case $flag in
 		1) fmt='%(%A, %d de %B de %Y %T)T';;
@@ -330,13 +321,11 @@ function log.__format()
 	fi
 
 	printf -v date "$fmt"
-	printf '%s: %s: %s: %s: %s\n'  "${0##*/}" \
-									"$2" \
-                                    "$date" \
-                                    "${code:--}" \
-                                    "${msg:--}" >> "${logfile:-/dev/stdout}"
-
-	printf '\033[0;m'
+	printf '%s: %s: %s: %s: %s \033[0;m\n'  	"${0##*/}" \
+												"$2" \
+                                    			"$date" \
+                                    			"$code" \
+                                    			"$msg" >> "${logfile:-/dev/stdout}"
 
 	return 0
 }
