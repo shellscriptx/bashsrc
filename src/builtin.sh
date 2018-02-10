@@ -81,6 +81,7 @@ __app__
 __sum__
 '
 
+
 # erros
 readonly __ERR_BUILTIN_FUNC_EXISTS='a função já existe ou é um comando interno'
 readonly __ERR_BUILTIN_ALREADY_INIT='o objeto já foi implementado'
@@ -1721,4 +1722,5 @@ source getopt.sh
 source error.sh
 
 source.__INIT__
+
 # /* BUILTIN_SH */
