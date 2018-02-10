@@ -49,7 +49,7 @@ function struct.__add__(){
 			error.trace def "$struct" "$1" '' "$__ERR_STRUCT_MEM_TYPE_REQUIRED"
 			return $?
 		elif [[ ${__INIT_OBJ_TYPE[$2]} == struct_t ]]; then
-			for mem in ${__INIT_SRC_TYPES[$2]}; do
+			for mem in $($2.__members__); do
 				if [[ ${__STRUCT_MEMBER_TYPE[$struct.$1.$mem]} ]]; then
 					error.trace st "$struct" "$1" "$2" "$__ERR_STRUCT_MEMBER_CONFLICT"
 					return $?
