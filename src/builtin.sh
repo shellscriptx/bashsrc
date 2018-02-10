@@ -7,6 +7,8 @@
 # E-mail:			shellscriptx@gmail.com
 #----------------------------------------------#
 
+[[ $__BUILTIN_SH ]] && return 0
+
 if ! command -v bash &>/dev/null; then
 	echo "bashsrc: erro: interpretador de comandos 'bash' não está instalado" 1>&2
 	exit 1
@@ -18,8 +20,6 @@ elif ! [[ $BASHSRC_PATH ]]; then
 	echo "bashsrc: erro: '\$BASHSRC_PATH' variável de ambiente não está configurada" 1>&2
 	exit 1
 fi
-
-[[ $__BUILTIN_SH ]] && return 0
 
 readonly __BUILTIN_SH=1
 
