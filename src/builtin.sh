@@ -10,8 +10,8 @@
 if ! command -v bash &>/dev/null; then
 	echo "bashsrc: erro: interpretador de comandos 'bash' não está instalado" 1>&2
 	exit 1
-elif [[ ${BASH_VERSINFO[0]} -lt 4 ]]; then
-	echo "bashsrc: erro: requer 'bash v4.0.0' ou superior" 1>&2
+elif ! [[ ${BASH_VERSINFO[0]} -ge 4 && ${BASH_VERSINFO[1]} -ge 3 ]]; then
+	echo "bashsrc: erro: requer 'bash v4.3.0' ou superior" 1>&2
 	echo "atual: bash $BASH_VERSION" 1>&2
 	exit 1
 elif ! [[ $BASHSRC_PATH ]]; then
