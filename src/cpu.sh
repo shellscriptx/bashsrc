@@ -33,7 +33,7 @@ var cpuinfo_t struct_t
 
 cpuinfo_t.__add__ \
 	processor		uint \
-	vendor_id 		str \
+	vendor_id		str \
 	family			str \
 	model			uint \
 	model_name		str  \
@@ -41,11 +41,11 @@ cpuinfo_t.__add__ \
 	microcode		hex \
 	mhz				dec \
 	cache_size		size \
-	physical_id 	uint \
+	physical_id		uint \
 	core_id			uint \
 	cores			uint \
 	apicid			uint \
-	init_apicid 	uint \
+	init_apicid		uint \
 	flags			str \
 	bogomips		dec \
 	clflush_size	uint \
@@ -116,23 +116,23 @@ function cpu.getinfo()
 		info=${info##+( )}
 		case ${flag,,} in
 			processor)		$1[$((++i))].processor = "$info";;
-			vendor_id) 		$1[$i].vendor_id = "$info";;
-			cpufamily) 		$1[$i].family = "$info";;
-			model) 			$1[$i].model = "$info";;
-			modelname) 		$1[$i].model_name = "$info";;
-			stepping) 		$1[$i].stepping = "$info";;
-			microcode) 		$1[$i].microcode = "$info";;
-			cpumhz) 		$1[$i].mhz = "$info";;
-			cachesize)  	$1[$i].cache_size = "$info";;
-			physicalid) 	$1[$i].physical_id = "$info";;
-			coreid) 		$1[$i].core_id = "$info";;
-			cpucores) 		$1[$i].cores = "$info";;
-			apicid) 		$1[$i].apicid = "$info";;
-			inititalapicid) $1[$i].init_apicid = "$info";;
-			flags) 			$1[$i].flags = "$info";;
-			bogomips) 		$1[$i].bogomips = "$info";;
-			clflushsize) 	$1[$i].clflush_size = "$info";;
-			addresssizes) 	$1[$i].address_size = "$info";;
+			vendor_id)		$1[$i].vendor_id = "$info";;
+			cpufamily)		$1[$i].family = "$info";;
+			model)			$1[$i].model = "$info";;
+			modelname)		$1[$i].model_name = "$info";;
+			stepping)		$1[$i].stepping = "$info";;
+			microcode)		$1[$i].microcode = "$info";;
+			cpumhz)			$1[$i].mhz = "$info";;
+			cachesize)		$1[$i].cache_size = "$info";;
+			physicalid)		$1[$i].physical_id = "$info";;
+			coreid)			$1[$i].core_id = "$info";;
+			cpucores)		$1[$i].cores = "$info";;
+			apicid)			$1[$i].apicid = "$info";;
+			inititalapicid)	$1[$i].init_apicid = "$info";;
+			flags)			$1[$i].flags = "$info";;
+			bogomips)		$1[$i].bogomips = "$info";;
+			clflushsize)	$1[$i].clflush_size = "$info";;
+			addresssizes)	$1[$i].address_size = "$info";;
 		esac 2>/dev/null || {
 			error.trace def 'struct' "$1" "$i" "$__ERR_CPU_STRUCT_INDEX"
 			return $?
