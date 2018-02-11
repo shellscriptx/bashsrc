@@ -1114,7 +1114,7 @@ function del()
 	return 0
 }
 
-# func var <[varname]varname> ... <[type]typename>
+# func var <[var]varname> ... <[type]typename>
 #
 # Implementa 'varname' com 'typename'
 #
@@ -1209,7 +1209,7 @@ function var()
 	return 0
 }
 
-# func __sizeof__ <[var]objname> => [uint]
+# func sizeof <[var]objname> => [uint]
 #
 # Retorna o tamanho do objeto
 #
