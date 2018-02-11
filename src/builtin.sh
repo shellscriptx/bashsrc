@@ -1,11 +1,21 @@
 #!/bin/bash
 
-#----------------------------------------------#
-# Source:           builtin.sh
-# Data:             9 de novembro de 2017
-# Desenvolvido por: Juliano Santos [SHAMAN]
-# E-mail:			shellscriptx@gmail.com
-#----------------------------------------------#
+#    Copyright 2018 Juliano Santos [SHAMAN]
+#
+#    This file is part of bashsrc.
+#
+#    bashsrc is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    bashsrc is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
 [[ $__BUILTIN_SH ]] && return 0
 
@@ -27,11 +37,10 @@ declare -A	__INIT_SRC_TYPES \
 			__TYPE__ \
 			__INIT_OBJ_METHOD \
 			__INIT_OBJ_TYPE \
+			__INIT_OBJ_SIZE \
 			__INIT_OBJ
 		
-
 declare	__DEPS__
-
 declare __ON_ERROR_RESUME=false
 
 declare __ERR__ \
@@ -53,7 +62,6 @@ shopt -s	extglob \
 shopt -u 	nocasematch
 
 __TYPE__[builtin_t]='
-__type__
 __len__
 __quote__
 __typeval__
@@ -82,6 +90,13 @@ __sum__
 '
 
 
+readonly __ARRAY_T=(
+struct_t
+builtin_t
+map_t
+array_t
+)
+
 # erros
 readonly __ERR_BUILTIN_FUNC_EXISTS='a função já existe ou é um comando interno'
 readonly __ERR_BUILTIN_ALREADY_INIT='o objeto já foi implementado'
@@ -92,7 +107,8 @@ readonly __ERR_BUILTIN_DEPS='o pacote requerido não está instalado'
 readonly __ERR_BUILTIN_TYPE='o identificador do tipo é inválido'
 readonly __ERR_BUILTIN_SRC_TYPE='o tipo do objeto é invalido'
 readonly __ERR_BUILTIN_DEL_OBJ='não foi possível deletar o objeto'
-
+readonly __ERR_BUILTIN_TYPE_ARRAY='o tipo já é implementado por array'
+ 
 readonly NULL=0
 
 readonly -A __FLAG_TYPE=(
@@ -105,24 +121,24 @@ readonly -A __FLAG_TYPE=(
 [array]='.'
 [flag]='^[a-zA-Z]+$'
 [funcname]='^[a-zA-Z0-9_.-]+$'
-[varname]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*$'
+[var]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*(\[([0-9]|[1-9][0-9]+)\])?$'
 [srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]$'
-[st_member]='^[a-zA-Z0-9_.]+$'
+[st_member]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]+[a-zA-Z])?$'
 [getopt_nargs]='^(-1|0|[1-9][0-9]*)$'
 [getopt_pname]='^[a-zA-Z0-9_=+-]+$'
 [getopt_flag]='^(\+|-)$'
 [uint]='^(0|[1-9][0-9]*)$'
 [int]='^(0|[-+]?[1-9][0-9]*)$'
 [float]='^[-+]?[0-9](,[0-9]+)$'
+[dec]='^[-+]?[0-9]+(.[0-9]+)$'
 [char]='^.$'
 [str]='^.+$'
 [bool]='^(true|false)$'
-[var]=${__FLAG_TYPE[varname]}
 [zone]='^[+-][0-9]+$'
 [bin]='^[01]+$'
 [hex]='^(0x)?[0-9a-fA-F]+$'
 [oct]='^[0-7]+$'
-[size]='^[0-9]+[kKmMgGtTpPeEzZyY]$'
+[size]='^[0-9]+\s+[kKmMgGtTpPeEzZyY][bB]$'
 [12h]='^(0[1-9]|1[0-2]):[0-5][0-9]$'
 [24h]='^([01][0-9]|2[0-3]):[0-5][0-9]$'
 [date]='^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/([0-9]{4,})$'
@@ -1072,25 +1088,33 @@ function del()
 {
 	getopt.parse -1 "varname:var:+:$1" ... "${@:2}"
 
-	local var method
+	local var method varname vet c
 
 	for var in $@; do
-		for method in ${__INIT_OBJ_METHOD[$var]}; do
-			unset __STRUCT_VAL_MEMBERS[$method] \
-				  __STRUCT_MEMBER_TYPE[$method]
-		done
-		unset -f ${__INIT_OBJ_METHOD[$var]}
-		unset 	__INIT_OBJ_METHOD[$var] \
-				__INIT_OBJ_TYPE[$var] \
+		if [[ $var =~ ^([^[]+)\[([^]]+)\]$ ]]; then
+			var=${BASH_REMATCH[1]}
+			vet=${BASH_REMATCH[2]}
+		fi
+		for ((c=0; c < ${vet:-1}; c++)); do
+			[[ $vet ]] && varname=$var[$c] || varname=$var
+			for method in ${__INIT_OBJ_METHOD[$varname]}; do
+				unset __STRUCT_VAL_MEMBERS[$method] \
+					  __STRUCT_MEMBER_TYPE[$method]
+			done
+			unset -f ${__INIT_OBJ_METHOD[$varname]}
+			unset	__INIT_OBJ_METHOD[$varname] \
+					__STRUCT_INIT[$varname] \
+					__INIT_SRC_TYPES[$varname]
+		done 
+		unset	__INIT_OBJ_TYPE[$var] \
 				__INIT_OBJ[$var] \
-				__STRUCT_INIT[$var]
-
+				__INIT_OBJ_SIZE[$var]
 	done || error.trace def
 
 	return 0
 }
 
-# func var <[var]varname> ... <[type]typename>
+# func var <[varname]varname> ... <[type]typename>
 #
 # Implementa 'varname' com 'typename'
 #
@@ -1098,86 +1122,112 @@ function var()
 {
 	getopt.parse -1 "varname:var:+:$1" ... "${@:1:$((${#@}-1))}"
 	
-	local type method proto func_ref func_type func_call var src_types member struct
+	local type method proto func_ref func_type func_call var src_types
+	local member struct varname vet c narr
 	
 	type=${@: -1}
 
 	src_types=${!__INIT_SRC_TYPES[@]}
-	
-	if ! [[ $type =~ ^(${src_types// /|})$ ]]; then
+	narr=${__ARRAY_T[@]}
+
+	if [[ $type != @(${src_types// /|}) ]]; then
 		error.trace def 'type' 'type' "$type" "$__ERR_BUILTIN_SRC_TYPE"
 		return $?
 	fi
 
 	for var in ${@:1:$((${#@}-1))}; do
+		
+		[[ $var =~ ^([^[]+)\[([^]]+)\]$ ]] && var=${BASH_REMATCH[1]} && vet=${BASH_REMATCH[2]}
+
+		if [[ $vet && $type == @(${narr// /|}) ]]; then
+			error.trace def 'varname' "$type" "$var" "$__ERR_BUILTIN_TYPE_ARRAY"
+			return $?
+		fi
 
 		if [[ ${__INIT_OBJ[$var]} ]]; then
 			error.trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"
 			return $?
 		fi
+
+		for ((c=0; c < ${vet:-1}; c++)); do
 		
-		if [[ $type == struct_t ]]; then
-			if ! [[ $var =~ ${__FLAG_TYPE[srctype]} ]]; then
-				error.trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_TYPE"
-				return $?	
-			elif [[ ${__INIT_SRC_TYPES[$var]} ]]; then
-				error.trace src 'varname' 'var' "$var" "$__ERR_BUILTIN_TYPE_CONFLICT"
-				return $?
-			fi
-		fi	
-			
-		for method in ${__INIT_SRC_TYPES[$type]}; do
-			
-			if [[ ${__INIT_OBJ_TYPE[$type]} == struct_t ]]; then
-				if declare -Fp $var.${method#*.} &>/dev/null; then
-					error.trace imp "" "$var" "${method#*.}" "$__ERR_BUILTIN_METHOD_CONFLICT"
+			[[ $vet ]] && varname=$var[$c] || varname=$var
+		
+			if [[ $type == struct_t ]]; then
+				if ! [[ $varname =~ ${__FLAG_TYPE[srctype]} ]]; then
+					error.trace def 'varname' 'var' "$varname" "$__ERR_BUILTIN_TYPE"
+					return $?	
+				elif [[ ${__INIT_SRC_TYPES[$varname]} ]]; then
+					error.trace src 'varname' 'var' "$varname" "$__ERR_BUILTIN_TYPE_CONFLICT"
 					return $?
 				fi
+			fi	
 
-				printf -v struct '%s.%s(){ 
-								 getopt.parse 2 "=:keyword:-:$1" "value:%s:-:$2" "${@:3}"; 
-								 [[ -n $1 ]] && __STRUCT_VAL_MEMBERS[$FUNCNAME]=$2 || 
-								 echo "${__STRUCT_VAL_MEMBERS[$FUNCNAME]}"; 
-								 return 0;
-								 }' "$var" "${method#*.}" "${__STRUCT_MEMBER_TYPE[$type.${method#*.}]}"
-
-				eval "$struct" &>/dev/null || error.trace def
-				__INIT_OBJ_METHOD[$var]+="$var.${method#*.} "
-			else
-				func_type=$(declare -fp $method 2>/dev/null)
-				func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|${src_types// /|}):[+-]:[^\"']+[\"']"
+			for method in ${__INIT_SRC_TYPES[$type]}; do
 		
-				if [[ $func_type =~ $func_ref ]]; then
-					func_call='%s(){ %s "%s" "$@"; return $?; }'
+				if [[ ${__INIT_OBJ_TYPE[$type]} == struct_t ]]; then
+					if declare -Fp $varname.${method#*.} &>/dev/null; then
+						error.trace imp "" "$varname" "${method#*.}" "$__ERR_BUILTIN_METHOD_CONFLICT"
+						return $?
+					fi
+
+					printf -v struct '%s.%s(){ 
+									 getopt.parse 2 "=:keyword:-:$1" "value:%s:-:$2" "${@:3}"; 
+									 [[ -n $1 ]] && __STRUCT_VAL_MEMBERS[$FUNCNAME]=$2 || 
+									 echo "${__STRUCT_VAL_MEMBERS[$FUNCNAME]}"; 
+									 return 0;
+									 }' "$varname" "${method#*.}" "${__STRUCT_MEMBER_TYPE[$type.${method#*.}]}"
+
+					eval "$struct" &>/dev/null || error.trace def
+					__INIT_OBJ_METHOD[$varname]+="$varname.${method#*.} "
 				else
-					func_call='%s(){ %s "$%s" "$@"; return $?; }'
-				fi
+					func_type=$(declare -fp $method 2>/dev/null)
+					func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|${src_types// /|}):[+-]:[^\"']+[\"']"
+		
+					if [[ $func_type =~ $func_ref ]]; then
+						func_call='%s(){ %s "%s" "$@"; return $?; }'
+					else
+						func_call='%s(){ %s "${%s}" "$@"; return $?; }'
+					fi
 				
-				if declare -Fp $var.${method##*.} &>/dev/null; then
-					error.trace imp "$var" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
-					return $?
-				fi
+					if declare -Fp $varname.${method##*.} &>/dev/null; then
+						error.trace imp "$varname" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
+						return $?
+					fi
 				
-				printf -v func_call "$func_call" $var.${method##*.} $method $var
-				eval "$func_call" || error.trace def
-				__INIT_OBJ_METHOD[$var]+="$var.${method##*.} "
-			fi
+					printf -v func_call "$func_call" $varname.${method##*.} $method $varname
+					eval "$func_call" || error.trace def
+					__INIT_OBJ_METHOD[$varname]+="$varname.${method##*.} "
+				fi
+			done
+			__INIT_OBJ_TYPE[$var]=$type
+			__INIT_OBJ[$var]=true
 		done
-		__INIT_OBJ_TYPE[$var]=$type
-		__INIT_OBJ[$var]=true
+		__INIT_OBJ_SIZE[$var]=$c
 	done
 
 	return 0
 }
 
-# func __type__  <[var]name> => [str]
+# func __sizeof__ <[var]objname> => [uint]
+#
+# Retorna o tamanho do objeto
+#
+function sizeof()
+{
+	getopt.parse 1 "var:var:+:$1" ${@:2}
+	echo "${__INIT_OBJ_SIZE[${1%%[*}]:-0}"
+	return 0
+}
+
+# func typeof <[var]name> => [str]
 #
 # Retorna o tipo do objeto implementado.
 #
-function __type__()
+function typeof()
 {
 	getopt.parse 1 "var:var:+:$1" ${@:2}
-	echo "${__INIT_OBJ_TYPE[$1]}"
+	echo "${__INIT_OBJ_TYPE[${1%%[*}]}"
 	return 0
 }
 
@@ -1719,6 +1769,7 @@ function source.__INIT__()
 }
 
 source getopt.sh
+source struct.sh
 source error.sh
 
 source.__INIT__

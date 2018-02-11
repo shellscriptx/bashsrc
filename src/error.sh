@@ -289,7 +289,7 @@ function error.__output()
 	local c_def c_red code line func err
 
 	if [[ $1 == error_t ]]; then
-		if [[ $(__type__ $2) == $1 ]]; then
+		if [[ $(typeof $2) == $1 ]]; then
 			code=$($2.code)
 			line=$($2.line)
 			func=$($2.funcname)

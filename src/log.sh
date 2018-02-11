@@ -1,5 +1,22 @@
 #!/bin/bash
 
+#    Copyright 2018 Juliano Santos [SHAMAN]
+#
+#    This file is part of bashsrc.
+#
+#    bashsrc is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    bashsrc is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
+
 [[ $__LOG_SH ]] && return 0
 
 readonly __LOG_SH=1
@@ -271,7 +288,7 @@ function log.__format()
 {
 	local msg flag code type fmt date logfile
 	
-	type=$(__type__ $1)
+	type=$(typeof $1)
 
 	case $type in
 		log_t)

@@ -1,5 +1,22 @@
 #!/bin/bash
 
+#    Copyright 2018 Juliano Santos [SHAMAN]
+#
+#    This file is part of bashsrc.
+#
+#    bashsrc is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    bashsrc is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
+
 [[ $__STRUCT_SH ]] && return 0
 
 readonly __STRUCT_SH=1
@@ -23,7 +40,6 @@ struct.__add__
 struct.__members__
 struct.__len__
 struct.__attr__
-__type__
 '
 
 # func struct.__add__ <[struct_t]name> <[str]member> ...
