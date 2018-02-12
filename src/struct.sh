@@ -36,10 +36,10 @@ readonly __ERR_STRUCT_MEM_TYPE_REQUIRED='requer o tipo do membro'
 readonly __ERR_STRUCT_VAL_MEMBER='valor do membro da estrutura requerido'
 
 __TYPE__[struct_t]='
+struct.__len__
 struct.__add__
 struct.__members__
-struct.__len__
-struct.__attr__
+struct.__items__
 '
 
 # func struct.__add__ <[struct_t]name> <[str]member> ...
@@ -73,7 +73,7 @@ function struct.__add__(){
 				__STRUCT_MEMBER_TYPE[$struct.$1.$mem]=${__STRUCT_MEMBER_TYPE[$2.$mem]}
 			done
 		else
-			if ! [[ ${__INIT_SRC_TYPES[$2]:-${__FLAG_TYPE[$2]}} ]]; then
+			if ! [[ ${__INIT_SRC_TYPES[${2%%[*}]:-${__FLAG_TYPE[$2]}} ]]; then
 				error.trace st "$struct" "$1" "$2" "$__ERR_STRUCT_MEM_TYPE"
 				return $?
 			elif [[ ${__STRUCT_MEMBER_TYPE[$struct.$1]} ]]; then
@@ -119,12 +119,12 @@ function struct.__len__()
 	return 0	
 }
 
-# func struct.__attr__ <[struct_t]name> => [str|str]
+# func struct.__items__ <[struct_t]name> => [str|str]
 #
-# Retorna o atributo dos membros da estrutura.
+# Retorna os itens da estrutura no formato:.
 # padrão: membro|tipo
 #
-function struct.__attr__()
+function struct.__items__()
 {
 	getopt.parse 1 "name:struct_t:+:$1" "${@:2}"
 
