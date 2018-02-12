@@ -1123,7 +1123,7 @@ function var()
 	getopt.parse -1 "varname:varname:+:$1" ... "${@:1:$((${#@}-1))}"
 	
 	local type method proto func_ref func_type func_call var src_types
-	local vector cv c narr object_t attr init
+	local vector cv c narr object_t attr init stmember
 
 	type=${@: -1}
 	src_types=${!__INIT_SRC_TYPES[@]}
@@ -1141,7 +1141,9 @@ function var()
 
 	for var in ${@:1:$((${#@}-1))}; do
 		
-		cv= attr= init=
+		cv=''
+		attr=''
+		init=''
 	
 		if [[ $var =~ ^([^[]+)\[([^]]+)\]$ ]]; then
 			var=${BASH_REMATCH[1]}
@@ -1167,12 +1169,13 @@ function var()
 
 		for ((c=0; c < ${cv:-1}; c++)); do
 			for method in ${__INIT_SRC_TYPES[$type]} ${__INIT_SRC_TYPES[object_t]}; do
-				
+
 				[[ $init && $method == @(${object_t// /|}) ]] && continue
 				[[ $attr && $method != @(${object_t// /|}) ]] && vector=$var[$c] || vector=''
-
-				if declare -Fp ${vector:-$var}.${method##*.} &>/dev/null; then
-					error.trace imp "" "${vector:-$var}" "${method##*.}" "$__ERR_BUILTIN_METHOD_CONFLICT"
+				[[ ${__INIT_OBJ_TYPE[$type]} == struct_t ]] && stmember=${method#*.} || stmember=''
+				
+				if declare -Fp ${vector:-$var}.${stmember:-${method##*.}} &>/dev/null; then
+					error.trace imp "" "${vector:-$var}" "${stmember:-${method##*.}}" "$__ERR_BUILTIN_METHOD_CONFLICT"
 					return $?
 				elif [[ $method == @(${object_t// /|}) ]]; then
 					printf -v proto '%s.%s(){ %s "%s"; return $?; }' "$var" "$method" "$method" "$var"
@@ -1182,7 +1185,7 @@ function var()
 										[[ -n $1 ]] && __STRUCT_VAL_MEMBERS[$FUNCNAME]=$2 || 
 										echo "${__STRUCT_VAL_MEMBERS[$FUNCNAME]}"; 
 										return 0;
-								 		}' "${vector:-$var}" "${method#*.}" "${__STRUCT_MEMBER_TYPE[$type.${method#*.}]}"
+								 		}' "${vector:-$var}" "$stmember" "${__STRUCT_MEMBER_TYPE[$type.$stmember]}"
 				else
 					func_type=$(declare -fp $method 2>/dev/null)
 					func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|${src_types// /|}):[+-]:[^\"']+[\"']"
@@ -1194,7 +1197,7 @@ function var()
 					printf -v proto "$proto" ${vector:-$var}.${method##*.} $method ${vector:-$var}
 				fi
 				eval "$proto" || error.trace def
-				__INIT_OBJ_METHOD[${vector:-$var}]+="${vector:-$var}.${method##*.} "
+				__INIT_OBJ_METHOD[${vector:-$var}]+="${vector:-$var}.${stmember:-${method##*.}} "
 			done
 			init=1
 		done
