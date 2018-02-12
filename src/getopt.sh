@@ -33,6 +33,10 @@ readonly __ERR_GETOPT_TOO_MANY_ARGS='excesso de argumentos'
 readonly __ERR_GETOPT_KEYWORD='operador/argumento requerido'
 readonly __ERR_GETOPT_ARG_NAME='nome do argumento inválido'
 readonly __ERR_GETOPT_ARG_REQUIRED='o argumento requerido'
+readonly __ERR_GETOPT_INDEX_OUT_RANGE='comprimento inválido: o índice está  fora do intervalo da matriz'
+readonly __ERR_GETOPT_OBJ_ARRAY='tipo incompatível: o objeto requerido é um array'
+readonly __ERR_GETOPT_OBJ_VETOR='tipo incompatível: o objeto requerido deve ser um "var" ou "vetor"'
+readonly __ERR_GETOPT_CTYPE='o tipo do argumento é inválido'
 
 # func getopt.parse <[uint]nargs> <[str]name:type:flag:value> ... ${@:nargs+1} -> [bool]
 #
@@ -80,7 +84,7 @@ readonly __ERR_GETOPT_ARG_REQUIRED='o argumento requerido'
 #  char     - Caractere único. 
 #  str      - Uma cadeia de caracteres. 
 #  bool     - Booleano (true ou false). 
-#  var      - Identificador de uma variável válida. 
+#  var      - Identificador de uma variável válida ou vetor. 
 #  array    - Array indexado. 
 #  map      - Array associativo. 
 #  funcname - Nomenclatura de função válida. 
@@ -214,7 +218,7 @@ readonly __ERR_GETOPT_ARG_REQUIRED='o argumento requerido'
 # 
 function getopt.parse()
 {
-	local name ctype flag value flags attr param app vargs lparam rep
+	local name ctype flag value flags attr param app vargs lparam rep re
 	
 	if ! [[ $1 =~ ${__FLAG_TYPE[getopt_nargs]} ]]; then
 		error.trace def "nargs" "int" "$1" "$__ERR_GETOPT_TYPE_ARG 'int'"
@@ -244,6 +248,9 @@ function getopt.parse()
 		if ! [[ $name =~ ${__FLAG_TYPE[getopt_pname]} ]]; then
 			error.trace def "name" 'str' "$name" "$__ERR_GETOPT_ARG_NAME"
 			return $?
+		elif ! [[ $ctype =~ ${__FLAG_TYPE[getopt_ctype]} ]]; then
+			error.trace def  "ctype" "str" "$ctype" "$__ERR_GETOPT_CTYPE"
+			return $?	
 		elif ! [[ $flag =~ ${__FLAG_TYPE[getopt_flag]} ]]; then
 			error.trace def "flag" 'str' "$flag" "$__ERR_GETOPT_FLAG"
 			return $?
@@ -262,10 +269,33 @@ function getopt.parse()
 				file) 		[[ -f $value ]] || { error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
 				path) 		[[ -e $value ]] || { error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
 				fd) 		[[ -e /dev/fd/$value ]] || { error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
-				*)	if [[ ${__FLAG_TYPE[$ctype]} ]]; then
+				*)	
+					if [[ ${__FLAG_TYPE[$ctype]} ]]; then
 						[[ $value =~ ${__FLAG_TYPE[$ctype]} ]]
-					elif [[ ${__INIT_OBJ_TYPE[${value%%[*}]} ]]; then
-						[[ ${__INIT_OBJ_TYPE[${value%%[*}]} == $ctype ]]
+					elif [[ ${__INIT_OBJ_TYPE[${value%%[*}]} == ${ctype%%[*} ]]; then
+						if [[ $value =~ \[([^]]+)\]$ ]]; then
+							if [[ ${BASH_REMATCH[1]} -ge ${__INIT_OBJ_SIZE[${value%%[*}]} ]]; then
+								error.trace def  "$name" "$ctype" "$value" "$__ERR_GETOPT_INDEX_OUT_RANGE"
+								return $?
+							fi
+						elif [[ $ctype =~ ^[^[]+$ ]]; then
+							if [[ $value =~ ^[^[]+$ && ${__INIT_OBJ_ATTR[${value%%[*}]} != var ]]; then
+								error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_OBJ_VETOR"
+								return $?
+							fi
+						elif [[ $ctype =~ \[\]$ ]]; then
+							if 	[[ ${__INIT_OBJ_ATTR[${value%%[*}]} != array ]] ||
+								[[ $value =~ \[[^]]+\]$ ]]; then
+								error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_OBJ_ARRAY"
+								return $?
+							fi
+						elif [[ $ctype =~ \[([^]]+)\]$ ]]; then
+							if 	[[ ${BASH_REMATCH[1]} -ne ${__INIT_OBJ_SIZE[${value%%[*}]} ]] ||
+								[[ $value =~ \[[^]]+\]$ ]]; then
+								error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_INDEX_OUT_RANGE"
+								return $?
+							fi
+						fi
 					else
 						false
 					fi
