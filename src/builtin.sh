@@ -38,6 +38,7 @@ declare -A	__INIT_SRC_TYPES \
 			__INIT_OBJ_METHOD \
 			__INIT_OBJ_TYPE \
 			__INIT_OBJ_SIZE \
+			__INIT_OBJ_ATTR \
 			__INIT_OBJ
 		
 declare	__DEPS__
@@ -61,7 +62,7 @@ shopt -s	extglob \
 
 shopt -u 	nocasematch
 
-__TYPE__[builtin_t]='
+__TYPE__[var_t]='
 __len__
 __quote__
 __typeval__
@@ -89,10 +90,34 @@ __app__
 __sum__
 '
 
+__TYPE__[ptr_t]='
+__float__
+__in__
+__dec__
+__fnmap__
+__upper__
+__lower__
+__rev__
+__repl__
+__rm__
+__swapcase__
+__ins__
+__app__
+__sum__
+'
+
+__TYPE__[object_t]='
+__del__
+__typeof__
+__sizeof__
+__imp__
+__attr__
+'
 
 readonly __ARRAY_T=(
+iter_t
+ptr_t
 struct_t
-builtin_t
 map_t
 array_t
 )
@@ -108,7 +133,8 @@ readonly __ERR_BUILTIN_TYPE='o identificador do tipo é inválido'
 readonly __ERR_BUILTIN_SRC_TYPE='o tipo do objeto é invalido'
 readonly __ERR_BUILTIN_DEL_OBJ='não foi possível deletar o objeto'
 readonly __ERR_BUILTIN_TYPE_ARRAY='o tipo já é implementado por array'
- 
+readonly __ERR_BUILTIN_IMPLICIT_TYPE='a implementação do tipo é implícita'
+
 readonly NULL=0
 
 readonly -A __FLAG_TYPE=(
@@ -122,11 +148,13 @@ readonly -A __FLAG_TYPE=(
 [flag]='^[a-zA-Z]+$'
 [funcname]='^[a-zA-Z0-9_.-]+$'
 [var]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*(\[([0-9]|[1-9][0-9]+)\])?$'
+[varname]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*(\[[1-9][0-9]*\])?$'
 [srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]$'
-[st_member]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]+[a-zA-Z])?$'
 [getopt_nargs]='^(-1|0|[1-9][0-9]*)$'
 [getopt_pname]='^[a-zA-Z0-9_=+-]+$'
 [getopt_flag]='^(\+|-)$'
+[getopt_ctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*(\[([1-9][0-9]*)?\])?$'
+[st_member]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]+[a-zA-Z])?(\[([1-9][0-9]*)?\])?$'
 [uint]='^(0|[1-9][0-9]*)$'
 [int]='^(0|[-+]?[1-9][0-9]*)$'
 [float]='^[-+]?[0-9](,[0-9]+)$'
@@ -1080,158 +1108,188 @@ function builtin.__iter_cond_any_all()
 	return 0	
 }
 
-# func del <[var]varname> ...
+# func del <[var]varname> => [bool]
 #
-# Apaga da memória os objetos implementados.
+# O mesmo que __del__.
 #
-function del()
-{
-	getopt.parse -1 "varname:var:+:$1" ... "${@:2}"
+function del(){ __del__ "$@"; return $?; }
 
-	local var method varname vet c
-
-	for var in $@; do
-		if [[ $var =~ ^([^[]+)\[([^]]+)\]$ ]]; then
-			var=${BASH_REMATCH[1]}
-			vet=${BASH_REMATCH[2]}
-		fi
-		for ((c=0; c < ${vet:-1}; c++)); do
-			[[ $vet ]] && varname=$var[$c] || varname=$var
-			for method in ${__INIT_OBJ_METHOD[$varname]}; do
-				unset __STRUCT_VAL_MEMBERS[$method] \
-					  __STRUCT_MEMBER_TYPE[$method]
-			done
-			unset -f ${__INIT_OBJ_METHOD[$varname]}
-			unset	__INIT_OBJ_METHOD[$varname] \
-					__STRUCT_INIT[$varname] \
-					__INIT_SRC_TYPES[$varname]
-		done 
-		unset	__INIT_OBJ_TYPE[$var] \
-				__INIT_OBJ[$var] \
-				__INIT_OBJ_SIZE[$var]
-	done || error.trace def
-
-	return 0
-}
-
-# func var <[var]varname> ... <[type]typename>
+# func var <[varname]varname> ... <[type]typename>
 #
 # Implementa 'varname' com 'typename'
 #
 function var()
 {
-	getopt.parse -1 "varname:var:+:$1" ... "${@:1:$((${#@}-1))}"
+	getopt.parse -1 "varname:varname:+:$1" ... "${@:1:$((${#@}-1))}"
 	
 	local type method proto func_ref func_type func_call var src_types
-	local member struct varname vet c narr
-	
-	type=${@: -1}
+	local vector cv c narr object_t attr init
 
+	type=${@: -1}
 	src_types=${!__INIT_SRC_TYPES[@]}
 	narr=${__ARRAY_T[@]}
+	object_t=(${__INIT_SRC_TYPES[object_t]})
+	object_t=${object_t[@]}
 
 	if [[ $type != @(${src_types// /|}) ]]; then
 		error.trace def 'type' 'type' "$type" "$__ERR_BUILTIN_SRC_TYPE"
 		return $?
+	elif [[ $type == object_t ]]; then
+		error.trace def 'type' 'type' "$type" "$__ERR_BUILTIN_IMPLICIT_TYPE"
+		return $?	
 	fi
 
 	for var in ${@:1:$((${#@}-1))}; do
 		
-		[[ $var =~ ^([^[]+)\[([^]]+)\]$ ]] && var=${BASH_REMATCH[1]} && vet=${BASH_REMATCH[2]}
+		cv= attr= init=
+	
+		if [[ $var =~ ^([^[]+)\[([^]]+)\]$ ]]; then
+			var=${BASH_REMATCH[1]}
+			cv=${BASH_REMATCH[2]}
+			attr=array
+		fi
 
-		if [[ $vet && $type == @(${narr// /|}) ]]; then
+		if [[ $attr && $type == @(${narr// /|}) ]]; then
 			error.trace def 'varname' "$type" "$var" "$__ERR_BUILTIN_TYPE_ARRAY"
 			return $?
-		fi
-
-		if [[ ${__INIT_OBJ[$var]} ]]; then
+		elif [[ ${__INIT_OBJ[$var]} ]]; then
 			error.trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_ALREADY_INIT"
 			return $?
+		elif [[ $type == struct_t ]]; then
+			if ! [[ $var =~ ${__FLAG_TYPE[srctype]} ]]; then
+				error.trace def 'varname' 'var' "$var" "$__ERR_BUILTIN_TYPE"
+				return $?	
+			elif [[ ${__INIT_SRC_TYPES[$var]} ]]; then
+				error.trace src 'varname' 'var' "$var" "$__ERR_BUILTIN_TYPE_CONFLICT"
+				return $?
+			fi
 		fi
 
-		for ((c=0; c < ${vet:-1}; c++)); do
-		
-			[[ $vet ]] && varname=$var[$c] || varname=$var
-		
-			if [[ $type == struct_t ]]; then
-				if ! [[ $varname =~ ${__FLAG_TYPE[srctype]} ]]; then
-					error.trace def 'varname' 'var' "$varname" "$__ERR_BUILTIN_TYPE"
-					return $?	
-				elif [[ ${__INIT_SRC_TYPES[$varname]} ]]; then
-					error.trace src 'varname' 'var' "$varname" "$__ERR_BUILTIN_TYPE_CONFLICT"
+		for ((c=0; c < ${cv:-1}; c++)); do
+			for method in ${__INIT_SRC_TYPES[$type]} ${__INIT_SRC_TYPES[object_t]}; do
+				
+				[[ $init && $method == @(${object_t// /|}) ]] && continue
+				[[ $attr && $method != @(${object_t// /|}) ]] && vector=$var[$c] || vector=''
+
+				if declare -Fp ${vector:-$var}.${method##*.} &>/dev/null; then
+					error.trace imp "" "${vector:-$var}" "${method##*.}" "$__ERR_BUILTIN_METHOD_CONFLICT"
 					return $?
-				fi
-			fi	
-
-			for method in ${__INIT_SRC_TYPES[$type]}; do
-		
-				if [[ ${__INIT_OBJ_TYPE[$type]} == struct_t ]]; then
-					if declare -Fp $varname.${method#*.} &>/dev/null; then
-						error.trace imp "" "$varname" "${method#*.}" "$__ERR_BUILTIN_METHOD_CONFLICT"
-						return $?
-					fi
-
-					printf -v struct '%s.%s(){ 
-									 getopt.parse 2 "=:keyword:-:$1" "value:%s:-:$2" "${@:3}"; 
-									 [[ -n $1 ]] && __STRUCT_VAL_MEMBERS[$FUNCNAME]=$2 || 
-									 echo "${__STRUCT_VAL_MEMBERS[$FUNCNAME]}"; 
-									 return 0;
-									 }' "$varname" "${method#*.}" "${__STRUCT_MEMBER_TYPE[$type.${method#*.}]}"
-
-					eval "$struct" &>/dev/null || error.trace def
-					__INIT_OBJ_METHOD[$varname]+="$varname.${method#*.} "
+				elif [[ $method == @(${object_t// /|}) ]]; then
+					printf -v proto '%s.%s(){ %s "%s"; return $?; }' "$var" "$method" "$method" "$var"
+				elif [[ ${__INIT_OBJ_TYPE[$type]} == struct_t ]]; then
+					printf -v proto '%s.%s(){ 
+										getopt.parse 2 "=:keyword:-:$1" "value:%s:-:$2" "${@:3}"; 
+										[[ -n $1 ]] && __STRUCT_VAL_MEMBERS[$FUNCNAME]=$2 || 
+										echo "${__STRUCT_VAL_MEMBERS[$FUNCNAME]}"; 
+										return 0;
+								 		}' "${vector:-$var}" "${method#*.}" "${__STRUCT_MEMBER_TYPE[$type.${method#*.}]}"
 				else
 					func_type=$(declare -fp $method 2>/dev/null)
 					func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|${src_types// /|}):[+-]:[^\"']+[\"']"
 		
-					if [[ $func_type =~ $func_ref ]]; then
-						func_call='%s(){ %s "%s" "$@"; return $?; }'
-					else
-						func_call='%s(){ %s "${%s}" "$@"; return $?; }'
-					fi
-				
-					if declare -Fp $varname.${method##*.} &>/dev/null; then
-						error.trace imp "$varname" "$type" "$method" "$__ERR_BUILTIN_METHOD_CONFLICT"
-						return $?
-					fi
-				
-					printf -v func_call "$func_call" $varname.${method##*.} $method $varname
-					eval "$func_call" || error.trace def
-					__INIT_OBJ_METHOD[$varname]+="$varname.${method##*.} "
+					[[ $func_type =~ $func_ref ]] && 
+					proto='%s(){ %s "%s" "$@"; return $?; }' ||
+					proto='%s(){ %s "${%s}" "$@"; return $?; }'
+					
+					printf -v proto "$proto" ${vector:-$var}.${method##*.} $method ${vector:-$var}
 				fi
+				eval "$proto" || error.trace def
+				__INIT_OBJ_METHOD[${vector:-$var}]+="${vector:-$var}.${method##*.} "
 			done
-			__INIT_OBJ_TYPE[$var]=$type
-			__INIT_OBJ[$var]=true
+			init=1
 		done
+		__INIT_OBJ_TYPE[$var]=$type
+		__INIT_OBJ[$var]=true
 		__INIT_OBJ_SIZE[$var]=$c
+		__INIT_OBJ_ATTR[$var]=${attr:-var}
 	done
 
 	return 0
 }
 
-# func sizeof <[var]objname> => [uint]
+# func __del__ <[var]varname> ... => [bool]
+#
+# Apaga da memória os objetos implementados.
+#
+function __del__()
+{
+	getopt.parse -1 "varname:var:+:$1" ... "${@:2}"
+
+	local var method vector cv c
+
+	for var in $@; do
+		if [[ $var =~ ^([^[]+)\[([^]]+)\]$ ]]; then
+			var=${BASH_REMATCH[1]}
+			cv=${BASH_REMATCH[2]}
+		fi
+		for ((c=0; c < ${cv:-1}; c++)); do
+			[[ $cv ]] && vector=$var[$c]
+			for method in ${__INIT_OBJ_METHOD[${vector:-$var}]}; do
+				unset __STRUCT_VAL_MEMBERS[$method] \
+					  __STRUCT_MEMBER_TYPE[$method]
+			done
+			unset -f ${__INIT_OBJ_METHOD[${vector:-$var}]}
+			unset	__INIT_OBJ_METHOD[${vector:-$var}] \
+					__STRUCT_INIT[$var] \
+					__INIT_SRC_TYPES[$var]
+		done 
+		unset	__INIT_OBJ_TYPE[$var] \
+				__INIT_OBJ[$var] \
+				__INIT_OBJ_SIZE[$var] \
+				__INIT_OBJ_ATTR[$var]
+		cv=''
+		vector=''
+	done || error.trace def
+
+	return 0
+}
+
+# func __attr__ <[var]object> => [str]
+#
+# Retorna o atributo do objeto implementado.
+# Os atributos são: 'array' ou 'var'.
+#
+function __attr__()
+{
+	getopt.parse 1 "object:var:+:$1" ${@:2}
+	echo "${__INIT_OBJ_ATTR[${1%%[*}]}"
+	return 0
+}
+
+# func __imp__ <[var]object> => [str]
+#
+# Retorna os métodos implementados do objeto.
+#
+function __imp__()
+{
+	getopt.parse 1 "object:var:+:$1" ${@:2}
+	echo "${__INIT_OBJ_METHOD[${1%%[*}]}"
+	return $?
+}
+
+# func __sizeof__ <[var]objname> => [uint]
 #
 # Retorna o tamanho do objeto
 #
-function sizeof()
+function __sizeof__()
 {
-	getopt.parse 1 "var:var:+:$1" ${@:2}
+	getopt.parse 1 "object:var:+:$1" ${@:2}
 	echo "${__INIT_OBJ_SIZE[${1%%[*}]:-0}"
 	return 0
 }
 
-# func typeof <[var]name> => [str]
+# func __typeof__ <[var]name> => [str]
 #
 # Retorna o tipo do objeto implementado.
 #
-function typeof()
+function __typeof__()
 {
-	getopt.parse 1 "var:var:+:$1" ${@:2}
+	getopt.parse 1 "object:var:+:$1" ${@:2}
 	echo "${__INIT_OBJ_TYPE[${1%%[*}]}"
 	return 0
 }
 
-# func __len__ <[var]name> => [str]|[uint]
+# func len <[var]name> => [str]|[uint]
 #
 # Retorna o índice/chave e o comprimento do elemento armazenado.
 #
@@ -1334,10 +1392,14 @@ function __in__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] && ((__byref[$__elem]++))
+		if [[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]]; then
+			[[ $($1.__typeof__) == ptr_t ]] &&
+			((__byref[$__elem]++)) ||
+			echo "$((${__byref[$__elem]}+1))"
+		fi
 	done
 	
-	return $?
+	return 0
 }
 
 # func __sum__ <[var]name> <[int]num> ...
@@ -1356,8 +1418,11 @@ function __sum__()
 	__nums=${__tmp[@]}
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] && 
-		__byref[$__elem]=$((${__byref[$__elem]}+${__nums// /+}))
+		if [[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]]; then
+			[[ $($1.__typeof__) == ptr_t ]] &&
+			__byref[$__elem]=$((${__byref[$__elem]}+${__nums// /+})) ||
+			echo "$((${__byref[$__elem]}+${__nums// /+}))"
+		fi
 	done
 
 	return 0
@@ -1376,8 +1441,14 @@ function __dec__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] && ((__byref[$__elem]--))
+		if [[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]]; then
+			[[ $($1.__typeof__) == ptr_t ]] &&
+			((__byref[$__elem]--)) ||
+			echo "$((${__byref[$__elem]}-1))"
+		fi
 	done
+	
+	return 0
 }
 
 # func __eq__ <[var]name> <[str]exp> => [bool]
@@ -1513,8 +1584,11 @@ function __float__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]] &&
-		printf -v __byref[$__elem] "%0.2f" "${__byref[$__elem]}"
+		if [[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]]; then
+			[[ $($1.__typeof__) == ptr_t ]] && 
+			printf -v __byref[$__elem] "%0.2f" "${__byref[$__elem]}" ||
+			printf "%0.2f\n" "${__byref[$__elem]}"
+		fi
 	done
 	return $?
 }
@@ -1531,8 +1605,11 @@ function __upper__()
 	declare -n __byref=$1
 	local __elem
 
+	
 	for __elem in "${!__byref[@]}"; do
-		__byref[$__elem]=${__byref[$__elem]^^}
+		[[ $($1.__typeof__) == ptr_t ]] && 
+		__byref[$__elem]=${__byref[$__elem]^^} ||
+		echo "${__byref[$__elem]^^}"
 	done
 	return $?
 }
@@ -1550,7 +1627,9 @@ function __lower__()
 	local __elem
 
 	for __elem in "${!__byref[@]}"; do
-		__byref[$__elem]=${__byref[$__elem],,}
+		[[ $($1.__typeof__) == ptr_t ]] && 
+		__byref[$__elem]=${__byref[$__elem],,} ||
+		echo "${__byref[$__elem],,}"
 	done
 	return $?
 }
@@ -1568,7 +1647,9 @@ function __swapcase__()
 	local __elem
 
 	for __elem in "${!__byref[@]}"; do
-		__byref[$__elem]=${__byref[$__elem]~~}
+		[[ $($1.__typeof__) == ptr_t ]] && 
+		__byref[$__elem]=${__byref[$__elem]~~} ||
+		echo "${__byref[$__elem]~~}"
 	done
 	return $?
 }
@@ -1589,7 +1670,9 @@ function __rev__()
 		for ((__i=${#__byref[$__elem]}-1; __i >= 0; __i--)); do
 			__tmp+=${__byref[$__elem]:$__i:1}
 		done
-		__byref[$__elem]=$__tmp
+		[[ $($1.__typeof__) == ptr_t ]] && 
+		__byref[$__elem]=$__tmp ||
+		echo "$__tmp"
 		__tmp=''
 	done
 	return $?
@@ -1608,7 +1691,9 @@ function __repl__()
 	local __elem
 
 	for __elem in "${!__byref[@]}"; do
-		__byref[$__elem]=${__byref[$__elem]//$2/$3}
+		[[ $($1.__typeof__) == ptr_t ]] && 
+		__byref[$__elem]=${__byref[$__elem]//$2/$3} ||
+		echo "${__byref[$__elem]//$2/$3}"
 	done
 	return $?
 }
@@ -1626,7 +1711,9 @@ function __rm__()
 	local __elem
 
 	for __elem in "${!__byref[@]}"; do
-		__byref[$__elem]=${__byref[$__elem]//$2/}
+		[[ $($1.__typeof__) == ptr_t ]] && 
+		__byref[$__elem]=${__byref[$__elem]//$2/} ||
+		echo "${__byref[$__elem]//$2/}"
 	done
 	return $?
 }
@@ -1644,7 +1731,9 @@ function __ins__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		__byref[$__elem]=${2}${__byref[$__elem]}
+		[[ $($1.__typeof__) == ptr_t ]] && 
+		__byref[$__elem]=${2}${__byref[$__elem]} ||
+		echo "${2}${__byref[$__elem]}"
 	done
 	return $?
 }
@@ -1662,7 +1751,9 @@ function __app__()
 	local __elem
 	
 	for __elem in "${!__byref[@]}"; do
-		__byref[$__elem]=${__byref[$__elem]}${2}
+		[[ $($1.__typeof__) == ptr_t ]] && 
+		__byref[$__elem]=${__byref[$__elem]}${2} ||
+		echo "${__byref[$__elem]}${2}"
 	done
 	return $?
 }
@@ -1670,8 +1761,7 @@ function __app__()
 # func __fnmap__ <[var]name> <[func]funcname> <[str]args> ...
 #
 # Chama 'funcname'a cada iteração de caracteres ou elementos armazenados em 'name', passando
-# automaticamente como parâmetro posicional '$1' o item atual com 'N'args (opcional) e salva
-# o retorno.
+# automaticamente como parâmetro posicional '$1' o item atual com 'N'args (opcional).
 #
 function __fnmap__()
 {
@@ -1683,13 +1773,17 @@ function __fnmap__()
 	if IFS=' ' read _ __attr _ < <(declare -p $1 2>/dev/null); then
 		case $__attr in
 			*a*|*A*)	for __i in "${!__byref[@]}"; do
-							__byref[$__i]=$($2 "${__byref[$__i]}" "${@:3}")
+							[[ $($1.__typeof__) == ptr_t ]] &&
+							__byref[$__i]=$($2 "${__byref[$__i]}" "${@:3}") ||
+							echo "$($2 "${__byref[$__i]}" "${@:3}")"
 						done;;
 
 			*)			for ((__i=0; __i < ${#__byref}; __i++)); do
 							__tmp+=$($2 "${__byref:$__i:1}" "${@:3}")
 						done
-						__byref=$__tmp;;
+						[[ $($1.__typeof__) == ptr_t ]] &&
+						__byref=$__tmp ||
+						echo "$__tmp"
 		esac
 	fi
 
