@@ -25,10 +25,6 @@ readonly __CPU_SH=1
 
 source builtin.sh
 
-readonly __CPUINFO=/proc/cpuinfo
-
-readonly __ERR_CPU_STRUCT_INDEX='índice fora do limite'
-
 var cpuinfo_t struct_t
 
 cpuinfo_t.__add__ \
@@ -105,7 +101,7 @@ cpuinfo_t.__add__ \
 #
 function cpu.getinfo()
 {
-	getopt.parse 1 "struct:cpuinfo_t:+:$1" ${@:2}
+	getopt.parse 1 "struct:cpuinfo_t[]:+:$1" ${@:2}
 
 	local flag info i
 
@@ -134,10 +130,10 @@ function cpu.getinfo()
 			clflushsize)	$1[$i].clflush_size = "$info";;
 			addresssizes)	$1[$i].address_size = "$info";;
 		esac 2>/dev/null || {
-			error.trace def 'struct' "$1" "$i" "$__ERR_CPU_STRUCT_INDEX"
+			error.trace def 'struct' "cpuinfo_t" '' "'$1[$i]' o índice está fora dos limites do array"
 			return $?
 		}
-	done < "$__CPUINFO" 
+	done < /proc/cpuinfo || error.trace def
 
 	return $?
 }
