@@ -28,7 +28,7 @@ var error_t struct_t
 error_t.__add__ \
 	code 		uint \
 	line 		uint \
-	funcname 	str \
+	func		str \
 	error 		str
 
 # func error.resume <[bool]option>
@@ -141,7 +141,7 @@ function error.errortf()
 
 # func error.trace <[flag]format> <[str]argname> <[str]argtype> <[str]value> <[str]error> <[str]args> ... => [str]
 #
-# Imprime uma mensagem de erro detalhada no padrão 'format' com os argumentos especificados e a pilha de rastramento da ocorrência.
+# Imprime uma mensagem de erro detalhada no padrão 'format' com os argumentos especificados e a pilha de rastreamento da ocorrência.
 #
 # flags:
 #
@@ -289,10 +289,10 @@ function error.__output()
 	local c_def c_red code line func err
 
 	if [[ $1 == error_t ]]; then
-		if [[ $(typeof $2) == $1 ]]; then
+		if [[ $($2.__typeof__) == $1 ]]; then
 			code=$($2.code)
 			line=$($2.line)
-			func=$($2.funcname)
+			func=$($2.func)
 			err=$($2.error)
 			
 			[[ $code ]] || { error.trace st "$1" 'code' 'uint' "$__ERR_STRUCT_VAL_MEMBER"; return $?; } 
