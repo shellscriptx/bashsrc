@@ -8,12 +8,6 @@
 |coreutils|7.0 (ou superior)|Utilitários básicos de arquivo, shell e manipulação de texto do sistema operacional GNU. (GNU core utilities)|
 
 
-### Documentação
-
-A  documentação  padrão  está disponível no arquivo fonte de cada biblioteca e que pode ser acessada pela utilitário `bashsrc` via linha de comando e distribuída junto ao  projeto.
-
-Para mais informações consulte a documentação: [clique aqui](https://github.com/shellscriptx/bashsrc/wiki) (em construção)
-
 ### Ambiente
 
 Para utilizar quaisquer bibliotecas é necessário configurar previamente o  ambiente.  O bashsrc  utiliza  a variável `BASHSRC_PATH` onde é definido o diretório padrão contendo as bibliotecas/binários.
@@ -49,6 +43,12 @@ $ . ~/.profile
 ```
 > Obs: se tudo estiver 'ok' nenhuma mensagem de erro é apresentada.
 
+
+### Documentação
+
+A documentação padrão está disponível no arquivo fonte de cada biblioteca e acessada pelo utilitário `bashsrc` via linha de comando e distribuído junto ao projeto.
+
+**Para mais informações consulte a documentação:** [clique aqui](https://github.com/shellscriptx/bashsrc/wiki) (em construção)
 
 ### Reportando falhas
 
