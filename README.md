@@ -1,12 +1,5 @@
 ## bashsrc 1.0.0
 
-### Sobre
-
-O  **bashsrc**  é  um  projeto open source distribuído em uma coleção de bibliotecas desenvolvidas em shell script contendo um conjunto de funções úteis que  oferece  ao  desenvolvedor um estilo de programação funcional com implementação de tipos. 
-
-O foco principal é a compatibilidade com o interpretador de comandos **BASH 4.3.0 (ou superior)**, cuja  funções
-são  desenvolvidas  utilizando  apenas  recursos  `built-in` e `coreutils`, evitando a utilização de dependências de pacotes externos que geram ‘coprocs’ durante a execução. Porém  alguns  critérios  serão levados em consideração para tal aplicação: _desempenho, viabilidade, compatibilidade, distribuição da  dependência_ entre outros, ficando  de responsabilidade do desenvolvedor verificar e reportar tais dependências se houverem.
-
 ### Dependências
 
 |Pacote|Versão|Descrição|
