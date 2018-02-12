@@ -23,145 +23,72 @@ readonly __USER_SH=1
 
 source builtin.sh
 
-__TYPE__[user_t]='
-user.pass
-user.uid
-user.gid
-user.gecos
-user.home
-user.shell
-'
+var user_t struct_t
 
-readonly __USER_PATH_PASSWD='/etc/passwd'
-readonly __ERR_USER_READ_PASS_FILE='falha ao ler o arquivo base'
-readonly __ERR_USER_USER_NOT_FOUND='usuário não encontrado'
+user_t.__add__ \
+	username	str \
+	uid			uint \
+	gid			uint \
+	home		str \
+	shell		str \
+	gecos		str \
+	pass		str
 
-# func user.pass <[str]username> => [str]
+# func user.getuid => [uint]
 #
-# Retorna a senha criptografada ou asteriscos de 'username'.
+# Retorna o id do usuário atual.
 #
-function user.pass()
+function user.getuid(){ getopt.parse 0 $@; echo "$UID"; return $?;  }
+
+# func user.geteuid => [uint]
+#
+# Retorna o id efetivo do usuário atual.
+#
+function user.geteuid(){ getopt.parse 0 $@; echo "$EUID"; return $?;  }
+
+# func user.getgid => [uint]
+#
+# Retorna o id do grupo do usuário atual.
+#
+function user.getgid(){ getopt.parse 0 $@; echo "${GROUPS[0]}"; return $?;  }
+
+# func user.getgids => [uint]
+#
+# Retorna o id dos grupos do usuário atual.
+#
+function user.getgids(){ getopt.parse 0 $@; echo "${GROUPS[@]}"; return $?;  }
+
+# func user.getlogin <[user_t]struct> <[str]username> => [bool]
+#
+# Salva em 'struct' as informações do usuário especificado.
+# Retorna 'true' para sucesso, caso contrário 'false'.
+#
+function user.getlogin(){ user.__get_stuser "$1" "$2" ${@:3}; return $?; }
+
+# func user.getuser <[user_t]struct>
+#
+# Salva em 'struct' as informações do usuário atual.
+#
+function user.getuser(){  user.__get_stuser "$1" "$USER" ${@:3}; return $?; }
+
+function user.__get_stuser() 
 {
-	getopt.parse 1 "username:str:+:$1" ${@:2}
-	user.__get_info "$1" pass
-	return $?
-}
-
-# func user.uid <[str]username> = [uint]
-#
-# Retorna a identificação numérica de 'username'.
-#
-function user.uid()
-{
-	getopt.parse 1 "username:str:+:$1" ${@:2}
-	user.__get_info "$1" uid
-	return $?
-}
-
-# func user.gid <[str]username> => [uint]
-#
-# Retorna a identificação do grupo primário de 'username'.
-#
-function user.gid()
-{
-	getopt.parse 1 "username:str:+:$1" ${@:2}
-	user.__get_info "$1" gid
-	return $?
-}
-
-# func user.gecos <[str]username> => [str]
-#
-# Retorna as informações complementares de 'username'.
-#
-function user.gecos()
-{
-	getopt.parse 1 "username:str:+:$1" ${@:2}
-	user.__get_info "$1" gecos
-	return $?
-}
-
-# func user.home <[str]username> => [str]
-#
-# Retorna o diretório pessoal de 'username'. ($HOME)
-#
-function user.home()
-{
-	getopt.parse 1 "username:str:+:$1" ${@:2}
-	user.__get_info "$1" home
-	return $?
-}
-
-# func user.shell <[str]username> => [str]
-#
-# Retorna o interpretador de comando usado por 'username'.
-#
-function user.shell()
-{
-	getopt.parse 1 "username:str:+:$1" ${@:2}
-	user.__get_info "$1" shell
-	return $?
-}
-
-# func user.getallusers => [str]
-#
-# Retorna uma lista iterável com todos os usuários do sistema.
-#
-function user.getallusers
-{
-	getopt.parse 0 ${@:1}
-	user.__get_info '' all
-	return $?
-}
-
-# func user.getuser <[uint]uid> => [str]
-#
-# Retorna o usuário associado a identificação 'uid'.
-#
-function user.getuser()
-{
-	getopt.parse 1 "uid:uint:+:$1" ${@:2}
+	getopt.parse 2 "struct:user_t:+:$1" "username:str:+:$2" ${@:3}
 	
-	local username
-	while read username; do
-		[[ $(user.__get_info "$username" uid) -eq $1 ]] && echo "$username" && break
-	done < <(user.__get_info '' all)
-	return $?
-}
+	while IFS=':' read user pass uid gid gecos home shell; do
+		if [[ $2 == $user ]]; then
+			$1.username  = "$user"
+			$1.uid = "$uid"
+			$1.gid = "$gid"
+			$1.home = "$home"
+			$1.shell = "$shell"
+			$1.gecos = "$gecos"
+			$1.pass = "$pass"
+			return 0
+		fi
+	done < /etc/passwd || error.def
 
-function user.__get_info()
-{
-	local account info fields flag=$2
-	declare -A entry
-	
-	if while read account; do
-		entry[${account%%:*}]=${account//:/ }
-	done < $__USER_PATH_PASSWD 2>/dev/null; then
-
-		if [[ $flag == all ]] ; then
-			printf '%s\n' ${!entry[@]}
-		elif [[ ${entry[$1]} ]]; then
-		
-			fields=(${entry[$1]})
-
-			case $flag in
-				pass) info=${fields[1]};;
-				uid) info=${fields[2]};;
-				gid) info=${fields[3]};;
-				gecos) info=${fields[@]:4}; info=${info%%/*};;
-				home) info=${fields[-2]};;
-				shell) info=${fields[-1]};;
-				*) return 1;;
-			esac
-			
-			printf '%s\n' "$info"
-		else
-			error.trace def 'user' 'str' "$1" "$__ERR_USER_USER_NOT_FOUND"; return $?
-		fi	
-	else
-		error.trace def '' '' "$__USER_PATH_PASSWD" "$__ERR_USER_READ_PASS_FILE"; return $?
-	fi
-
-	return $?
+	return 1
 }
 
 source.__INIT__
