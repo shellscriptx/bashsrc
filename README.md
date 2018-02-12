@@ -7,8 +7,6 @@
 |Pacote|Versão|Descrição|
 |-|-|-|
 |bash|4.3 (ou superior)|Interpretador de comandos BASH (Bourne-Again Shell).|
-|coreutils|7.0 (ou superior)|Utilitários básicos de arquivo, shell e manipulação de texto do sistema operacional GNU. (GNU core utilities)|
-
 
 ### Ambiente
 
