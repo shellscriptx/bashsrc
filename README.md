@@ -48,7 +48,7 @@ $ . ~/.profile
 > Obs: se tudo estiver 'ok' nenhuma mensagem de erro é apresentada.
 
 
-Para mais informações consulte a documentação na  wiki: [clique aqui](https://github.com/shellscriptx/bashsrc/wiki) (em construção)
+Para mais informações consulte a documentação: [clique aqui](https://github.com/shellscriptx/bashsrc/wiki) (em construção)
 
 ### Reportando falhas
 
