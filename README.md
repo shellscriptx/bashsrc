@@ -48,11 +48,13 @@ $ . ~/.profile
 > Obs: se tudo estiver 'ok' nenhuma mensagem de erro é apresentada.
 
 
+Para mais informações consulte a documentação: [bashsrc](https://github.com/shellscriptx/bashsrc/wiki) (em construção)
+
 ### Reportando falhas
 
 * E-mail: shellscriptx@gmail.com
 
-**Autor**
+### Créditos
 
 * Juliano Santos [SHAMAN]
 
