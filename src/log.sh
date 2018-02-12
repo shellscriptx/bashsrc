@@ -33,20 +33,20 @@ readonly LOG_LDATE=1
 readonly LOG_SDATE=2
 readonly LOG_HOUR=3
 readonly LOG_DATE=4
-readonly LOG_LONG=5
+readonly LOG_SDT=5
 readonly LOG_SECS=6
 
 var logfile_t struct_t
 var log_t struct_t
 
 log_t.__add__ \
-	code 	uint \
-	msg 	str \
-	flag 	uint
+		code 	uint \
+		msg 	str \
+		flag 	uint
 
 logfile_t.__add__ \
-	log 	log_t \
-    file 	str
+			log 	log_t \
+    		file 	str
 
 # func log.format <[flag]flag> <[str]msg> => [str]
 #
@@ -213,9 +213,9 @@ function log.outf()
 	return 0
 }
 
-# func log.warn <[logwarn_t]struct> => [str]
+# func log.warn <[log_t]struct> => [str]
 #
-# Exibe o log com os atributos da estrutura 'logwarn_t', retornando
+# Exibe o log com os atributos da estrutura 'log_t', retornando
 # 'code' status
 #
 function log.warn()
@@ -225,9 +225,9 @@ function log.warn()
 	return $($1.code)
 }
 
-# func log.warnf <[logwarn_t]struct> <[str]exp> ... => [str]
+# func log.warnf <[log_t]struct> <[str]exp> ... => [str]
 #
-# Exibe o log com os atributos da estrutura 'logwarn_t' substituindo
+# Exibe o log com os atributos da estrutura 'log_t' substituindo
 # os caracteres de formato por 'exp' (opcional), retornando 
 # 'code' status
 #
@@ -288,8 +288,8 @@ function log.__format()
 {
 	local msg flag code type fmt date logfile
 	
-	type=$(typeof $1)
-
+	type=$($1.__typeof__)
+	
 	case $type in
 		log_t)
 			msg=$($1.msg)
@@ -307,7 +307,7 @@ function log.__format()
 			error.trace def
 			return $?
 			;;
-	esac
+	esac 
 
 	[[ $msg ]] || { error.trace st "$1" 'msg' 'str' "$__ERR_STRUCT_VAL_MEMBER"; return $?; }
 	[[ $flag ]] || { error.trace st "$1" 'flag' 'uint' "$__ERR_STRUCT_VAL_MEMBER"; return $?; }
