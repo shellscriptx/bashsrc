@@ -123,7 +123,7 @@ function time.gmtime()
 	getopt.parse 2 "struct:time_t:+:$1" "seconds:uint:+:$2" "${@:3}"
 	
 	info_t=($(printf "%(%_m %_d %_H %_M %_S %_Y %_j %_w %z)T" $2))
-	
+
 	$1.tm_mon = ${info_t[0]}
 	$1.tm_mday = ${info_t[1]}
 	$1.tm_hour = ${info_t[2]}
