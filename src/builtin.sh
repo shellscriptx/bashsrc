@@ -115,7 +115,7 @@ __attr__
 '
 
 readonly __ARRAY_T=(
-iter_t
+var_t
 ptr_t
 struct_t
 map_t
