@@ -216,7 +216,12 @@ function error.trace()
 					echo "Estrutura: <$2>"
 					echo "Membro: [$3]"
 					echo "Tipo: $4"
-				;;
+					;;
+				objp)
+					echo "Objeto requerido: <$2>"
+					echo "Atributo: [$3]"
+					echo "Objeto: $4"
+					;;
 				*) return 1;;
 			esac
 		
