@@ -56,7 +56,6 @@ declare __ERR__ \
 
 shopt -s	extglob \
 			globasciiranges \
-			expand_aliases \
 			extquote \
 			sourcepath
 
