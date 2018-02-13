@@ -33,10 +33,9 @@ readonly __ERR_GETOPT_TOO_MANY_ARGS='excesso de argumentos'
 readonly __ERR_GETOPT_KEYWORD='operador/argumento requerido'
 readonly __ERR_GETOPT_ARG_NAME='nome do argumento inválido'
 readonly __ERR_GETOPT_ARG_REQUIRED='o argumento requerido'
-readonly __ERR_GETOPT_INDEX_OUT_RANGE='comprimento inválido: o índice está  fora do intervalo da matriz'
-readonly __ERR_GETOPT_OBJ_ARRAY='tipo incompatível: o objeto requerido é um array'
-readonly __ERR_GETOPT_OBJ_VETOR='tipo incompatível: o objeto requerido deve ser um "var" ou "vetor"'
+readonly __ERR_GETOPT_INDEX_OUT_RANGE='comprimento inválido: o índice está fora do intervalo da matriz'
 readonly __ERR_GETOPT_CTYPE='o tipo do argumento é inválido'
+readonly __ERR_GETOPT_OBJ_ATTR='objeto inválido: o atributo do objeto é incompatível com o tipo requerido'
 
 # func getopt.parse <[uint]nargs> <[str]name:type:flag:value> ... ${@:nargs+1} -> [bool]
 #
@@ -273,29 +272,38 @@ function getopt.parse()
 					if [[ ${__FLAG_TYPE[$ctype]} ]]; then
 						[[ $value =~ ${__FLAG_TYPE[$ctype]} ]]
 					elif [[ ${__INIT_OBJ_TYPE[${value%%[*}]} == ${ctype%%[*} ]]; then
-						if [[ $value =~ \[([^]]+)\]$ ]]; then
-							if [[ ${BASH_REMATCH[1]} -ge ${__INIT_OBJ_SIZE[${value%%[*}]} ]]; then
+					
+						local re_vet re_arr re_asz size tflag
+	
+						re_vet='^[^[]+$'
+						re_arr='^[^[]+\[\]$'
+						re_asz='^[^[]+\[([^]]+)\]$'
+
+						if		[[ $ctype =~ $re_vet ]]; then tflag=vector
+						elif	[[ $ctype =~ $re_arr ]]; then tflag=array
+						elif	[[ $ctype =~ $re_asz ]]; then tflag=szarray; size=${BASH_REMATCH[1]}
+						fi
+						
+						[[ $value =~ $re_asz ]] &&
+						[[ ${BASH_REMATCH[1]} -ge ${__INIT_OBJ_SIZE[${value%%[*}]} ]] && {
 								error.trace def  "$name" "$ctype" "$value" "$__ERR_GETOPT_INDEX_OUT_RANGE"
 								return $?
-							fi
-						elif [[ $ctype =~ ^[^[]+$ ]]; then
-							if [[ $value =~ ^[^[]+$ && ${__INIT_OBJ_ATTR[${value%%[*}]} != var ]]; then
-								error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_OBJ_VETOR"
-								return $?
-							fi
-						elif [[ $ctype =~ \[\]$ ]]; then
-							if 	[[ ${__INIT_OBJ_ATTR[${value%%[*}]} != array ]] ||
-								[[ $value =~ \[[^]]+\]$ ]]; then
-								error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_OBJ_ARRAY"
-								return $?
-							fi
-						elif [[ $ctype =~ \[([^]]+)\]$ ]]; then
-							if 	[[ ${BASH_REMATCH[1]} -ne ${__INIT_OBJ_SIZE[${value%%[*}]} ]] ||
-								[[ $value =~ \[[^]]+\]$ ]]; then
-								error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_INDEX_OUT_RANGE"
-								return $?
-							fi
-						fi
+						}
+	
+						case $tflag in
+							vector)		[[ $value =~ $re_vet ]] &&
+										[[ ${__INIT_OBJ_ATTR[${value%%[*}]} == var ]] ||
+										[[ $value =~ $re_asz && ${__INIT_OBJ_ATTR[${value%%[*}]} == array ]];;
+									
+							array)		[[ ${__INIT_OBJ_ATTR[${value%%[*}]} == array ]] &&
+										[[ $value =~ $re_vet ]];;
+
+							szarray)	[[ $size -eq ${__INIT_OBJ_SIZE[${value%%[*}]} ]] &&
+										[[ $value =~ $re_vet ]];;
+						esac || {
+							error.trace objp "$ctype" "$tflag" "$value" "$__ERR_GETOPT_OBJ_ATTR"
+							return $?
+						}
 					else
 						false
 					fi
