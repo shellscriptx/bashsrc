@@ -1844,7 +1844,7 @@ function source.__INIT__()
 		if ! [[ $type_name =~ ${__FLAG_TYPE[srctype]} ]]; then
 			error.trace def '' "${BASH_SOURCE[-2]}" "$type_name" "$__ERR_BUILTIN_TYPE"
 			return $?	
-		elif [[ $type_name =~ ^${init_types// /|}$ ]]; then
+		elif [[ $type_name == @(${init_types// /|}) ]]; then
 			error.trace src '' "${BASH_SOURCE[-2]}" "$type_name" "$__ERR_BUILTIN_TYPE_CONFLICT"
 			return $?
 		fi
