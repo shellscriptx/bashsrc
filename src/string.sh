@@ -1078,7 +1078,7 @@ function string.field()
 		for i in ${@:3}; do
 			echo -n "${field[$i]} "
 		done; echo
-	done <<< "$1"
+	done <<< "$1" 2>/dev/null
 
 	return 0
 }
