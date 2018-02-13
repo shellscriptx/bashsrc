@@ -2,51 +2,22 @@
 
 ![bashsrc](https://github.com/shellscriptx/bashsrc/blob/dev/bashsrc.png)
 
-### Dependências
+### Sobre
+
+O **bashsrc** é um projeto _open source_ distribuído em uma coleção de bibliotecas desenvolvidas em **shell script**, com um conjunto de funções úteis que fornece ao desenvolvedor um estilo de programação funcional com implementação de "tipos".
+
+O foco principal é a compatibilidade com o interpretador de comandos **BASH 4.3.0 (ou superior)**, cuja  funções são  desenvolvidas  utilizando  apenas  recursos  `built-in` e `coreutils`, evitando a utilização de dependências de pacotes externos que geram ‘coprocs’ durante a execução. Porém  alguns  critérios  serão levados em consideração para tal aplicação: _desempenho, viabilidade, compatibilidade, distribuição da  dependência_ entre outros, ficando  de responsabilidade do desenvolvedor verificar e reportar tais dependências se houverem.
+
+### Dependência
 
 |Pacote|Versão|Descrição|
 |-|-|-|
 |bash|4.3 (ou superior)|Interpretador de comandos BASH (Bourne-Again Shell).|
 
-### Ambiente
-
-Para utilizar quaisquer bibliotecas é necessário configurar previamente o  ambiente.  O bashsrc  utiliza  a variável `BASHSRC_PATH` onde é definido o diretório padrão contendo as bibliotecas/binários.
-
-### Configuração
-
-Realizando download do projeto:
-
-```
-$ git clone git@github.com:shellscriptx/bashsrc.git
-```
-
-Após o download copie a pasta do projeto para o diretório de sua preferência.
-
-Por padrão utilize o `$HOME` do seu usuário.
-```
-$ cp -r bashsrc/ ~
-```
-Defina  as  variáveis de ambiente inserindo-as no arquivo `~/.bashrc` ou `~/.profile`
-as linhas abaixo:
-```
-export BASHSRC_PATH=$HOME/bashsrc
-export PATH=$PATH:$BASHSRC_PATH/src
-export PATH=$PATH:$BASHSRC_PATH/bin
-```
-Carregando as configurações:
-```
-$ . ~/.bashrc
-```
-ou
-```
-$ . ~/.profile
-```
-> Obs: se tudo estiver 'ok' nenhuma mensagem de erro é apresentada.
-
-
 ### Documentação
 
-A documentação padrão está disponível no arquivo fonte de cada biblioteca e acessada pelo utilitário `bashsrc` via linha de comando e distribuído junto ao projeto.
+A  documentação  padrão  está disponível no arquivo fonte de cada biblioteca e que pode ser acessada pela utilitário [bashsrc](https://github.com/shellscriptx/bashsrc/wiki/Utilit%C3%A1rio) via linha de comando e distribuída junto ao  projeto.
+
 
 **Para mais informações consulte a documentação:** [clique aqui](https://github.com/shellscriptx/bashsrc/wiki) (em construção)
 
@@ -56,7 +27,7 @@ A documentação padrão está disponível no arquivo fonte de cada biblioteca e
 
 ### Créditos
 
-* Juliano Santos [SHAMAN]
+* Juliano Santos [(SHAMAN)](https://t.me/x_SHAMAN_x)
 
 **Comunidade**
 
