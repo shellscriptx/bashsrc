@@ -267,7 +267,6 @@ function getopt.parse()
 				dir) 		[[ -d $value ]] || { error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_DIR_NOT_FOUND"; return $?; };;
 				file) 		[[ -f $value ]] || { error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FILE_NOT_FOUND"; return $?; };;
 				path) 		[[ -e $value ]] || { error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_PATH_NOT_FOUND"; return $?; };;
-				fd) 		[[ -e /dev/fd/$value ]] || { error.trace def "$name" "$ctype" "$value" "$__ERR_GETOPT_FD_NOT_EXISTS"; return $?; };;
 				*)	
 					if [[ ${__FLAG_TYPE[$ctype]} ]]; then
 						[[ $value =~ ${__FLAG_TYPE[$ctype]} ]]
