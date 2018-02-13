@@ -19,7 +19,7 @@ O foco principal é a compatibilidade com o interpretador de comandos **BASH 4.3
 A  documentação  padrão  está disponível no arquivo fonte de cada biblioteca e que pode ser acessada pela utilitário [bashsrc](https://github.com/shellscriptx/bashsrc/wiki/Utilit%C3%A1rio) via linha de comando e distribuída junto ao  projeto.
 
 
-**Para mais informações consulte a documentação:** [clique aqui](https://github.com/shellscriptx/bashsrc/wiki) (em construção)
+**Para mais informações:** [clique aqui](https://github.com/shellscriptx/bashsrc/wiki) (em construção)
 
 ### Reportando falhas
 
