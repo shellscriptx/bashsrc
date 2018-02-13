@@ -605,7 +605,7 @@ function fnrange()
 function isobj()
 {
 	getopt.parse 1 "name:var:+:$1" ${@:2}
-	[[ -v $1 ]]
+	[[ ${__INIT_OBJ[${1%%[*}]} ]]
 	return $?
 }
 
@@ -1297,7 +1297,7 @@ function __typeof__()
 	return 0
 }
 
-# func len <[var]name> => [str]|[uint]
+# func __len__ <[var]name> => [str]|[uint]
 #
 # Retorna o índice/chave e o comprimento do elemento armazenado.
 #
