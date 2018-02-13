@@ -1113,11 +1113,33 @@ function builtin.__iter_cond_any_all()
 	return 0	
 }
 
-# func del <[var]varname> => [bool]
+# func del <[var]varname> ... => [bool]
 #
-# O mesmo que __del__.
+# Apaga da memória o objeto implementado. (não recursivo)
 #
-function del(){ __del__ "$@"; return $?; }
+function del()
+{
+	getopt.parse -1 "varname:var:+:$1" ... "${@:2}"
+
+	local var method vector cv c
+
+	for var in $@; do
+		for method in ${__INIT_OBJ_METHOD[$var]}; do
+			unset __STRUCT_VAL_MEMBERS[$method] \
+				  __STRUCT_MEMBER_TYPE[$method]
+		done
+		unset -f ${__INIT_OBJ_METHOD[$var]}
+		unset	__INIT_OBJ_METHOD[$var] \
+				__STRUCT_INIT[$var] \
+				__INIT_SRC_TYPES[$var] \
+				__INIT_OBJ_TYPE[$var] \
+				__INIT_OBJ[$var] \
+				__INIT_OBJ_SIZE[$var] \
+				__INIT_OBJ_ATTR[$var]
+	done || error.trace def
+
+	return 0
+}
 
 # func var <[varname]varname> ... <[type]typename>
 #
@@ -1215,9 +1237,10 @@ function var()
 	return 0
 }
 
+
 # func __del__ <[var]varname> ... => [bool]
 #
-# Apaga da memória os objetos implementados.
+# Apaga da memória os objetos implementados e seus elementos inclusive (somente array).
 #
 function __del__()
 {
@@ -1226,27 +1249,22 @@ function __del__()
 	local var method vector cv c
 
 	for var in $@; do
-		if [[ $var =~ ^([^[]+)\[([^]]+)\]$ ]]; then
-			var=${BASH_REMATCH[1]}
-			cv=${BASH_REMATCH[2]}
-		fi
-		for ((c=0; c < ${cv:-1}; c++)); do
-			[[ $cv ]] && vector=$var[$c]
+		cv=${__INIT_OBJ_SIZE[$var]}	
+		for ((c=0; c < cv; c++)); do
+			[[ ${__INIT_OBJ_ATTR[$var]} == array ]] && vector=$var[$c] || vector=''
 			for method in ${__INIT_OBJ_METHOD[${vector:-$var}]}; do
 				unset __STRUCT_VAL_MEMBERS[$method] \
 					  __STRUCT_MEMBER_TYPE[$method]
 			done
 			unset -f ${__INIT_OBJ_METHOD[${vector:-$var}]}
 			unset	__INIT_OBJ_METHOD[${vector:-$var}] \
-					__STRUCT_INIT[$var] \
-					__INIT_SRC_TYPES[$var]
+					__STRUCT_INIT[$var]
 		done 
 		unset	__INIT_OBJ_TYPE[$var] \
+				__INIT_SRC_TYPES[$var] \
 				__INIT_OBJ[$var] \
 				__INIT_OBJ_SIZE[$var] \
 				__INIT_OBJ_ATTR[$var]
-		cv=''
-		vector=''
 	done || error.trace def
 
 	return 0
