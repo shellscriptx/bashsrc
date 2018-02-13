@@ -47,9 +47,10 @@ cpuinfo_t.__add__ \
 	clflush_size	uint \
 	address_size	str
 
-# func cpu.getinfo <[cpuinfo_t[]]struct> => [uint]
+# func cpu.getinfo <[cpuinfo_t[]]struct> => [bool]
 #
 # Obtem as informações da cpu e salva no array implementado por 'cpuinfo_t'
+# Retorna 'true' para sucesso, caso contrário 'false.'
 #
 # Exemplo:
 #
