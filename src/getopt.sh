@@ -219,7 +219,7 @@ function getopt.parse()
 {
 	local name ctype flag value flags attr param app vargs lparam rep re
 	
-	if ! [[ $1 =~ ${__FLAG_TYPE[getopt_nargs]} ]]; then
+	if ! [[ $1 =~ ${__FLAG_IN[getopt_nargs]} ]]; then
 		error.trace def "nargs" "int" "$1" "$__ERR_GETOPT_TYPE_ARG 'int'"
 		return $?
 	elif [[ $1 -eq -1 ]]; then
@@ -244,13 +244,13 @@ function getopt.parse()
 			continue
 		fi
 		
-		if ! [[ $name =~ ${__FLAG_TYPE[getopt_pname]} ]]; then
+		if ! [[ $name =~ ${__FLAG_IN[getopt_pname]} ]]; then
 			error.trace def "name" 'str' "$name" "$__ERR_GETOPT_ARG_NAME"
 			return $?
-		elif ! [[ $ctype =~ ${__FLAG_TYPE[getopt_ctype]} ]]; then
+		elif ! [[ $ctype =~ ${__FLAG_IN[getopt_ctype]} ]]; then
 			error.trace def  "ctype" "str" "$ctype" "$__ERR_GETOPT_CTYPE"
 			return $?	
-		elif ! [[ $flag =~ ${__FLAG_TYPE[getopt_flag]} ]]; then
+		elif ! [[ $flag =~ ${__FLAG_IN[getopt_flag]} ]]; then
 			error.trace def "flag" 'str' "$flag" "$__ERR_GETOPT_FLAG"
 			return $?
 		elif [[ $flag == + && ! $value ]]; then
@@ -273,33 +273,29 @@ function getopt.parse()
 						[[ $value =~ ${__FLAG_TYPE[$ctype]} ]]
 					elif [[ ${__INIT_OBJ_TYPE[${value%%[*}]} == ${ctype%%[*} ]]; then
 					
-						local re_vet re_arr re_asz size tflag
+						local size tflag
 	
-						re_vet='^[^[]+$'
-						re_arr='^[^[]+\[\]$'
-						re_asz='^[^[]+\[([^]]+)\]$'
-
-						if		[[ $ctype =~ $re_vet ]]; then tflag=vector
-						elif	[[ $ctype =~ $re_arr ]]; then tflag=array
-						elif	[[ $ctype =~ $re_asz ]]; then tflag=szarray; size=${BASH_REMATCH[1]}
+						if		[[ $ctype =~ ${__FLAG_IN[var]} ]]; then tflag=var
+						elif	[[ $ctype =~ ${__FLAG_IN[array]} ]]; then tflag=array
+						elif	[[ $ctype =~ ${__FLAG_IN[szarray]} ]]; then tflag=szarray; size=${BASH_REMATCH[1]}
 						fi
 						
-						[[ $value =~ $re_asz ]] &&
+						[[ $value =~ ${__FLAG_IN[szarray]} ]] &&
 						[[ ${BASH_REMATCH[1]} -ge ${__INIT_OBJ_SIZE[${value%%[*}]} ]] && {
 								error.trace def  "$name" "$ctype" "$value" "$__ERR_GETOPT_INDEX_OUT_RANGE"
 								return $?
 						}
 	
 						case $tflag in
-							vector)		[[ $value =~ $re_vet ]] &&
+							var)		[[ $value =~ ${__FLAG_IN[var]} ]] &&
 										[[ ${__INIT_OBJ_ATTR[${value%%[*}]} == var ]] ||
-										[[ $value =~ $re_asz && ${__INIT_OBJ_ATTR[${value%%[*}]} == array ]];;
+										[[ $value =~ ${__FLAG_IN[szarray]} && ${__INIT_OBJ_ATTR[${value%%[*}]} == array ]];;
 									
 							array)		[[ ${__INIT_OBJ_ATTR[${value%%[*}]} == array ]] &&
-										[[ $value =~ $re_vet ]];;
+										[[ $value =~ ${__FLAG_IN[var]} ]];;
 
 							szarray)	[[ $size -eq ${__INIT_OBJ_SIZE[${value%%[*}]} ]] &&
-										[[ $value =~ $re_vet ]];;
+										[[ $value =~ ${__FLAG_IN[var]} ]];;
 						esac || {
 							error.trace objp "$ctype" "$tflag" "$value" "$__ERR_GETOPT_OBJ_ATTR"
 							return $?
