@@ -49,7 +49,7 @@ cpuinfo_t.__add__ \
 
 # func cpu.getinfo <[cpuinfo_t[]]struct> => [bool]
 #
-# Obtem as informações da cpu e salva no array implementado por 'cpuinfo_t'
+# Obtem as informações do processador e salva no array implementado por 'cpuinfo_t'.
 # Retorna 'true' para sucesso, caso contrário 'false.'
 #
 # Exemplo:
@@ -58,8 +58,7 @@ cpuinfo_t.__add__ \
 #
 # source cpu.sh
 #
-# # Implementa um array de 4 elementos com 'cpuinfo_t' para
-# # armazenar as informações dos 4 núcleos do processador.
+# # Implementa um array de 4 elementos.
 # var info[4] cpuinfo_t
 #
 # Obtem as informações.
