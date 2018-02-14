@@ -1204,7 +1204,7 @@ function var()
 					proto='%s(){ %s "%s" "$@"; return $?; }' ||
 					proto='%s(){ %s "${%s}" "$@"; return $?; }'
 					
-					printf -v proto "$proto" ${vet:-$var}.${fn##*.} $fn ${vet:-$var}
+					printf -v proto "$proto" ${vet:-$var}.$objm $fn ${vet:-$var}
 				fi
 				eval "$proto" || error.trace def
 				__INIT_OBJ_METHOD[${vet:-$var}]+="${vet:-$var}.$objm "
