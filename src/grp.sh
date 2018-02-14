@@ -65,17 +65,18 @@ function grp.getgrnam(){
 
 function grp.__get_grinfo()
 {
-	local name pass gid mem
+	local name pass gid mem flag
 
 	while IFS=':' read name pass gid mem; do
 		case $1 in
 			grall) echo "$name";;
-			grgid|grnam) [[ $3 == @($gid|$name) ]] && {
-							$2.gr_name = "$name"
-							$2.gr_passwd = "$pass"
-							$2.gr_gid = "$gid"
-							$2.gr_mem = "$mem"
-							break
+			grgid|grnam)	[[ $1 == grgid ]] && flag=$gid
+							[[ $3 == ${flag:-$name} ]] && {
+								$2.gr_name = "$name"
+								$2.gr_passwd = "$pass"
+								$2.gr_gid = "$gid"
+								$2.gr_mem = "$mem"
+								break
 							};;
 		esac
 	done < /etc/group 2>/dev/null || {
