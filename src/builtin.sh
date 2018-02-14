@@ -105,7 +105,7 @@ __app__
 __sum__
 '
 
-__TYPE__[object_t]='
+__TYPE__[obj_t]='
 __del__
 __typeof__
 __sizeof__
@@ -190,6 +190,7 @@ readonly -A __FLAG_IN=(
 [var]='^[^[]+$'
 [array]='^[^[]+\[\]$'
 [szarray]='^[^[]+\[([0-9]|[1-9][0-9]+)\]$'
+[farray]='^([^[]+)\[([^]]+)\]$'
 )
 
 # func has <[str]exp1> on <[str]exp2> => [bool]
@@ -1127,19 +1128,23 @@ function var()
 {
 	getopt.parse -1 "varname:varname:+:$1" ... "${@:1:$((${#@}-1))}"
 	
-	local type method proto func_ref func_type func_call var src_types
-	local vector cv c narr object_t attr init objmethod
+	local type fn proto fnref fntype var types
+	local vet cv c narr obj attr init objm imp
 
 	type=${@: -1}
-	src_types=${!__INIT_SRC_TYPES[@]}
-	narr=${__ARRAY_T[@]}
-	object_t=(${__INIT_SRC_TYPES[object_t]})
-	object_t=${object_t[@]}
 
-	if [[ $type != @(${src_types// /|}) ]]; then
+	printf -v types '%s|' ${!__INIT_SRC_TYPES[@]}
+	printf -v narr '%s|' ${__ARRAY_T[@]}
+	printf -v obj '%s|' ${__INIT_SRC_TYPES[obj_t]}
+	
+	types=${types%|}
+	obj=${obj%|}
+	narr=${narr%|}
+	
+	if [[ $type != @($types) ]]; then
 		error.trace def 'type' 'type' "$type" "$__ERR_BUILTIN_SRC_TYPE"
 		return $?
-	elif [[ $type == object_t ]]; then
+	elif [[ $type == obj_t ]]; then
 		error.trace def 'type' 'type' "$type" "$__ERR_BUILTIN_IMPLICIT_TYPE"
 		return $?	
 	fi
@@ -1150,13 +1155,13 @@ function var()
 		attr=''
 		init=''
 	
-		if [[ $var =~ ^([^[]+)\[([^]]+)\]$ ]]; then
+		if [[ $var =~ ${__FLAG_IN[farray]} ]]; then
 			var=${BASH_REMATCH[1]}
 			cv=${BASH_REMATCH[2]}
 			attr=array
 		fi
 
-		if [[ $attr && $type == @(${narr// /|}) ]]; then
+		if [[ $attr && $type == @($narr) ]]; then
 			error.trace def 'varname' "$type" "$var" "$__ERR_BUILTIN_TYPE_ARRAY"
 			return $?
 		elif [[ ${__INIT_OBJ[$var]} ]]; then
@@ -1173,36 +1178,36 @@ function var()
 		fi
 
 		for ((c=0; c < ${cv:-1}; c++)); do
-			for method in ${__INIT_SRC_TYPES[$type]} ${__INIT_SRC_TYPES[object_t]}; do
+			for fn in ${__INIT_SRC_TYPES[$type]} ${__INIT_SRC_TYPES[obj_t]}; do
 
-				[[ $init && $method == @(${object_t// /|}) ]] && continue
-				[[ $attr && $method != @(${object_t// /|}) ]] && vector=$var[$c] || vector=''
-				[[ ${__INIT_OBJ_TYPE[$type]} == struct_t ]] && objmethod=${method#*.} || objmethod=${method##*.}
+				[[ $init && $fn == @($obj) ]] && continue
+				[[ $attr && $fn != @($obj) ]] && vet=$var[$c] || vet=''
+				[[ ${__INIT_OBJ_TYPE[$type]} == struct_t ]] && objm=${fn#*.} || objm=${fn##*.}
 				
-				if declare -Fp ${vector:-$var}.$objmethod &>/dev/null; then
-					error.trace imp "" "${vector:-$var}" "$objmethod" "$__ERR_BUILTIN_METHOD_CONFLICT"
+				if declare -Fp ${vet:-$var}.$objm &>/dev/null; then
+					error.trace imp "" "${vet:-$var}" "$objm" "$__ERR_BUILTIN_METHOD_CONFLICT"
 					return $?
-				elif [[ $method == @(${object_t// /|}) ]]; then
-					printf -v proto '%s.%s(){ %s "%s"; return $?; }' "$var" "$method" "$method" "$var"
+				elif [[ $fn == @($obj) ]]; then
+					printf -v proto '%s.%s(){ %s "%s"; return $?; }' "$var" "$fn" "$fn" "$var"
 				elif [[ ${__INIT_OBJ_TYPE[$type]} == struct_t ]]; then
 					printf -v proto '%s.%s(){ 
 										getopt.parse 2 "=:keyword:-:$1" "value:%s:-:$2" "${@:3}"; 
 										[[ -n $1 ]] && __STRUCT_VAL_MEMBERS[$FUNCNAME]=$2 || 
 										echo "${__STRUCT_VAL_MEMBERS[$FUNCNAME]}"; 
 										return 0;
-								 		}' "${vector:-$var}" "$objmethod" "${__STRUCT_MEMBER_TYPE[$type.$objmethod]}"
+								 		}' "${vet:-$var}" "$objm" "${__STRUCT_MEMBER_TYPE[$type.$objm]}"
 				else
-					func_type=$(declare -fp $method 2>/dev/null)
-					func_ref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|${src_types// /|}):[+-]:[^\"']+[\"']"
+					fntype=$(declare -fp $fn 2>/dev/null)
+					fnref="getopt\.parse\s+-?[0-9]+\s+[\"'][^:]+:(var|map|array|func|$types):[+-]:[^\"']+[\"']"
 		
-					[[ $func_type =~ $func_ref ]] && 
+					[[ $fntype =~ $fnref ]] && 
 					proto='%s(){ %s "%s" "$@"; return $?; }' ||
 					proto='%s(){ %s "${%s}" "$@"; return $?; }'
 					
-					printf -v proto "$proto" ${vector:-$var}.${method##*.} $method ${vector:-$var}
+					printf -v proto "$proto" ${vet:-$var}.${fn##*.} $fn ${vet:-$var}
 				fi
 				eval "$proto" || error.trace def
-				__INIT_OBJ_METHOD[${vector:-$var}]+="${vector:-$var}.$objmethod "
+				__INIT_OBJ_METHOD[${vet:-$var}]+="${vet:-$var}.$objm "
 			done
 			init=1
 		done
@@ -1224,7 +1229,7 @@ function __del__()
 {
 	getopt.parse -1 "varname:var:+:$1" ... "${@:2}"
 
-	local var method vet cv c
+	local var fn vet cv c
 
 	for var in $@; do
 		[[ ${__INIT_OBJ[$var]} ]] || continue
@@ -1232,9 +1237,9 @@ function __del__()
 		cv=${__INIT_OBJ_SIZE[$var]}
 		for ((c=0; c < cv; c++)); do
 			vet=${vet:+$var[$c]}
-			for method in ${__INIT_OBJ_METHOD[${vet:-$var}]}; do
-				unset __STRUCT_VAL_MEMBERS[$method] \
-					  __STRUCT_MEMBER_TYPE[$method]
+			for fn in ${__INIT_OBJ_METHOD[${vet:-$var}]}; do
+				unset __STRUCT_VAL_MEMBERS[$fn] \
+					  __STRUCT_MEMBER_TYPE[$fn]
 			done
 			unset -f ${__INIT_OBJ_METHOD[${vet:-$var}]}
 			unset	__INIT_OBJ_METHOD[${vet:-$var}] \
@@ -1246,6 +1251,7 @@ function __del__()
 				__INIT_OBJ[$var] \
 				__INIT_OBJ_SIZE[$var] \
 				__INIT_OBJ_ATTR[$var]
+
 	done || error.trace def
 
 	return 0
@@ -1270,7 +1276,13 @@ function __attr__()
 function __imp__()
 {
 	getopt.parse 1 "object:var:+:$1" ${@:2}
-	echo "${__INIT_OBJ_METHOD[${1%%[*}]}"
+
+	local imp
+	for imp in 	${__INIT_SRC_TYPES[${__INIT_OBJ_TYPE[${1%%[*}]}]} \
+				${__INIT_SRC_TYPES[obj_t]}; do
+		echo "$1.${imp##*.}"
+	done
+
 	return $?
 }
 
@@ -1826,9 +1838,10 @@ function __iter__()
 
 function source.__INIT__()
 {
-	local attr type_name method init_types func pkg err deps
+	local attr type fn types func pkg err deps
 
-	init_types=${!__INIT_SRC_TYPES[@]}
+	printf -v types '%s|' ${!__INIT_SRC_TYPES[@]}
+	types=${types%|}
 	
 	for pkg in $__DEPS__; do
 		command -v $pkg &>/dev/null || { err=1; deps+="$pkg, "; }
@@ -1844,22 +1857,22 @@ function source.__INIT__()
 		return $?
 	fi	
 
-	for type_name in ${!__TYPE__[@]}; do
-		if ! [[ $type_name =~ ${__FLAG_TYPE[srctype]} ]]; then
-			error.trace def '' "${BASH_SOURCE[-2]}" "$type_name" "$__ERR_BUILTIN_TYPE"
+	for type in ${!__TYPE__[@]}; do
+		if ! [[ $type =~ ${__FLAG_TYPE[srctype]} ]]; then
+			error.trace def '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE"
 			return $?	
-		elif [[ $type_name == @(${init_types// /|}) ]]; then
-			error.trace src '' "${BASH_SOURCE[-2]}" "$type_name" "$__ERR_BUILTIN_TYPE_CONFLICT"
+		elif [[ $type == @($types) ]]; then
+			error.trace src '' "${BASH_SOURCE[-2]}" "$type" "$__ERR_BUILTIN_TYPE_CONFLICT"
 			return $?
 		fi
-		for method in ${__TYPE__[$type_name]}; do
-			if ! declare -Fp $method &>/dev/null; then
-				error.trace imp '' "$type_name" "$method" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
+		for fn in ${__TYPE__[$type]}; do
+			if ! declare -Fp $fn &>/dev/null; then
+				error.trace imp '' "$type" "$fn" "$__ERR_BUILTIN_METHOD_NOT_FOUND"
 				return $?
 			fi
 		done
-		__INIT_SRC_TYPES[$type_name]=${__TYPE__[$type_name]}
-		unset __TYPE__[$type_name] || error.trace def
+		__INIT_SRC_TYPES[$type]=${__TYPE__[$type]}
+		unset __TYPE__[$type] || error.trace def
 	done
 
 	while IFS=' ' read _ _ func; do readonly -f $func; done < <(declare -Fp)
