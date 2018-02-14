@@ -32,18 +32,22 @@ elif [[ ! -d "$BASHSRC_PATH" ]]; then
 	exit 1
 fi
 
-declare -A pattern=(
+declare -A re=(
 [funcname]='^\s*[a-zA-Z0-9_.]+'
 [varname]='(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*'
 [comm]='^\s*#\s*\*'
 [func]='^\s*#\s*func\s+'
 [ntype]='(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]'
-[type]="^[^#]*\s*__TYPE__\[(${pattern[ntype]})\]"
-[objtype]='^[^#]*\s*__TYPE__\[([^]]+)\]='
+[type]="^[^#]*__TYPE__\[(${re[ntype]})\]"
+[objtype]='^[^#]*__TYPE__\[([^]]+)\]='
+[sttype]='^[^#]*var\s+(\w+_[tT])\s+struct_t'
 [const]='^\s*(readonly|declare -[^r]*r[^r]*)\s+[a-zA-Z][a-zA-Z0-9_]+='
-[struct]="^[^#]*\s*var\s+(${pattern[varname]})\s+struct_t"
+[struct]="^[^#]*var\s+(${re[ntype]})\s+struct_t"
 [nocomm]='^[^#]+'
-[spc]='^\s*$'
+[spc]='\s*'
+[stadd]='\.__add__\s+'
+[var]='[^#]*var\s+'
+[st]='\s+struct_t'
 )
 
 function usage()
@@ -68,6 +72,7 @@ function usage()
 	echo
 	echo "Desenvolvido por: Juliano Santos [SHAMAN]"
 	echo "Reportar falhas: <shellscriptx@gmail.com>"
+	echo "Wiki: <https://github.com/shellscriptx/bashsrc/wiki>"
 	exit 1
 }
 
@@ -76,7 +81,7 @@ function view_doc()
 	local srcname=(${1/./ })
 	local srcfile=${srcname[0]}.sh
 	local srcdir=$BASHSRC_PATH/src
-	local line match prefix ver
+	local line match prefix ver st stname
 
 	if [[ ${#@} -eq 0 ]]; then
 		echo "$BASENAME: requer nome da biblioteca" 1>&2
@@ -91,20 +96,22 @@ function view_doc()
 	
 	if [[ ${#srcname[@]} -eq 1 ]]; then
 		while read line; do
-			if [[ $line =~ ${pattern[comm]} ]]; then echo "${line#+(#)}"
-			elif [[ $line =~ ${pattern[func]} ]]; then echo "${line#+(#)}"
-			elif [[ $line =~ ${pattern[type]} ]]; then echo "type ${BASH_REMATCH[1]}"
-			elif [[ $line =~ ${pattern[const]} ]]; then echo "$line"
-			elif [[ $line =~ ${pattern[struct]} ]]; then echo "struct ${BASH_REMATCH[1]}"
+			if [[ $line =~ ${re[comm]} ]]; then echo "${line#+(#)}"
+			elif [[ $line =~ ${re[func]} ]]; then echo "${line#+(#)}"
+			elif [[ $line =~ ${re[type]} ]]; then echo "type ${BASH_REMATCH[1]}"
+			elif [[ $line =~ ${re[const]} ]]; then echo "$line"
+			elif [[ $line =~ ${re[struct]} ]]; then echo "struct ${BASH_REMATCH[1]}"
 			fi
 		done < "$srcdir/$srcfile"
 	else
-		prefix=${1#builtin.}; prefix=${prefix##*/}
+		prefix=${1#builtin.}; prefix=${prefix##*+(${re[ntype]})${re[st]}}
 		while read line; do
-			[[ $ver -eq 1 && $line =~ ${pattern[nocomm]} ]] || 
-			[[ $ver -eq 2 && $line =~ ${pattern[spc]} ]] && break
+			[[ $ver -eq 1 && $line =~ ${re[nocomm]} ]] || 
+			[[ $ver -eq 2 && $line =~ ^${re[spc]}$ ]] && break
+			[[ $line =~ ^${re[var]}(${prefix#*.})${re[st]} ]] && 
+			stname=${BASH_REMATCH[1]}
 
-			if [[ $line =~ ${pattern[func]}${prefix} ]]; then
+			if [[ $line =~ ${re[func]}${prefix} ]]; then
 				ver=1; match=1
 			elif [[ $line =~ __TYPE__\[(${1#*.})\] ]]; then
 				echo "type ${BASH_REMATCH[1]}"
@@ -117,11 +124,16 @@ function view_doc()
 				echo
 				ver=2
 				match=1
+			elif [[ $line =~ ^${re[spc]}(${stname}${re[stadd]})(.*)$ ]]; then
+				printf -v st '%s ' ${BASH_REMATCH[2]}
+				echo -e "struct $stname\n"
+				printf '%-15s %s\n' 'Membro' 'Tipo' '' '' $st
+				match=1
 			fi
 			
 			case $ver in
 				1) 	echo "${line#+(#)}";;
-				2)	[[ $line =~ ${pattern[funcname]} ]] && 
+				2)	[[ $line =~ ${re[funcname]} ]] && 
 					! [[ $line =~ __TYPE__ ]] && echo "S.${line##*.}";;
 			esac
 		done < "$srcdir/$srcfile"
@@ -141,7 +153,9 @@ function check_conflicts()
 
 	while read srcfile; do
 		while read line; do
-			[[ "$line" =~ ${pattern[objtype]} ]] && echo "${BASH_REMATCH[1]}|$srcfile"
+			[[ "$line" =~ ${re[objtype]} ]] ||
+			[[ "$line" =~ ${re[sttype]} ]] && 
+			echo "${BASH_REMATCH[1]}|$srcfile"
 		done < "$srcfile"
 	done < <(list_sources) | sort -d -t'|' -k1 | while read cur; do
 		if [[ "${old%|*}" == "${cur%|*}" ]]; then
@@ -168,6 +182,7 @@ function list_sources()
 			if [[ -d "$file" ]]; then
 				list_sources "$file"
 			else
+				[[ $file =~ \.sh$ ]] &&
 				echo "$file"
 			fi
 		done
