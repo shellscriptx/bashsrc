@@ -16,6 +16,7 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
+#
 
 readonly BASENAME=${0##*/}
 readonly BASHSRC_VERSION=1.0.0
