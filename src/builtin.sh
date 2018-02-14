@@ -1113,33 +1113,11 @@ function builtin.__iter_cond_any_all()
 	return 0	
 }
 
-# func del <[var]varname> ... => [bool]
+# func del <[varname]varname> ... => [bool]
 #
-# Apaga da memória o objeto implementado. (não recursivo)
+# O mesmo que __del__.
 #
-function del()
-{
-	getopt.parse -1 "varname:var:+:$1" ... "${@:2}"
-
-	local var method vector cv c
-
-	for var in $@; do
-		for method in ${__INIT_OBJ_METHOD[$var]}; do
-			unset __STRUCT_VAL_MEMBERS[$method] \
-				  __STRUCT_MEMBER_TYPE[$method]
-		done
-		unset -f ${__INIT_OBJ_METHOD[$var]}
-		unset	__INIT_OBJ_METHOD[$var] \
-				__STRUCT_INIT[$var] \
-				__INIT_SRC_TYPES[$var] \
-				__INIT_OBJ_TYPE[$var] \
-				__INIT_OBJ[$var] \
-				__INIT_OBJ_SIZE[$var] \
-				__INIT_OBJ_ATTR[$var]
-	done || error.trace def
-
-	return 0
-}
+function del(){ __del__ "$@"; return $?; }
 
 # func var <[varname]varname> ... <[type]typename>
 #
@@ -1246,20 +1224,23 @@ function __del__()
 {
 	getopt.parse -1 "varname:var:+:$1" ... "${@:2}"
 
-	local var method vector cv c
+	local var method vet cv c
 
 	for var in $@; do
-		cv=${__INIT_OBJ_SIZE[$var]}	
+		[[ ${__INIT_OBJ[$var]} ]] || continue
+		[[ ${__INIT_OBJ_ATTR[$var]} == array ]] && vet=1 || vet=''
+		cv=${__INIT_OBJ_SIZE[$var]}
 		for ((c=0; c < cv; c++)); do
-			[[ ${__INIT_OBJ_ATTR[$var]} == array ]] && vector=$var[$c] || vector=''
-			for method in ${__INIT_OBJ_METHOD[${vector:-$var}]}; do
+			vet=${vet:+$var[$c]}
+			for method in ${__INIT_OBJ_METHOD[${vet:-$var}]}; do
 				unset __STRUCT_VAL_MEMBERS[$method] \
 					  __STRUCT_MEMBER_TYPE[$method]
 			done
-			unset -f ${__INIT_OBJ_METHOD[${vector:-$var}]}
-			unset	__INIT_OBJ_METHOD[${vector:-$var}] \
+			unset -f ${__INIT_OBJ_METHOD[${vet:-$var}]}
+			unset	__INIT_OBJ_METHOD[${vet:-$var}] \
 					__STRUCT_INIT[$var]
-		done 
+		done
+		unset -f ${__INIT_OBJ_METHOD[$var]} 
 		unset	__INIT_OBJ_TYPE[$var] \
 				__INIT_SRC_TYPES[$var] \
 				__INIT_OBJ[$var] \

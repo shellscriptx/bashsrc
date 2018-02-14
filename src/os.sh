@@ -44,7 +44,7 @@ os.file.readable
 os.file.rewind
 '
 
-declare -a __OS_FD_OPEN
+declare -A __OS_FD_OPEN
 
 # Limite máximo de arquivos abertos
 readonly __FD_MAX=1024
@@ -530,8 +530,7 @@ function os.open()
 		return $?
 	fi
 
-	__OS_FD_OPEN[$fd]="$1|$file|$mode|$fd|0"
-	eval "$1=$fd"
+	__OS_FD_OPEN[$1]="$file|$mode|$fd|0"
 
 	return 0
 }
@@ -544,8 +543,9 @@ function os.open()
 function os.file.isatty()
 {
 	getopt.parse 1 "file:file_t:+:$1" ${@:2}
-	local -n __fd=$1
-	[[ -t /dev/fd/$__fd ]]
+	local fd
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+	[[ -t /dev/fd/$fd ]]
 	return $?
 }
 
@@ -556,8 +556,9 @@ function os.file.isatty()
 function os.file.writable()
 {
 	getopt.parse 1 "file:file_t:+:$1" ${@:2}
-	local -n __fd=$1
-	[[ -w /dev/fd/$__fd ]]
+	local fd
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+	[[ -w /dev/fd/$fd ]]
 	return $?
 }
 
@@ -568,8 +569,9 @@ function os.file.writable()
 function os.file.readable()
 {
 	getopt.parse 1 "file:file_t:+:$1" ${@:2}
-	local -n __fd=$1
-	[[ -r /dev/fd/$__fd ]]
+	local fd
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+	[[ -r /dev/fd/$fd ]]
 	return $?
 }
 
@@ -580,11 +582,9 @@ function os.file.readable()
 function os.file.size()
 {
 	getopt.parse 1 "file:file_t:+:$1" "${@:2}"
-
-	local __filename
-	local -n __fd=$1
-	IFS='|' read _ __filename _ _ _ <<< "${__OS_FD_OPEN[$__fd]}"
-	stat -c "%s" "$__filename"
+	local file
+	IFS='|' read file _ _ _ <<< "${__OS_FD_OPEN[$1]}"
+	stat -c "%s" "$file"
 	return $?
 }
 
@@ -596,10 +596,9 @@ function os.file.name()
 {
 	getopt.parse 1 "file:file_t:+:$1" ${@:2}
 
-	local __filename
-	local -n __fd=$1
-	IFS='|' read _ __filename _ _ _ <<< "${__OS_FD_OPEN[$__fd]}"
-	echo "$__filename"
+	local file
+	IFS='|' read file _ _ _ <<< "${__OS_FD_OPEN[$1]}"
+	echo "$file"
 	return $?
 }
 
@@ -614,11 +613,10 @@ function os.file.name()
 function os.file.mode()
 {
 	getopt.parse 1 "file:file_t:+:$1" ${@:2}
-	
-	local __mode
-	local -n __fd=$1
-	IFS='|' read _ _ __mode _ _ <<< "${__OS_FD_OPEN[$__fd]}"
-	echo "$__mode"
+
+	local mode	
+	IFS='|' read _ mode _ _ <<< "${__OS_FD_OPEN[$1]}"
+	echo "$mode"
 	return $?
 }
 
@@ -645,12 +643,10 @@ function os.file.stat()
 {
 	getopt.parse 1 "file:file_t:+:$1" "${@:2}"
 	
-	local __filename
-	local -n __fd=$1
-	IFS='|' read _ __filename _ _ _ <<< "${__OS_FD_OPEN[$__fd]}"
-
-	[[ -d "$__filename" ]]
-	stat --format="%A|%a|%G|%U|%g|%u|%s|%y|%Y|$?" "$__filename"
+	local file
+	IFS='|' read file _ _ _ <<< "${__OS_FD_OPEN[$1]}"
+	[[ -d "$file" ]]
+	stat --format="%A|%a|%G|%U|%g|%u|%s|%y|%Y|$?" "$file"
 	return $?
 }
 
@@ -662,12 +658,10 @@ function os.file.fd()
 {
 	getopt.parse 1 "file:file_t:+:$1" ${@:2}
 	
-	local __nfd
-	local -n __fd=$1
-	IFS='|' read _ _ _ __nfd _ <<< "${__OS_FD_OPEN[$__fd]}"
-	echo "$__nfd"
-
-	return 0
+	local fd
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+	echo "$fd"
+	return $?
 }
 
 # func os.file.readlines <[file_t]file> => [str]
@@ -678,21 +672,21 @@ function os.file.readlines()
 {
 	getopt.parse 1 "file:file_t:+:$1" ${@:2}
 	
-	local __line
-	local __bytes=0
-	local -n __fd=$1
-	
-	if ! while read __line; do
-		__bytes=$((__bytes+${#__line}))
-		echo "$__line"
-	done <&$__fd 2>/dev/null; then
-		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_READ '$__fd'"
+	local fd line bytes=0
+
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+
+	if ! while read line; do
+		bytes=$((bytes+${#line}))
+		echo "$line"
+	done <&$fd 2>/dev/null; then
+		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_READ '$fd'"
 		return $?
 	fi
 	
-	__OS_FD_OPEN[$__fd]="${__OS_FD_OPEN[$__fd]%|*}|$((${__OS_FD_OPEN[$__fd]##*|}+$__bytes))"
+	__OS_FD_OPEN[$1]="${__OS_FD_OPEN[$1]%|*}|$((${__OS_FD_OPEN[$1]##*|}+$bytes))"
 
-	return 0
+	return $?
 }
 
 # func os.file.readline <[file_t]file> => [str]
@@ -719,18 +713,18 @@ function os.file.readlines()
 function os.file.readline()
 {
 	getopt.parse 1 "file:file_t:+:$1" ${@:2}
-	
-	local __line
-	local -n __fd=$1
 
-	if ! read __line <&$__fd 2>/dev/null; then
-		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_READ '$__fd'"
+	local fd line	
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+
+	if ! read line <&$fd 2>/dev/null; then
+		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_READ '$fd'"
 		return $?
 	fi
 
-	__OS_FD_OPEN[$__fd]="${__OS_FD_OPEN[$__fd]%|*}|$((${__OS_FD_OPEN[$__fd]##*|}+${#__line}))"
+	__OS_FD_OPEN[$1]="${__OS_FD_OPEN[$1]%|*}|$((${__OS_FD_OPEN[$1]##*|}+${#line}))"
 
-	echo "$__line"
+	echo "$line"
 
 	return 0
 }
@@ -758,23 +752,23 @@ function os.file.read()
 {
 	getopt.parse 2 "file:file_t:+:$1" "bytes:uint:+:$2" ${@:3}
 	
-	local __ch	
-	local __bytes=0
-	local -n __fd=$1
+	local fd ch bytes=0
+
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
 
 	(($2 == 0)) && return 0	
 
-	if ! while read -N1 __ch; do
-		echo -n "${__ch:- }"
-		(($((++__bytes)) == $2)) && break
-	done <&$__fd 2>/dev/null; then
-		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_READ '$__fd'"
+	if ! while read -N1 ch; do
+		echo -n "${ch:- }"
+		(($((++bytes)) == $2)) && break
+	done <&$fd 2>/dev/null; then
+		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_READ '$fd'"
 		return $?
 	fi
 
 	echo
 	
-	__OS_FD_OPEN[$__fd]="${__OS_FD_OPEN[$__fd]%|*}|$((${__OS_FD_OPEN[$__fd]##*|}+$__bytes))"
+	__OS_FD_OPEN[$1]="${__OS_FD_OPEN[$1]%|*}|$((${__OS_FD_OPEN[$1]##*|}+$bytes))"
 
 	return 0
 }
@@ -788,10 +782,12 @@ function os.file.writeline()
 {
 	getopt.parse 2 "file:file_t:+:$1" "exp:str:-:$2" ${@:3}
 
-	local -n __fd=$1
-	
-	if ! echo "$2" >&$__fd 2>/dev/null; then
-		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_WRITE '$__fd'"
+	local fd
+
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+
+	if ! echo "$2" >&$fd 2>/dev/null; then
+		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_WRITE '$fd'"
 		return $?
 	fi
 	
@@ -823,12 +819,14 @@ function os.file.write()
 {
 	getopt.parse 3 "file:file_t:+:$1" "exp:str:-:$2" "bytes:uint:+:$3" ${@:4}
 
-	local -n __fd=$1
+	local fd
+
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
 	
 	(($3 == 0)) && return 0
 
-	if ! echo "${2:0:$3}" >&$__fd 2>/dev/null; then
-		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_WRITE '$__fd'"
+	if ! echo "${2:0:$3}" >&$fd 2>/dev/null; then
+		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_WRITE '$fd'"
 		return $?
 	fi
 	
@@ -842,21 +840,17 @@ function os.file.write()
 function os.file.close()
 {
 	getopt.parse 1 "file:file_t:+:$1" ${@:2}
-	
-	local __var
-	local -n __fd=$1
 
-	if ! eval exec "$__fd<&-"; then
-		error.trace def 'file' 'file_t' "$__fd" "$__ERR_OS_FILE_CLOSE"
+	local fd
+	
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+
+	if ! eval exec "$fd<&-"; then
+		error.trace def 'file' 'file_t' "$fd" "$__ERR_OS_FILE_CLOSE"
 		return $?
 	fi
 	
-	IFS='|' read __var _ _ _ _ <<< "${__OS_FD_OPEN[$__fd]}"
-	
-	unset -f ${__INIT_OBJ_METHOD[$__var]}
-
-	unset 	__OS_FD_OPEN[$__fd] \
-			__INIT_OBJ_METHOD[$__var] 
+	__OS_FD_OPEN[$1]='|0|0|0'
 	
 	return 0
 }
@@ -868,9 +862,10 @@ function os.file.close()
 function os.file.tell()
 {
 	getopt.parse 1 "file:file_t:+:$1" ${@:2}
-	
-	local -n __fd=$1
-	echo "${__OS_FD_OPEN[$__fd]##*|}"
+
+	local cur
+	IFS='|' read _ _ _ cur <<< "${__OS_FD_OPEN[$1]}"
+	echo "$cur"
 	return 0
 }
 
@@ -924,26 +919,24 @@ function os.file.seek()
 {
 	getopt.parse 3 "file:file_t:+:$1" "offset:uint:+:$2" "whence:uint:+:$3" ${@:4}
 	
-	local __filename __mode __cur
-	local -n __fd=$1
+	local file mode fd cur
 
+	IFS='|' read file mode fd cur <<< "${__OS_FD_OPEN[$1]}"
 
-	IFS='|' read _ __filename __mode _ __cur <<< "${__OS_FD_OPEN[$1]}"
-	
-	case $__mode in
-		0)	eval exec "$__fd<'$__filename'";;
-		1) 	eval exec "$__fd>>'$__filename'";;
-		2)	eval exec "$__fd<>'$__filename'";;
+	case $mode in
+		0)	eval exec "$fd<'$file'";;
+		1) 	eval exec "$fd>>'$file'";;
+		2)	eval exec "$fd<>'$file'";;
 	esac 2>/dev/null || {
-		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_READ '$__fd'"
+		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_READ '$fd'"
 		return $?
 	}
 
-	__OS_FD_OPEN[$__fd]="${__OS_FD_OPEN[$__fd]%|*}|0"
+	__OS_FD_OPEN[$1]="$file|$mode|$fd|0"
 
 	case $3 in
 		0)	os.file.read $1 $2;;
-		1) 	os.file.read $1 $(($__cur+$2));;
+		1) 	os.file.read $1 $(($cur+$2));;
 		2)	os.file.read $1 $(os.file.size $1);;
 		*) 	error.trace def 'whence' 'uint' "$3" "$__ERR_OS_SEEK_FLAG"; return $?;;
 	esac 1>/dev/null
