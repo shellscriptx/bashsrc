@@ -22,109 +22,68 @@
 readonly __GRP_SH=1
 
 source builtin.sh
+source struct.sh
 
-__TYPE__[group_t]='
-grp.getgrgid
-grp.getgrusers
-grp.getgrpass
-'
+var group_t struct_t
 
-readonly __GRP_PATH='/etc/group'
-readonly __ERR_GRP_READ_GROUP_FILE='falha ao ler o arquivo base'
-readonly __ERR_GRP_GROUP_NOT_FOUND='grupo não encontrado'
+group_t.__add__ \
+	gr_name		str \
+	gr_passwd 	str \
+	gr_gid		uint \
+	gr_mem		str
 
-# func grp.getgrgid <[str]grpname> => [uint]
-#
-# Retorna o id associado a 'grpname'.
-#
-function grp.getgrgid()
-{
-	getopt.parse 1 "grpname:str:+:$1" ${@:2}
-	grp.__get_info "$1" gid
-	return $?
-}
-
-# func grp.getgrusers <[str]grpname> => [str]
-#
-# Retorna uma lista iterável com os usuários de 'grpname'.
-#
-function grp.getgrusers()
-{
-	getopt.parse 1 "grpname:str:+:$1" ${@:2}
-	grp.__get_info "$1" users
-	return $?
-}
-
-# func grp.getgrpass <[str]grpname> => [str]
-#
-# Retorna a flag de sinalização de senha
-#
-function grp.getgrpass()
-{
-	getopt.parse 1 "grpname:str:+:$1" ${@:2}
-	grp.__get_info "$1" pass
-	return $?
-}
-
-# func grp.getgrpnam <[uint]gid> => [str]
-#
-# Retorna o nome do grupo associado ao 'gid'.
-#
-function grp.getgrnam()
-{
-	getopt.parse 1 "gid:uint:+:$1" ${@:2}
-	
-	local grpname
-	while read grpname; do
-		[[ $(grp.__get_info "$grpname" gid) -eq $1 ]] && echo "$grpname" && break
-	done < <(grp.__get_info '' all)
-	
-	return $?
-}
 
 # func grp.getgrall => [str]
 #
-# Retorna uma lista iterável com todos os grupos do sistema.
+# Retorna uma lista iterável de todos os grupos do sistema.
 #
-function grp.getgrall()
-{
-	getopt.parse 0 ${@:1}
-	grp.__get_info '' all
+function grp.getgrall(){
+	getopt.parse 0 $@
+	grp.__get_grinfo grall
 	return $?
 }
 
-function grp.__get_info()
-{
-	local group info fields flag=$2
-	declare -A entry
-	
-	if while read group; do
-		entry[${group%%:*}]=${group//:/ }
-	done < $__GRP_PATH 2>/dev/null; then
-		
-		if [[ $flag == all ]]; then 
-			printf '%s\n' ${!entry[@]}
-		elif [[ ${entry[$1]} ]]; then
-
-			fields=(${entry[$1]})
-
-			case $flag in
-				pass) info=${fields[1]};;
-				gid) info=${fields[2]};;
-				users) info=${fields[@]:3}; info=${info//,/ };;
-				*) return 1;;
-			esac
-
-			printf '%s\n' $info
-
-		else
-			error.trace def 'group' 'str' "$1" "$__ERR_GRP_GROUP_NOT_FOUND"; return $?
-		fi	
-	else
-		error.trace def '' '' "$__GRP_PATH" "$__ERR_GRP_READ_GROUP_FILE"; return $?
-	fi
-
+# func grp.getgrgid <[group_t]struct> <[uint]gid>
+#
+# Salva em 'struct' as informações do 'gid' especificado.
+#
+function grp.getgrgid(){
+	getopt.parse 2 "struct:group_t:+:$1" "gid:uint:+:$2" "${@:3}"
+	grp.__get_grinfo grgid $1 $2
 	return $?
+}
+
+# func grp.getgrnam <[group_t]struct> <[str]name>
+#
+# Salva em 'struct' as informações do grupo 'name'.
+#
+function grp.getgrnam(){
+	getopt.parse 2 "struct:group_t:+:$1" "name:str:+:$2" "${@:3}"
+	grp.__get_grinfo grnam $1 $2
+	return $?
+}
+
+function grp.__get_grinfo()
+{
+	local name pass gid mem
+
+	while IFS=':' read name pass gid mem; do
+		case $1 in
+			grall) echo "$name";;
+			grgid|grnam) [[ $3 == @($gid|$name) ]] && {
+							$2.gr_name = "$name"
+							$2.gr_passwd = "$pass"
+							$2.gr_gid = "$gid"
+							$2.gr_mem = "$mem"
+							break
+							};;
+		esac
+	done < /etc/group 2>/dev/null || {
+		error.trace def
+		return $?
+	}
+
+	return 0
 }
 
 source.__INIT__
