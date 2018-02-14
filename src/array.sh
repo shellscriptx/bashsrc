@@ -1,11 +1,21 @@
 #!/bin/bash
 
-#----------------------------------------------#
-# Source:           array.sh
-# Data:             14 de novembro de 2017
-# Desenvolvido por: Juliano Santos [SHAMAN]
-# E-mail:           shellscriptx@gmail.com
-#----------------------------------------------#
+#    Copyright 2018 Juliano Santos [SHAMAN]
+#
+#    This file is part of bashsrc.
+#
+#    bashsrc is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    bashsrc is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
 [[ $__ARRAY_SH ]] && return 0
 
@@ -13,11 +23,29 @@ readonly __ARRAY_SH=1
 
 source builtin.sh
 
-# func array <[var]name> ...
-#
-# Cria variável do tipo 'array'
-#
-function array(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
+__TYPE__[array_t]='
+array.append 
+array.clear 
+array.copy 
+array.clone 
+array.count 
+array.items 
+array.index 
+array.insert 
+array.pop 
+array.remove 
+array.removeall 
+array.reverse 
+array.len 
+array.sort 
+array.join 
+array.item 
+array.contains 
+array.reindex 
+array.slice
+array.listindex
+array.list
+'
 
 # func array.append <[array]name> <[str]object>
 #
@@ -25,7 +53,7 @@ function array(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
 #
 function array.append()
 {
-	getopt.parse "name:array:+:$1" "object:str:-:$2"
+	getopt.parse 2 "name:array:+:$1" "object:str:-:$2" ${@:3}
 
 	declare -n __arr=$1
 	__arr+=("$2")
@@ -38,7 +66,7 @@ function array.append()
 #
 function array.clear()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	unset $1
 	return 0
 }
@@ -50,7 +78,7 @@ function array.clear()
 #
 function array.clone()
 {
-	getopt.parse "src:array:+:$1" "dest:array:+:$2"
+	getopt.parse 2 "src:array:+:$1" "dest:array:+:$2" ${@:3}
 	
 	unset $2
 
@@ -67,7 +95,7 @@ function array.clone()
 #
 function array.copy()
 {
-	getopt.parse "src:array:+:$1" "dest:array:+:$2"
+	getopt.parse 2 "src:array:+:$1" "dest:array:+:$2" ${@:3}
 	
 	declare -n __arr_src=$1 __arr_dest=$2
 	__arr_dest+=("${__arr_src[@]}") 
@@ -81,7 +109,7 @@ function array.copy()
 #
 function array.count()
 {
-	getopt.parse "src:array:+:$1" "object:str:-:$2"
+	getopt.parse 2 "src:array:+:$1" "object:str:-:$2" ${@:3}
 	
 	declare -n __arr=$1
 	local __elem __c=0
@@ -101,7 +129,7 @@ function array.count()
 #
 function array.items()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
 	printf "%s\n" "${__arr[@]}"
@@ -116,7 +144,7 @@ function array.items()
 #
 function array.index()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
 	local __i __pos=-1
@@ -140,7 +168,7 @@ function array.index()
 # ordem sequêncial crescente a partir do 'index' inserido.
 function array.insert()
 {
-	getopt.parse "name:array:+:$1" "index:uint:+:$2" "object:str:-:$3"
+	getopt.parse 3 "name:array:+:$1" "index:uint:+:$2" "object:str:-:$3" ${@:4}
 	
 	declare -n __arr=$1
 	__arr=([$2]="$3" "${__arr[@]}")
@@ -155,7 +183,7 @@ function array.insert()
 #
 function array.pop()
 {
-	getopt.parse "name:array:+:$1" "index:int:+:$2"
+	getopt.parse 2 "name:array:+:$1" "index:int:+:$2" ${@:3}
 	
 	declare -n __arr=$1
 		
@@ -173,7 +201,7 @@ function array.pop()
 #
 function array.remove()
 {
-	getopt.parse "name:array:+:$1" "object:str:-:$2"
+	getopt.parse 2 "name:array:+:$1" "object:str:-:$2" ${@:3}
 	
 	declare -n __arr=$1
 	local __i
@@ -194,7 +222,7 @@ function array.remove()
 #
 function array.removeall()
 {
-	getopt.parse "name:array:+:$1" "object:str:-:$2"
+	getopt.parse 2 "name:array:+:$1" "object:str:-:$2" ${@:3}
 	
 	declare -n __arr=$1
 	local __i
@@ -214,20 +242,20 @@ function array.removeall()
 #
 function array.reverse()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
 	mapfile -t __arr < <(printf '%s\n' "${__arr[@]}" | sort -dr)
 	return 0
 }
 
-# func array.len <[array]name>
+# func array.len <[array]name> => [uint]
 #
 # Retorna o total de elementos em 'name'.
 #
 function array.len()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
 	echo ${#__arr[@]}
@@ -240,7 +268,7 @@ function array.len()
 #
 function array.sort()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
 	mapfile -t __arr < <(printf '%s\n' "${__arr[@]}" | sort -d)
@@ -254,7 +282,7 @@ function array.sort()
 #
 function array.join()
 {
-	getopt.parse "name:array:+:$1" "exp:str:-:$2"
+	getopt.parse 2 "name:array:+:$1" "exp:str:-:$2" ${@:3}
 	
 	declare -n __arr=$1
 	printf "%s$2" "${__arr[@]}"; echo
@@ -268,7 +296,7 @@ function array.join()
 #
 function array.item()
 {
-	getopt.parse "name:array:+:$1" "index:int:+:$2"
+	getopt.parse 2 "name:array:+:$1" "index:int:+:$2" ${@:3}
 	
 	declare -n __arr=$1
 	[[ $2 -gt -2 ]] && echo "${__arr[$2]}"
@@ -281,7 +309,7 @@ function array.item()
 #
 function array.contains()
 {
-	getopt.parse "name:array:+:$1" "object:str:-:$2"
+	getopt.parse 2 "name:array:+:$1" "object:str:-:$2" ${@:3}
 
 	declare -n __arr=$1
 	local __item
@@ -299,7 +327,7 @@ function array.contains()
 # a partir da posição '0'.
 function array.reindex()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	declare -n __arr=$1
 	__arr=("${__arr[@]}")
 	return 0
@@ -327,41 +355,35 @@ function array.reindex()
 # $ array.append sys "Windows"
 #
 # # Capturando os dois primeiros caracteres do objeto na posição 1.
-# $ array.slice sys '[1][:2]'
+# $ array.slice sys '1' ':2'
 # Li
 #
 function array.slice()
 {
-    getopt.parse "exp:array:+:$1" "slice:slice:+:$2"
-	
+    getopt.parse -1 "exp:array:+:$1" "slice:slice:+:$2" ... "${@:3}"
+
 	declare -n __arr=$1
-    local __exp __slice __ini __start __length __delm
-
-	__slice=$2
-	__ini=0
-
-    while [[ $__slice =~ \[([^]][0-9]*:?(-[0-9]+|[0-9]*))\] ]]
-    do
-        __start=${BASH_REMATCH[1]%:*}
-        __length=${BASH_REMATCH[1]#*:}
-        __delm=${BASH_REMATCH[1]//[0-9]/}
-
-        [[ ! $__delm ]] && __length=1
-
-		if [[ $__ini -eq 0 ]]; then
-			__exp=${__arr[@]:${__start:-0}:${__length:-${#__arr[@]}}}
-			__ini=1
-		else
-			__exp=${__exp:${__start:-0}:${__length:-${#__exp}}}
-		fi
+	local __slice __elem
 	
-		__slice=${__slice/\[${BASH_REMATCH[1]}\]/}
+	IFS=':' __slice=($2)
 
-    done
+	__slice[0]=${__slice[0]#-}
+	__slice[1]=${__slice[1]#-}
 
-    echo  "$__exp"
+	__slice[0]=${__slice[0]:-0}
+	__slice[1]=${__slice[1]:-1}
+	__elem=${__arr[@]:${__slice[0]}:${__slice[1]}}
 
-    return 0
+	for __slice in "${@:3}"; do
+		IFS=':' __slice=($__slice)
+		__slice[0]=${__slice[0]:-0}
+		__slice[1]=${__slice[1]:-$((${#__elem}-${__slice[0]}))}
+		__elem=${__elem:${__slice[0]}:${__slice[1]}}
+	done
+
+	echo "$__elem"
+
+	return 0
 }
 
 # func array.listindex <[array]name> => [uint]
@@ -370,10 +392,10 @@ function array.slice()
 #
 function array.listindex()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
-	printf "%d " "${!__arr[@]}"; echo
+	echo "${!__arr[@]}"
 	return 0
 }
 
@@ -383,7 +405,7 @@ function array.listindex()
 # precedidos por seus respectivos índices.
 function array.list()
 {
-	getopt.parse "name:array:+:$1"
+	getopt.parse 1 "name:array:+:$1" ${@:2}
 	
 	declare -n __arr=$1
 	local __i
@@ -395,28 +417,6 @@ function array.list()
 	return 0
 }
 
-readonly -f array.append \
-			array.clear \
-			array.copy \
-			array.clone \
-			array.count \
-			array.items \
-			array.index \
-			array.insert \
-			array.pop \
-			array.remove \
-			array.removeall \
-			array.reverse \
-			array.len \
-			array.sort \
-			array.join \
-			array.item \
-			array.contains \
-			array.reindex \
-			array.slice \
-			array.listindex \
-			array.list \
-			array
-
-# /* __ARRAY_SRC */
+source.__INIT__
+# /* __ARRAY_SH */
 

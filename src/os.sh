@@ -1,11 +1,21 @@
 #!/bin/bash
 
-#----------------------------------------------#
-# Source:           os.sh
-# Data:             29 de novembro de 2017
-# Desenvolvido por: Juliano Santos [SHAMAN]
-# E-mail:           shellscriptx@gmail.com
-#----------------------------------------------#
+#    Copyright 2018 Juliano Santos [SHAMAN]
+#
+#    This file is part of bashsrc.
+#
+#    bashsrc is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    bashsrc is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
 [[ $__OS_SH ]] && return 0
 
@@ -13,23 +23,45 @@ readonly __OS_SH=1
 
 source builtin.sh
 source time.sh
-source str.sh
+
+__TYPE__[file_t]='
+os.file.name
+os.file.stat
+os.file.fd
+os.file.readlines
+os.file.readline
+os.file.read
+os.file.writeline
+os.file.write
+os.file.close
+os.file.tell
+os.file.mode
+os.file.seek
+os.file.size
+os.file.isatty
+os.file.writable
+os.file.readable
+os.file.rewind
+'
+
+declare -A __OS_FD_OPEN
 
 # Limite máximo de arquivos abertos
 readonly __FD_MAX=1024
 
 # errors
-readonly __OS_ERR_MODE_PERM='modo de permissão inválido'
-readonly __OS_ERR_FILE_NOT_FOUND='arquivo não encontrado'
-readonly __OS_ERR_FD_OPEN_MAX='limite máximo de arquivos abertos alcançado'
-readonly __OS_ERR_FD_READ='erro de leitura no descritor'
-readonly __OS_ERR_FD_WRITE='erro de escrita no descritor'
-readonly __OS_ERR_FD_CREATE='erro ao criar o descritor'
-readonly __OS_ERR_OPEN_FLAG='open flag de acesso inválida'
-readonly __OS_ERR_SEEK_FLAG='seek flag de fluxo inválida'
-readonly __OS_ERR_FILE_NOT_WRITE='não é permitido gravar no arquivo'
-readonly __OS_ERR_FILE_NOT_READ='não é permitido ler o arquivo'
-readonly __OS_ERR_FILE_NOT_RW='não é permitido ler/gravar no arquivo'
+readonly __ERR_OS_MODE_PERM='modo de permissão inválido'
+readonly __ERR_OS_FILE_NOT_FOUND='arquivo não encontrado'
+readonly __ERR_OS_FD_OPEN_MAX='limite máximo de arquivos abertos alcançado'
+readonly __ERR_OS_FD_READ='erro de leitura no descritor'
+readonly __ERR_OS_FD_WRITE='erro de escrita no descritor'
+readonly __ERR_OS_FD_CREATE='erro ao criar o descritor'
+readonly __ERR_OS_OPEN_FLAG='open flag de acesso inválida'
+readonly __ERR_OS_SEEK_FLAG='seek flag de fluxo inválida'
+readonly __ERR_OS_FILE_NOT_WRITE='não é permitido gravar no arquivo'
+readonly __ERR_OS_FILE_NOT_READ='não é permitido ler o arquivo'
+readonly __ERR_OS_FILE_NOT_RW='não é permitido ler/gravar no arquivo'
+readonly __ERR_OS_FILE_CLOSE='erro ao fechar o descritor do arquivo'
 
 # constantes
 readonly STDIN=/dev/stdin
@@ -46,12 +78,6 @@ readonly SEEK_SET=0
 readonly SEEK_CUR=1
 readonly SEEK_END=2
 
-# func os.file <[var]name> ...
-#
-# Cria variável do tipo 'os.file'
-#
-function os.file(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
-
 # func os.chdir <[str]dir> => [bool]
 #
 # Altera o diretório atual para 'dir'. Retorna 'true' para sucesso,
@@ -59,7 +85,7 @@ function os.file(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
 #
 function os.chdir()
 {
-	getopt.parse "dir:dir:+:$1"
+	getopt.parse 1 "dir:dir:+:$1" ${@:2}
 	cd "$dir" &>/dev/null
 	return $?
 }
@@ -71,9 +97,11 @@ function os.chdir()
 #
 function os.chmod()
 {
-	getopt.parse "path:path:+:$1" "mode:uint:+:$2"
+	getopt.parse 2 "path:path:+:$1" "mode:uint:+:$2" ${@:3}
 	
-	[[ $2 =~ ^[0-7]{3,4}$ ]] || error.__exit 'mode' 'uint' "$2" "$__OS_ERR_MODE_PERM"
+	if ! [[ $2 =~ ^[0-7]{3,4}$ ]]; then
+		error.trace def 'mode' 'uint' "$2" "$__ERR_OS_MODE_PERM"; return $?
+	fi
 	chmod "$2" "$1" &>/dev/null
 	return $?
 }
@@ -84,12 +112,15 @@ function os.chmod()
 #
 function os.stackdir()
 {
-	getopt.parse "stack:array:+:$1" "dir:str:+:$1"
+	getopt.parse 1 "stack:array:+:$1" "dir:str:+:$1" ${@:2}
 
 	declare -n __stack_dir=$1
 	local __dir=$2
 	
-	[ ! -d "$__dir" ] && error.__exit 'dir' 'str' "$__dir" "$__OS_ERR_DIR_NOT_FOUND"
+	if [ ! -d "$__dir" ]; then
+		error.trace def 'dir' 'str' "$__dir" "$__ERR_OS_DIR_NOT_FOUND"
+		return $?
+	fi
 	__stack_dir+=("$__dir")
 	
 	return 0
@@ -102,7 +133,7 @@ function os.stackdir()
 #
 function os.exists()
 {
-	getopt.parse "filepath:str:+:$1"
+	getopt.parse 1 "filepath:str:+:$1" ${@:2}
 	[[ -e "$1" ]]
 	return $?
 }
@@ -113,9 +144,9 @@ function os.exists()
 #
 function os.environ()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 
-	while read _ _ env; do
+	while IFS=' ' read _ _ env; do
 		echo "${env%%=*}"
 	done < <(declare -xp)
 	
@@ -128,7 +159,7 @@ function os.environ()
 #
 function os.getenv()
 {
-	getopt.parse "varname:var:+:$1"
+	getopt.parse 1 "varname:var:+:$1" ${@:2}
 			
 	declare -n __env_var=$1
 	echo "$__env_var"
@@ -142,7 +173,7 @@ function os.getenv()
 #
 function os.setenv()
 {
-	getopt.parse "varname:var:+:$1" "value:str:-:$2"
+	getopt.parse 2 "varname:var:+:$1" "value:str:-:$2" ${@:3}
 	
 	export $1="$2"		
 	return 0
@@ -154,8 +185,8 @@ function os.setenv()
 #
 function os.geteuid()
 {
-	getopt.parse "-:null:-:$*"
-	id --user
+	getopt.parse 0 ${@:1}
+	echo $UID
 	return 0
 }
 
@@ -166,7 +197,7 @@ function os.geteuid()
 #
 function os.argv()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo "${0##*/} ${BASH_ARGV[@]}"
 	return 0
 }
@@ -178,7 +209,7 @@ function os.argv()
 #
 function os.argc()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo $(($BASH_ARGC+1))
 	return 0
 }
@@ -189,8 +220,8 @@ function os.argc()
 #
 function os.getgid()
 {
-	getopt.parse "-:null:-:$*"
-	id --group
+	getopt.parse 0 ${@:1}
+	echo ${GROUPS[0]}
 	return 0
 }
 
@@ -200,8 +231,8 @@ function os.getgid()
 #
 function os.getgroups()
 {
-	getopt.parse "-:null:-:$*"
-	id --groups
+	getopt.parse 0 ${@:1}
+	echo ${GROUPS[@]}
 	return 0
 }
 
@@ -211,7 +242,7 @@ function os.getgroups()
 #
 function os.getpid()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo $BASHPID
 	return 0
 }
@@ -222,7 +253,7 @@ function os.getpid()
 #
 function os.getppid()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo $PPID
 	return 0
 }
@@ -233,8 +264,8 @@ function os.getppid()
 #
 function os.getwd()
 {
-	getopt.parse "-:null:-:$*"
-	pwd; return 0
+	getopt.parse 0 ${@:1}
+	echo "$PWD"; return 0
 }
 
 # func os.hostname => [str]
@@ -243,73 +274,60 @@ function os.getwd()
 #
 function os.hostname()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	[[ -e /etc/hostname ]] && echo $(< /etc/hostname) || return 1
 	return 0
 }
 
-# func os.chatime <[path]pathname> <[map]time> => [bool]
+# func os.chatime <[st_time]struct> <[path]pathname> => [bool]
 #
 # Altera o tempo de acesso do arquivo ou diretório especificado
 # em 'pathname' pelo tempo na estrutura 'time'. Se o valor de um membro
 # da estrutura for omitido, assume como padrão a data do sistema.
 #
-function os.chatime(){ os.__chtime -a "$1" "$2"; return $?; }
+function os.chatime(){ os.__chtime "$1" "$2" '-a'; return $?; }
 
-# func os.chmtime <[path]pathname> <[map]time> => [bool]
+# func os.chmtime <[st_time]struct> <[path]pathname> => [bool]
 #
 # Altera o tempo de modificação do arquivo ou diretório especificado
 # em 'pathname' pelo tempo na estrutura 'time'. Se o valor de um membro
 # da estrutura for omitido, assume como padrão a data do sistema.
 #
-function os.chmtime(){ os.__chtime -m "$1" "$2"; return $?; }
+function os.chmtime(){ os.__chtime "$1" "$2" '-m'; return $?; }
 
-# func os.chtime <[path]pathname> <[map]time> => [bool]
+# func os.chtime <[st_time]struct> <[path]pathname> => [bool]
 #
 # Altera o tempo de modificação e acesso do arquivo ou diretório especificado
 # em 'pathname' pelo tempo na estrutura 'time'. Se o valor de um membro
 # da estrutura for omitido, assume como padrão a data do sistema.
 #
-function os.chtime(){ os.__chtime '' "$1" "$2"; return $?; }
+function os.chtime(){ os.__chtime "$1" "$2" ''; return $?; }
 
 function os.__chtime()
 {
-	getopt.parse "pathname:path:+:$2" "time:map:+:$3"
+	getopt.parse 3 "struct:st_time:+:$1" "pathname:path:+:$2" "flag:str:-:$3"
 
-	declare -n __map_ref=$3
-	local __flag=$1
-	local __tm=($(printf "%(%_w %_d %_m %Y %_H %_M %_S %_j)T"))
-
-	__map_ref[tm_wday]=${__map_ref[tm_wday]:-${__tm[0]}}
-	__map_ref[tm_mday]=${__map_ref[tm_mday]:-${__tm[1]}}
-	__map_ref[tm_mon]=${__map_ref[tm_mon]:-${__tm[2]}}
-	__map_ref[tm_year]=${__map_ref[tm_year]:-${__tm[3]}}
-	__map_ref[tm_hour]=${__map_ref[tm_hour]:-${__tm[4]}}
-	__map_ref[tm_min]=${__map_ref[tm_min]:-${__tm[5]}}
-	__map_ref[tm_sec]=${__map_ref[tm_sec]:-${__tm[6]}}
-	__map_ref[tm_yday]=${__map_ref[tm_yday]:-${__tm[7]}}
-	
-	if ! (time.__check_time ${__map_ref[tm_hour]} \
-                            ${__map_ref[tm_min]} \
-                            ${__map_ref[tm_sec]} &&
-          time.__check_date ${__map_ref[tm_wday]} \
-                            ${__map_ref[tm_mday]} \
-                            ${__map_ref[tm_mon]} \
-                            ${__map_ref[tm_year]} \
-                            ${__map_ref[tm_yday]}); then
-        
-        error.__exit 'time' 'map' "\n$(map.list $3)" "$__TIME_ERR_DATETIME"
+	if  ! (time.__check_time $($1.tm_hour) \
+								$($1.tm_min) \
+								$($1.tm_sec) &&
+			time.__check_date   $($1.tm_wday) \
+								$($1.tm_mday) \
+								$($1.tm_mon) \
+								$($1.tm_year) \
+								$($1.tm_yday)) 2>/dev/null; then
+        error.trace def 'st_time' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
+        return $?
     fi
 
-	touch $__flag \
+	touch $3 \
 			--no-create \
-			--date "${__weekdays[${__map_ref[tm_wday]}]}
-					${__map_ref[tm_mday]}
-					${__months[${__map_ref[tm_mon]}]}
-					${__map_ref[tm_year]}
-					${__map_ref[tm_hour]}:${__map_ref[tm_min]}:${__map_ref[tm_sec]}" \
-					"$2" &>/dev/null
-				
+			--date "${__weekdays[$($1.tm_wday)]}
+					$($1.tm_mday) 
+					${__months[$($1.tm_mon)]} 
+					$($1.tm_year) 
+					$($1.tm_hour):$($1.tm_min):$($1.tm_sec)" \
+			"$2" &>/dev/null
+	
 	return $?
 }
 
@@ -321,9 +339,11 @@ function os.__chtime()
 #
 function os.mkdir()
 {
-	getopt.parse "dir:str:+:$1" "mode:uint:+:$2"
+	getopt.parse 2 "dir:str:+:$1" "mode:uint:+:$2" ${@:3}
 	
-	[[ $2 =~ ^[0-7]{3,4}$ ]] || error.__exit 'mode' 'uint' "$2" "$__OS_ERR_MODE_PERM"
+	if ! [[ $2 =~ ^[0-7]{3,4}$ ]]; then
+		error.trace def 'mode' 'uint' "$2" "$__ERR_OS_MODE_PERM"; return $?
+	fi
 	mkdir --parents --mode=$2 "$1" &>/dev/null
 	return $?
 }
@@ -335,7 +355,7 @@ function os.mkdir()
 #
 function os.remove()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" ${@:2}
 	rm -rf "$1" &>/dev/null
 	return $?
 }
@@ -347,20 +367,29 @@ function os.remove()
 #
 function os.rename()
 {
-	getopt.parse "path:path:+:$1" "newname:str:+:$2"
+	getopt.parse 2 "path:path:+:$1" "newname:str:+:$2" ${@:3}
 	mv -f "$1" "$2" &>/dev/null
 	return $?
 }
 
-# func os.tempdir => [str]
+# func os.tempfile <[str]prefix> => [str]
 #
-# Retorna o diretório temporário padrão do sistema.
+# Gera nomenclatura de um arquivo temporário contendo o prefixo especificado.
 #
-function os.tempdir()
+function os.tempfile()
 {
-	getopt.parse "-:null:-:$*"
-	local tmpdir=$(mktemp --dry-run)
-	echo "${tmpdir%/*}"
+	getopt.parse 1 "prefix:str:+:$1" ${@:2}
+
+	local chars='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+	local seed=$(printf '%(%s)T')
+	local hash
+	
+	for _ in {1..10}; do 
+		hash+=${chars:$((RANDOM^$seed))%${#chars}:1}
+	done
+
+	echo "/tmp/$1.$hash"
+
 	return 0
 }
 
@@ -372,7 +401,7 @@ function os.tempdir()
 
 function os.create()
 {
-	getopt.parse "filename:str:+:$1"
+	getopt.parse 1 "filename:str:+:$1" ${@:2}
 	> "$1"
 	return $?
 }
@@ -398,14 +427,14 @@ function os.create()
 #
 function os.stat()
 {
-	getopt.parse "path:path:+:$1"
+	getopt.parse 1 "path:path:+:$1" "${@:2}"
 	
 	[[ -d "$1" ]]
 	stat --format="%A|%a|%G|%U|%g|%u|%s|%y|%Y|$?" "$1"
 	return $?	
 }
 
-# func os.open <[var]fd> <[str]filename> <[uint]flag> => [bool]
+# func os.open <[file_t]var> <[str]filename> <[uint]flag> => [bool]
 #
 # Abre o arquivo especificado em 'filename' associando um descritor 
 # válido para modo de acesso determinado em 'flag'. Se o arquivo for
@@ -429,8 +458,7 @@ function os.stat()
 #
 # source o.sh
 #
-# # Criando objeto do tipo 'os.file'.
-# $ os.file arq
+# $ var arq file_t
 #
 # # Abrindo arquivo para leitura
 # $ os.open arq '/etc/group' $O_RDONLY
@@ -446,130 +474,135 @@ function os.stat()
 # # Fechando arquivo
 # $ arq.close
 # ou
-# $ arq.file.close $arq
-#
-# # Deletando 'arq'
-# del arq
+# $ os.file.close arq
 #
 function os.open()
 {
-	getopt.parse "fd:var:+:$1" "filename:str:+:$2" "flag:uint:+:$3"
+	getopt.parse 3 "var:file_t:+:$1" "filename:str:+:$2" "flag:uint:+:$3" ${@:4}
 	
-	local __file=$2
-	local __mode=$3
-	local __av=0
-	local __fd __parse
-
-	declare -n __fdref=$1
+	local file=$2
+	local mode=$3
+	local av=0
+	local fd parse
 
 	if [ ! -d /dev/fd ]; then
-		error.__exit '' '' '' "'/dev/fd' diretório FIFOs para método I/O não encontrado"
-	elif [ -d "$__file" ]; then
-		error.__exit 'filename' 'str' "$__file" 'é um diretório'
+		error.trace def '' '' '' "'/dev/fd' diretório FIFOs para método I/O não encontrado"; return $?
+	elif [ -d "$file" ]; then
+		error.trace def 'filename' 'str' "$file" 'é um diretório'; return $?
 	fi
 
-	for ((__fd=3; __fd <= __FD_MAX; __fd++)); do
-		if [ ! -e /dev/fd/$__fd ]; then __av=1; break; fi
+	for ((fd=3; fd <= __FD_MAX; fd++)); do
+		if [ ! -e /dev/fd/$fd ]; then av=1; break; fi
 	done
 
-	if [ $__av -eq 0 ]; then
-		error.__exit 'file' 'fd' "$__file" "$__OS_ERR_FD_OPEN_MAX"
+	if [ $av -eq 0 ]; then
+		error.trace def 'file' 'fd' "$file" "$__ERR_OS_FD_OPEN_MAX"; return $?
 	fi
 	
-	case $__mode in
+	case $mode in
 		0)
-			if [[ ! -e "$__file" ]]; then
-				error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_FOUND"
-			elif [[ ! -r "$__file" ]]; then
-				error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_READ"
+			if [[ ! -e "$file" ]]; then
+				error.trace def 'file' 'str' "$file" "$__ERR_OS_FILE_NOT_FOUND"; return $?
+			elif [[ ! -r "$file" ]]; then
+				error.trace def 'file' 'str' "$file" "$__ERR_OS_FILE_NOT_READ"; return $?
 			fi
-			__parse="$__fd<$__file"
+			parse="$fd<'$file'"
 			;;
 
 		1)
-			if [[ -e "$__file" && ! -w "$__file" ]]; then
-				error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_WRITE"
+			if [[ -e "$file" && ! -w "$file" ]]; then
+				error.trace def 'file' 'str' "$file" "$__ERR_OS_FILE_NOT_WRITE"; return $?
 			fi
-			__parse="$__fd>>$__file"
+			parse="$fd>>'$file'"
 			;;
 
 		2) 
-			if [[ -e "$__file" ]] && [[ ! -w "$__file" || ! -r "$__file" ]]; then
-				error.__exit 'file' 'str' "$__file" "$__OS_ERR_FILE_NOT_RW"
+			if [[ -e "$file" ]] && [[ ! -w "$file" || ! -r "$file" ]]; then
+				error.trace def 'file' 'str' "$file" "$__ERR_OS_FILE_NOT_RW"; return $?
 			fi
-			__parse="$__fd<>$__file"
+			parse="$fd<>'$file'"
 			;;
-		*) error.__exit 'flag' 'uint' "$__mode" "$__OS_ERR_OPEN_FLAG";;
+		*) error.trace def 'flag' 'uint' "$mode" "$__ERR_OS_OPEN_FLAG"; return $?;;
 	esac
 
-	eval exec "$__parse" 2>/dev/null || \
-	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_CREATE '$__fd'"
+	if ! eval exec "$parse" 2>/dev/null; then
+		error.trace def 'file' 'file_t' '-' "$__ERR_OS_FD_CREATE '$fd'"
+		return $?
+	fi
 
-	mkdir -p "$__RUNTIME/$$/fd"
-	echo "$__file|$__mode|$__fd|0" > "$__RUNTIME/$$/fd/$__fd"
-
-	__fdref=$__fd
+	__OS_FD_OPEN[$1]="$file|$mode|$fd|0"
 
 	return 0
 }
 
-# func os.file.isatty <[uint]fd> => [bool]
+# func os.file.isatty <[file_t]file> => [bool]
 #
-# Retorna 'true' se há um arquivo aberto associado ao descritor 'fd'.
+# Retorna 'true' se há um arquivo aberto associado ao descritor 'file_t'.
 # Caso contrário retorna 'false'.
 #
 function os.file.isatty()
 {
-	getopt.parse "descriptor:fd:+:$1"
-	[ -t /dev/fd/$1 ]
+	getopt.parse 1 "file:file_t:+:$1" ${@:2}
+	local fd
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+	[[ -t /dev/fd/$fd ]]
 	return $?
 }
 
-# func os.file.writable <[uint]fd> => [bool]
+# func os.file.writable <[file_t]file> => [bool]
 #
 # Retorna 'true' se é um descritor de escrita. Caso contrário 'false'.
 #
 function os.file.writable()
 {
-	getopt.parse "descriptor:fd:+:$1"
-	[ -w /dev/fd/$1 ]
+	getopt.parse 1 "file:file_t:+:$1" ${@:2}
+	local fd
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+	[[ -w /dev/fd/$fd ]]
 	return $?
 }
 
-# func os.file.readable <[uint]fd> => [bool]
+# func os.file.readable <[file_t]file> => [bool]
 #
 # Retorna 'true' se é um descritor de leitura. Caso contrário 'false'.
 #
 function os.file.readable()
 {
-	getopt.parse "descriptor:fd:+:$1"
-	[ -r /dev/fd/$1 ]
+	getopt.parse 1 "file:file_t:+:$1" ${@:2}
+	local fd
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+	[[ -r /dev/fd/$fd ]]
 	return $?
 }
 
-# func os.file.size <[uint]fd> => [uint]
+# func os.file.size <[file_t]file> => [uint]
 #
-# Retorna o comprimento em bytes do arquivo associado ao descritor 'fd'.
+# Retorna o comprimento em bytes do arquivo associado a 'file'.
 #
 function os.file.size()
 {
-	getopt.parse "descriptor:fd:+:$1"
-	str.field "$(os.file.stat $1)" '|' 6
+	getopt.parse 1 "file:file_t:+:$1" "${@:2}"
+	local file
+	IFS='|' read file _ _ _ <<< "${__OS_FD_OPEN[$1]}"
+	stat -c "%s" "$file"
 	return $?
 }
 
-# func os.file.name <[uint]fd> => [str]
+# func os.file.name <[file_t]file> => [str]
 #
-# Retorna o nome completo do arquivo associado ao descritor 'fd'.
+# Retorna o nome completo do arquivo associado a 'file'.
 #
 function os.file.name()
 {
-	getopt.parse "descriptor:fd:+:$1"
-	str.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 0
+	getopt.parse 1 "file:file_t:+:$1" ${@:2}
+
+	local file
+	IFS='|' read file _ _ _ <<< "${__OS_FD_OPEN[$1]}"
+	echo "$file"
 	return $?
 }
 
-# func os.file.mode <[uint]fd> => [uint]
+# func os.file.mode <[file_t]file> => [uint]
 #
 # Retorna um inteiro positivo indicando o modo de acesso.
 #
@@ -579,12 +612,15 @@ function os.file.name()
 #
 function os.file.mode()
 {
-	getopt.parse "descriptor:fd:+:$1"
-	str.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 1
+	getopt.parse 1 "file:file_t:+:$1" ${@:2}
+
+	local mode	
+	IFS='|' read _ mode _ _ <<< "${__OS_FD_OPEN[$1]}"
+	echo "$mode"
 	return $?
 }
 
-# func os.file.stat <[uint]fd> => [str]
+# func os.file.stat <[file_t]file> => [str]
 #
 # Lê as informações de status do arquivo ou diretório.
 # As informações retornadas são separadas pelo delimitador '|' PIPE,
@@ -605,56 +641,64 @@ function os.file.mode()
 #
 function os.file.stat()
 {
-	getopt.parse "descriptor:fd:+:$1"
-	os.stat "$(os.file.name $1)"
+	getopt.parse 1 "file:file_t:+:$1" "${@:2}"
+	
+	local file
+	IFS='|' read file _ _ _ <<< "${__OS_FD_OPEN[$1]}"
+	[[ -d "$file" ]]
+	stat --format="%A|%a|%G|%U|%g|%u|%s|%y|%Y|$?" "$file"
 	return $?
 }
 
-# func os.file.fd <[uint]fd> => [uint]
+# func os.file.fd <[file_t]file> => [uint]
 #
 # Retorna um inteiro sem sinal indicando o número do descritor associado.
 #
 function os.file.fd()
 {
-	getopt.parse "descriptor:fd:+:$1"
-	str.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 2
-	return 0
+	getopt.parse 1 "file:file_t:+:$1" ${@:2}
+	
+	local fd
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+	echo "$fd"
+	return $?
 }
 
-# func os.file.readlines <[uint]fd> => [str]
+# func os.file.readlines <[file_t]file> => [str]
 #
-# Lê todas as linhas contidas no arquivo apontado por 'fd'. 
+# Lê todas as linhas contidas no arquivo apontado por 'file'.
 #
 function os.file.readlines()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "file:file_t:+:$1" ${@:2}
 	
-	local attr cur
-	local bytes=0
+	local fd line bytes=0
 
-	while read line; do
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+
+	if ! while read line; do
 		bytes=$((bytes+${#line}))
 		echo "$line"
-	done <&$1 2>/dev/null || \
-	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$1'"
+	done <&$fd 2>/dev/null; then
+		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_READ '$fd'"
+		return $?
+	fi
 	
-	attr=$(< "$__RUNTIME/$$/fd/$1")
-	cur=${attr##*|}
-	seek=$((cur+bytes))
+	__OS_FD_OPEN[$1]="${__OS_FD_OPEN[$1]%|*}|$((${__OS_FD_OPEN[$1]##*|}+$bytes))"
 
-	echo "${attr%|*}|$seek" > "$__RUNTIME/$$/fd/$1"
-	
-	return 0
+	return $?
 }
 
-# func os.file.readline <[uint]fd> => [str]
+# func os.file.readline <[file_t]file> => [str]
 #
 # Lê uma única linha do arquivo e seta o fluxo no inicio da próxima linha.
 #
 # Exemplo:
 #
 # $ source o.sh
-# $ os.file arq
+#
+# $ var arq file_t
+#
 # $ os.open arq '/etc/group' $O_RDONLY
 #
 # # Lendo uma linha por vez
@@ -668,32 +712,33 @@ function os.file.readlines()
 #
 function os.file.readline()
 {
-	getopt.parse "descriptor:fd:+:$1"
-	
-	local seek len attr line cur
+	getopt.parse 1 "file:file_t:+:$1" ${@:2}
 
-	read line <&$1 2>/dev/null || \
-	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$1'"
+	local fd line	
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
 
-	len=${#line}
-	attr=$(< "$__RUNTIME/$$/fd/$1")
-	cur=${attr##*|}
-	seek=$((cur+len))
+	if ! read line <&$fd 2>/dev/null; then
+		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_READ '$fd'"
+		return $?
+	fi
 
-	echo "${attr%|*}|$seek" > "$__RUNTIME/$$/fd/$1"
+	__OS_FD_OPEN[$1]="${__OS_FD_OPEN[$1]%|*}|$((${__OS_FD_OPEN[$1]##*|}+${#line}))"
+
 	echo "$line"
 
 	return 0
 }
 
-# func os.file.read <[uint]fd> <[uint]bytes> => [str]
+# func os.file.read <[file_t]file> <[uint]bytes> => [str]
 #
 # Lê N'bytes' a partir da posição atual do fluxo.
 #
 # Exemplo:
 #
 # $ source o.sh
-# $ os.file arq
+#
+# $ var arq file_t
+#
 # $ os.open arq '/etc/group' $O_RDONLY
 #
 # # Lendo os primeiros 4 bytes.
@@ -705,44 +750,51 @@ function os.file.readline()
 # 
 function os.file.read()
 {
-	getopt.parse "descriptor:fd:+:$1" "bytes:uint:+:$2"
-		
-	local attr cur seek ch
-	local bytes=0
+	getopt.parse 2 "file:file_t:+:$1" "bytes:uint:+:$2" ${@:3}
+	
+	local fd ch bytes=0
+
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
 
 	(($2 == 0)) && return 0	
 
-	while read -N1 ch; do
+	if ! while read -N1 ch; do
 		echo -n "${ch:- }"
 		(($((++bytes)) == $2)) && break
-	done <&$1 2>/dev/null || \
-	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$1'"
+	done <&$fd 2>/dev/null; then
+		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_READ '$fd'"
+		return $?
+	fi
+
 	echo
 	
-	attr=$(< "$__RUNTIME/$$/fd/$1")
-	cur=${attr##*|}
-	seek=$((cur+bytes))
+	__OS_FD_OPEN[$1]="${__OS_FD_OPEN[$1]%|*}|$((${__OS_FD_OPEN[$1]##*|}+$bytes))"
 
-	echo "${attr%|*}|$seek" > "$__RUNTIME/$$/fd/$1"
 	return 0
 }
 
-# func os.file.writeline <[uint]fd> <[str]exp> => [bool]
+# func os.file.writeline <[file_t]file> <[str]exp> => [bool]
 #
 # Grava em 'fd' o conteúdo de 'exp'. Retorna 'true' se for gravado
 # com sucesso, caso contrário uma mensagem de erro é retornada.
 #
 function os.file.writeline()
 {
-	getopt.parse "descriptor:fd:+:$1" "exp:str:-:$2"
+	getopt.parse 2 "file:file_t:+:$1" "exp:str:-:$2" ${@:3}
+
+	local fd
+
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+
+	if ! echo "$2" >&$fd 2>/dev/null; then
+		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_WRITE '$fd'"
+		return $?
+	fi
 	
-	echo "$2" >&$1 2>/dev/null || \
-	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_WRITE '$1'"
-	
-	return $?
+	return 0
 }
 
-# func os.file.write <[uint]fd> <[str]exp> <[uint]bytes> => [bool]
+# func os.file.write <[file_t]file> <[str]exp> <[uint]bytes> => [bool]
 #
 # Grava no arquivo os primeiros N'bytes' de 'exp'. Retorna 'true' para êxito,
 # caso contrário uma mensagem de erro é retornada.
@@ -750,7 +802,7 @@ function os.file.writeline()
 # Exemplo:
 #
 # $ source os.sh
-# $ os.file arq
+# $ var arq file_t
 #
 # # Abrindo arquivo para escrita.
 # $ os.open arq 'test.txt' $O_WRONLY
@@ -765,62 +817,74 @@ function os.file.writeline()
 #
 function os.file.write()
 {
-	getopt.parse "descriptor:fd:+:$1" "exp:str:-:$2" "bytes:uint:+:$3"
+	getopt.parse 3 "file:file_t:+:$1" "exp:str:-:$2" "bytes:uint:+:$3" ${@:4}
+
+	local fd
+
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
 	
 	(($3 == 0)) && return 0
 
-	echo "${2:0:$3}" >&$1 2>/dev/null || \
-	error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_WRITE '$1'"
-	
-	return $?
-}
-
-# func os.file.close <[uint]fd> => [bool]
-#
-# Fecha a conexão com o descritor 'fd'.
-#
-function os.file.close()
-{
-	getopt.parse "descriptor:fd:+:$1"
-	
-	local fd=$(os.file.fd $1)
-	
-	if eval exec "$fd>&-" && eval exec "$fd<&-"; then
-		> "$__RUNTIME/$$/fd/$1"
-	else
-		return 1
+	if ! echo "${2:0:$3}" >&$fd 2>/dev/null; then
+		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_WRITE '$fd'"
+		return $?
 	fi
 	
 	return 0
 }
 
-# func os.file.tell <[uint]fd> => [uint]
+# func os.file.close <[file_t]file> => [bool]
 #
-# Retorna a posição atual do fluxo apontado por 'fd'.
+# Fecha a conexão com 'file'.
 #
-function os.file.tell()
+function os.file.close()
 {
-	getopt.parse "descriptor:fd:+:$1"
-	str.field "$(< "$__RUNTIME/$$/fd/$1")" '|' 3
+	getopt.parse 1 "file:file_t:+:$1" ${@:2}
+
+	local fd
+	
+	IFS='|' read _ _ fd _ <<< "${__OS_FD_OPEN[$1]}"
+
+	if ! eval exec "$fd<&-"; then
+		error.trace def 'file' 'file_t' "$fd" "$__ERR_OS_FILE_CLOSE"
+		return $?
+	fi
+	
+	__OS_FD_OPEN[$1]='|0|0|0'
+	
 	return 0
 }
 
-# func os.file.rewind <[uint]fd> => [bool]
+# func os.file.tell <[file_t]file> => [uint]
 #
-# Seta a posição do fluxo para o inicio do arquivo apontado por 'fd'.
+# Retorna a posição atual do fluxo apontado por 'file'.
+#
+function os.file.tell()
+{
+	getopt.parse 1 "file:file_t:+:$1" ${@:2}
+
+	local cur
+	IFS='|' read _ _ _ cur <<< "${__OS_FD_OPEN[$1]}"
+	echo "$cur"
+	return 0
+}
+
+# func os.file.rewind <[file_t]file> => [bool]
+#
+# Seta a posição do fluxo para o inicio do arquivo apontado por 'file'.
 # Retorna 'true' para sucesso, caso contrário 'false' e uma mensagem de erro
 # é retornada.
 # 
 function os.file.rewind()
 {
-	getopt.parse "descriptor:fd:+:$1"
+	getopt.parse 1 "file:file_t:+:$1" ${@:2}
 	os.file.seek $1 0 $SEEK_SET
-	return $?
+	return 0
 }
 
-# func os.file.seek <[uint]fd> <[uint]offset> <[uint]whence> => [bool]
+# func os.file.seek <[file_t]file> <[uint]offset> <[uint]whence> => [bool]
 #
-# Seta a posição do arquivo de fluxo apontado por 'fd'. A nova posição medida
+# Seta a posição do arquivo de fluxo apontado por 'file'. A nova posição medida
 # em bytes é obitida pelo acréscimo de 'offset' bytes à posição especificada 
 # por 'whence'.
 # Retorna 'true' para sucesso, caso contrário uma mensagem de erro é retornada.
@@ -838,7 +902,8 @@ function os.file.rewind()
 # Existem duas maneiras de construir um projeto de software. Uma é fazê-lo tão simples que obviamente não há falhas. A outra é fazê-lo tão complicado que não existem falhas óbvias.
 #
 # $ source os.sh
-# $ os.file arq
+# 
+# $ var arq file_t
 #
 # # Abrindo arquivo para leitura
 # $ os.open arq 'frase.txt' $O_RDONLY
@@ -852,99 +917,32 @@ function os.file.rewind()
 #
 function os.file.seek()
 {
-	getopt.parse "descriptor:fd:+:$1" "offset:uint:+:$2" "whence:uint:+:$3"
+	getopt.parse 3 "file:file_t:+:$1" "offset:uint:+:$2" "whence:uint:+:$3" ${@:4}
 	
-	local fd=$1
-	local offset=$2
-	local whence=$3
-	local mode file cur end
-	
-	mode=$(os.file.mode $fd)
-	file=$(os.file.name $fd)
-	cur=$(os.file.tell $fd)
-	end=$(os.file.size $fd)
+	local file mode fd cur
+
+	IFS='|' read file mode fd cur <<< "${__OS_FD_OPEN[$1]}"
 
 	case $mode in
-		0) 	parse="$fd<$file";;
-		1) 	parse="$fd>>$file";;
-		2)	parse="$fd<>$file";;
-		*) 	error.__exit 'flag' 'uint' "$mode" "$__OS_ERR_OPEN_FLAG";;
-	esac
-	
-	eval exec "$parse" 2>/dev/null || error.__exit 'descriptor' "fd" '-' "$__OS_ERR_FD_READ '$fd'"
+		0)	eval exec "$fd<'$file'";;
+		1) 	eval exec "$fd>>'$file'";;
+		2)	eval exec "$fd<>'$file'";;
+	esac 2>/dev/null || {
+		error.trace def 'file' "file_t" '-' "$__ERR_OS_FD_READ '$fd'"
+		return $?
+	}
 
-	case $whence in
-		0)	os.file.read $fd $offset 1>/dev/null;;
-		1) 	os.file.read $fd $((cur+offset)) 1>/dev/null;;
-		2)	os.file.read $fd $end 1>/dev/null;;
-		*) 	error.__exit 'whence' 'uint' "$whence" "$__OS_ERR_SEEK_FLAG";;
-	esac
+	__OS_FD_OPEN[$1]="$file|$mode|$fd|0"
 
-	return $?
-}
-
-function os.__init()
-{
-	local depends=(id pwd touch mkdir stat)
-	local dep deps
-
-	for dep in ${depends[@]}; do
-		if ! command -v $dep &>/dev/null; then
-			deps+=($dep)
-		fi
-	done
-
-	[[ $deps ]] && error.__depends $FUNCNAME ${BASH_SOURCE##*/} "${deps[*]}"
+	case $3 in
+		0)	os.file.read $1 $2;;
+		1) 	os.file.read $1 $(($cur+$2));;
+		2)	os.file.read $1 $(os.file.size $1);;
+		*) 	error.trace def 'whence' 'uint' "$3" "$__ERR_OS_SEEK_FLAG"; return $?;;
+	esac 1>/dev/null
 
 	return 0
 }
 
-os.__init
-
-readonly -f os.file \
-			os.chdir \
-			os.chmod \
-			os.stackdir \
-			os.exists \
-			os.environ \
-			os.getenv \
-			os.setenv \
-			os.geteuid \
-			os.argv \
-			os.argc \
-			os.getgid \
-			os.getgroups \
-			os.getpid \
-			os.getppid \
-			os.getwd \
-			os.hostname \
-			os.chatime \
-			os.chmtime \
-			os.chtime \
-			os.mkdir \
-			os.remove \
-			os.rename \
-			os.tempdir \
-			os.create \
-			os.stat \
-			os.open \
-			os.file.isatty \
-			os.file.writable \
-			os.file.readable \
-			os.file.size \
-			os.file.name \
-			os.file.mode \
-			os.file.stat \
-			os.file.fd \
-			os.file.readlines \
-			os.file.readline \
-			os.file.read \
-			os.file.writeline \
-			os.file.write \
-			os.file.close \
-			os.file.tell \
-			os.file.rewind \
-			os.file.seek \
-			os.__init 
-
+source.__INIT__
 # /* __OS_SH */ #

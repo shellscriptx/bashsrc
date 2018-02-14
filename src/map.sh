@@ -1,11 +1,21 @@
 #!/bin/bash
 
-#----------------------------------------------#
-# Source:           map.sh
-# Data:             22 de novembro de 2017
-# Desenvolvido por: Juliano Santos [SHAMAN]
-# E-mail:           shellscriptx@gmail.com
-#----------------------------------------------#
+#    Copyright 2018 Juliano Santos [SHAMAN]
+#
+#    This file is part of bashsrc.
+#
+#    bashsrc is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    bashsrc is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
 [[ $__MAP_SH ]] && return 0
 
@@ -13,29 +23,19 @@ readonly __MAP_SH=1
 
 source builtin.sh
 
-# func map <[var]name> ...
-#
-# Cria variável do tipo 'map'
-#
-function map(){ builtin.__init_obj_type "$FUNCNAME" "$@"; return $?; }
-
-# func map.clear <[map]name>
-#
-# Limpa todos os elementos de 'name'.
-#
-function map.clear()
-{
-	getopt.parse "name:map:+:$1"
-
-	declare -n __map=$1
-	local __key
-	
-	for __key in "${!__map[@]}"; do
-		unset __map[$__key]
-	done
-
-	return 0
-}
+__TYPE__[map_t]='
+map.clone
+map.copy
+map.fromkeys
+map.get
+map.keys
+map.items
+map.list
+map.remove
+map.add
+map.contains
+map.pop
+'
 
 # func map.clone <[map]src> <[map]dest>
 #
@@ -44,12 +44,12 @@ function map.clear()
 #
 function map.clone()
 {
-	getopt.parse "src:map:+:$1" "dest:map:+:$2"
+	getopt.parse 2 "src:map:+:$1" "dest:map:+:$2" ${@:3}
 	
 	declare -n __map1=$1 __map2=$2
 	local __key
 
-	map.clear $2
+	__map2=()
 	
 	for __key in "${!__map1[@]}"; do
 		__map2[$__key]=${__map1[$__key]}
@@ -65,7 +65,7 @@ function map.clone()
 #
 function map.copy()
 {
-	getopt.parse "src:map:+:$1" "dest:map:+:$2"
+	getopt.parse 2 "src:map:+:$1" "dest:map:+:$2" ${@:3}
 	
 	declare -n __map1=$1 __map2=$2
 	local __key
@@ -83,7 +83,7 @@ function map.copy()
 #
 function map.fromkeys()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1"
 
 	declare -n __map=$1
 	local __key
@@ -101,7 +101,7 @@ function map.fromkeys()
 #
 function map.get()
 {
-	getopt.parse "name:map:+:$1" "key:str:+:$2"
+	getopt.parse 2 "name:map:+:$1" "key:str:+:$2" ${@:3}
 
 	declare -n __map=$1
 	echo "${__map[$2]}"
@@ -114,7 +114,7 @@ function map.get()
 #
 function map.keys()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1" ${@:2}
 	
 	declare -n __map=$1
 	printf "%s\n" "${!__map[@]}"
@@ -127,7 +127,7 @@ function map.keys()
 #
 function map.items()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1" ${@:2}
 	
 	declare -n __map=$1
 	printf "%s\n" "${__map[@]}"
@@ -141,7 +141,7 @@ function map.items()
 #
 function map.list()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1" ${@:2}
 
 	declare -n __map=$1
 	local __key
@@ -159,7 +159,7 @@ function map.list()
 #
 function map.remove()
 {
-	getopt.parse "name:map:+:$1" "key:str:+:$2"
+	getopt.parse 2 "name:map:+:$1" "key:str:+:$2" ${@:3}
 	
 	declare -n __map=$1
 	unset __map[$2]
@@ -173,7 +173,7 @@ function map.remove()
 #
 function map.add()
 {
-	getopt.parse "name:map:+:$1" "key:str:+:$2" "object:str:-:$3"
+	getopt.parse 3 "name:map:+:$1" "key:str:+:$2" "object:str:-:$3" ${@:4}
 	
 	declare -n __map=$1
 	__map[$2]=$3
@@ -186,7 +186,7 @@ function map.add()
 #
 function map.contains()
 {
-	getopt.parse "name:map:+:$1" "key:str:+:$2"
+	getopt.parse 2 "name:map:+:$1" "key:str:+:$2" ${@:3}
 	
 	declare -n __map=$1
 	local __key
@@ -205,7 +205,7 @@ function map.contains()
 #
 function map.pop()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "name:map:+:$1" ${@:2}
 	
 	declare -n __map=$1
 	local __key
@@ -217,18 +217,5 @@ function map.pop()
 	return 0
 }
 
-readonly -f map.clear \
-			map.clone \
-			map.copy \
-			map.fromkeys \
-			map.get \
-			map.keys \
-			map.items \
-			map.list \
-			map.remove \
-			map.add \
-			map.contains \
-			map.pop  \
-			map
-
-# /* __MAP_SRC */
+source.__INIT__
+# /* __MAP_SH */

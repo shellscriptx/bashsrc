@@ -1,27 +1,36 @@
 #!/bin/bash
 
-#----------------------------------------------#
-# Source:           time.sh
-# Data:             23 de novembro de 2017
-# Desenvolvido por: Juliano Santos [SHAMAN]
-# E-mail:           shellscriptx@gmail.com
-#----------------------------------------------#
+#    Copyright 2018 Juliano Santos [SHAMAN]
+#
+#    This file is part of bashsrc.
+#
+#    bashsrc is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    bashsrc is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
 [[ $__TIME_SH ]] && return 0
 
 readonly __TIME_SH=1
 
 source builtin.sh
-source map.sh
 
 # arquivos
 readonly __TIME_TZFILE=/usr/share/zoneinfo/zone.tab
 readonly __TIME_CTZFILE=/etc/timezone
 
 # erros
-readonly __TIME_ERR_TZNAME='nome do fuso horário inválido'
-readonly __TIME_ERR_TZFILE="não foi possível localizar o arquivo"
-readonly __TIME_ERR_DATETIME='data/hora inválida'
+readonly __ERR_TIME_TZNAME='nome do fuso horário inválido'
+readonly __ERR_TIME_TZFILE="não foi possível localizar o arquivo"
+readonly __ERR_TIME_DATETIME='data/hora inválida'
 
 # meses
 readonly JANUARY=1 
@@ -79,6 +88,19 @@ readonly -a __weekdays=(
 'Saturday'
 )
 
+var time_t struct_t
+
+time_t.__add__ \
+		tm_mon 		uint \
+		tm_mday 	uint \
+		tm_hour 	uint \
+		tm_min 		uint \
+		tm_sec 		uint \
+		tm_year 	uint \
+		tm_yday 	uint \
+		tm_wday 	uint \
+		tm_isdst 	zone
+
 
 # func time.today => [str]
 #
@@ -86,158 +108,79 @@ readonly -a __weekdays=(
 #
 function time.today()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 "${@:1}"
 	printf "%(%a %b %d %H:%M:%S %Y %z)T\n"
 	return 0	
 }
 
-# func time.gmtime <[map]datetime> <[uint]seconds>
+# func time.gmtime <[time_t]struct> <[uint]seconds>
 #
-# Salva em 'datetime' a estrutura data e hora convertidos
+# Salva em 'struct' a estrutura data e hora convertidos
 # a partir do tempo em segundos especificado em 'seconds'.
-#
-# map[chave] 
-#
-# chaves:
-#
-# tm_sec    - Segundos (0-60)
-# tm_min    - Minutos (0-59)
-# tm_hour   - Horas	(0-23)
-# tm_mday   - Dia do mês (1-31)
-# tm_mon    - Mês (1-12)
-# tm_year   - Ano (1900)
-# tm_wday   - Dia da semana (0-6, domingo = 0)
-# tm_yday   - Dia do ano (0-365)
-# tm_isdst  - Fuso horário
-#
-# Exemplo:
-#
-# #!/bin/bash
-# # script: datetime.sh
-#
-# source time.sh
-#
-# # Declara variável do tipo map.
-# declare -A dt
-#
-# # Salva em 'dt' a hora atual.
-# time.gmtime dt
-#
-# # Exibindo os campos da hora.
-# echo 'Horas:' ${dt[tm_hour]}
-# echo 'Minutos:' ${dt[tm_min]}
-# echo 'Segundos:' ${dt[tm_sec]}
-#
-# # FIM
-#
-# $ ./datetime.sh
-# Horas: 11
-# Minutos: 52
-# Segundos: 57
 #
 function time.gmtime()
 {
-	getopt.parse "name:map:+:$1" "seconds:uint:+:$2"
+	getopt.parse 2 "struct:time_t:+:$1" "seconds:uint:+:$2" "${@:3}"
 	
-	declare -n  __map_ref=$1
-	local __info
+	info_t=($(printf "%(%_m %_d %_H %_M %_S %_Y %_j %_w %z)T" $2))
 
-	__info=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
-		
-	__map_ref[tm_mon]=${__info[0]}
-	__map_ref[tm_mday]=${__info[1]}
-	__map_ref[tm_hour]=${__info[2]}
-	__map_ref[tm_min]=${__info[3]}
-	__map_ref[tm_sec]=${__info[4]}
-	__map_ref[tm_year]=${__info[5]}
-	__map_ref[tm_yday]=${__info[6]}
-	__map_ref[tm_wday]=${__info[7]}
-	__map_ref[tm_isdst]=${__info[8]}
+	$1.tm_mon = ${info_t[0]}
+	$1.tm_mday = ${info_t[1]}
+	$1.tm_hour = ${info_t[2]}
+	$1.tm_min = ${info_t[3]}
+	$1.tm_sec = ${info_t[4]}
+	$1.tm_year = ${info_t[5]}
+	$1.tm_yday = ${info_t[6]}
+	$1.tm_wday = ${info_t[7]}
+	$1.tm_isdst = ${info_t[8]}
 
 	return 0
 }
 
-# func time.mtime <[map]name>
+# func time.mtime <[time_t]struct>
 #
-# Converte a hora atual para um estrutura time e salva em 'name'.
+# Converte a hora atual para um estrutura 'time_t'.
 #
 function time.mtime()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 1 "struct:time_t:+:$1" "${@:2}"
 	
-	declare -n __map_ref=$1
-	local __info
+	local info_t
 
-	__info=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T"))
-	
-	__map_ref[tm_mon]=${__info[0]}
-	__map_ref[tm_mday]=${__info[1]}
-	__map_ref[tm_hour]=${__info[2]}
-	__map_ref[tm_min]=${__info[3]}
-	__map_ref[tm_sec]=${__info[4]}
-	__map_ref[tm_year]=${__info[5]}
-	__map_ref[tm_yday]=${__info[6]}
-	__map_ref[tm_wday]=${__info[7]}
-	__map_ref[tm_isdst]=${__info[8]}
+	info_t=($(printf "%(%_m %_d %_H %_M %_S %_Y %_j %_w %z)T"))
+
+	$1.tm_mon = ${info_t[0]}
+	$1.tm_mday = ${info_t[1]}
+	$1.tm_hour = ${info_t[2]}
+	$1.tm_min = ${info_t[3]}
+	$1.tm_sec = ${info_t[4]}
+	$1.tm_year = ${info_t[5]}
+	$1.tm_yday = ${info_t[6]}
+	$1.tm_wday = ${info_t[7]}
+	$1.tm_isdst = ${info_t[8]}
 
 	return 0
 }
 
-# func time.localtime <[uint]seconds> => [map]
+# func time.localtime <[time_t]struct> <[uint]seconds> 
 # 
 # Converte o tempo em segundos para uma estrutura datetime.
 #
-# Exemplo:
-#
-# #!/bin/bash
-# # script: datetime.sh
-#
-# source time.sh
-# source map.sh
-#
-# # Declarando o tipo map.
-# declare -A dt
-#
-# # Convertendo os segundos para a estrutura [map]datetime.
-# seg=$(time.time)
-# echo 'Segundos:' $seg
-# time.localtime dt $seg
-#
-# echo 'Listando estrutura:'
-# map.list dt
-#
-# # FIM
-#
-# $ ./datetime.sh
-# Segundos: 1511404409
-# Listando estrutura:
-#
-# tm_wday|4
-# tm_mon|11
-# tm_sec|29
-# tm_hour|0
-# tm_isdst|-0200
-# tm_min|33
-# tm_mday|23
-# tm_yday|327
-# tm_year|2017
-#
 function time.localtime()
 {
-	getopt.parse "name:map:+:$1" "seconds:uint:+:$2"	
+	getopt.parse 2 "struct:time_t:+:$1" "seconds:uint:+:$2" ${@:3}
 	
-	declare -n __map_ref=$1
-	local __info=($(printf "%(%_m %_d %_H %_M %_S %Y %_j %w %z)T" $2))
-	
-	__map_ref[tm_mon]=${__info[0]}
-	__map_ref[tm_mday]=${__info[1]}
-	__map_ref[tm_hour]=${__info[2]}
-	__map_ref[tm_min]=${__info[3]}
-	__map_ref[tm_sec]=${__info[4]}
-	__map_ref[tm_year]=${__info[5]}
-	__map_ref[tm_yday]=${__info[6]}
-	__map_ref[tm_wday]=${__info[7]}
-	__map_ref[tm_isdst]=${__info[8]}
+	info_t=($(printf "%(%_m %_d %_H %_M %_S %_Y %_j %_w %z)T" $2))
+
+	$1.tm_mon = ${info_t[0]}
+	$1.tm_mday = ${info_t[1]}
+	$1.tm_hour = ${info_t[2]}
+	$1.tm_min = ${info_t[3]}
+	$1.tm_sec = ${info_t[4]}
+	$1.tm_year = ${info_t[5]}
+	$1.tm_yday = ${info_t[6]}
+	$1.tm_wday = ${info_t[7]}
+	$1.tm_isdst = ${info_t[8]}
 			
 	return 0
 }
@@ -249,7 +192,7 @@ function time.localtime()
 #
 function time.tznames()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%s\n" ${!__timezones[@]}
 	return 0
 }
@@ -267,7 +210,7 @@ function time.tznames()
 #
 function time.tzinfo()
 {
-	getopt.parse "tzname:str:+:$1"
+	getopt.parse 1 "tzname:str:+:$1" ${@:2}
 	
 	local tzname=$1
 
@@ -278,7 +221,7 @@ function time.tzinfo()
 		echo "${tzname}|${__timezones[$tzname]}|${utc}"
 		unset TZ
 	else	
-		error.__exit "tzname" "str" "$tzname" "$__TIME_ERR_TZNAME"
+		error.trace def "tzname" "str" "$tzname" "$__ERR_TIME_TZNAME"; return $?
 	fi
 
 	return 0
@@ -290,25 +233,25 @@ function time.tzinfo()
 #
 function time.tzname()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	
 	[[ $TZ ]] && tzname=$TZ || tzname=$(< $__TIME_CTZFILE)
 	echo "$tzname"
 	return 0
 }
 
-# func time.tzgmtime <[map]name> <[str]tzname>
+# func time.tzgmtime <[struct]name> <[str]tzname>
 #
 # O mesmo que 'time.gmtime', porém salva a estrutura de hora e data
 # do fuso horário especificado em 'tzname'.
 #
 function time.tzgmtime()
 {
-	getopt.parse "name:map:+:$1"
+	getopt.parse 2 "name:time_t:+:$1" "tzname:str:+:$2" ${@:3}
 
 	time.tzinfo $2 1>/dev/null
 	export TZ=$2
-	time.gmtime "$1"
+	time.gmtime "$1" $(printf '%(%s)T')
 	unset TZ
 	return 0
 }
@@ -319,7 +262,7 @@ function time.tzgmtime()
 #
 function time.tztoday()
 {
-	getopt.parse "tzname:str:+:$1"
+	getopt.parse 1 "tzname:str:+:$1" ${@:2}
 	time.tzinfo "$1" 1>/dev/null
 	export TZ=$1
 	time.today
@@ -333,7 +276,7 @@ function time.tztoday()
 #
 function time.now()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%H:%M:%S)T\n"
 	return 0
 }
@@ -344,7 +287,7 @@ function time.now()
 #
 function time.date()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%d/%m/%Y)T\n"
 	return 0
 }
@@ -355,8 +298,8 @@ function time.date()
 #
 function time.hour()
 {
-	getopt.parse "-:null:-:$*"
-	printf "%(%_H)T\n"
+	getopt.parse 0 ${@:1}
+	printf "%(%H)T\n"
 	return 0
 }
 
@@ -366,8 +309,8 @@ function time.hour()
 #
 function time.minute()
 {
-	getopt.parse "-:null:-:$*"
-	printf "%(%_M)T\n"
+	getopt.parse 0 ${@:1}
+	printf "%(%M)T\n"
 	return 0
 }
 
@@ -377,8 +320,8 @@ function time.minute()
 #
 function time.second()
 {
-	getopt.parse "-:null:-:$*"
-	printf "%(%_S)T\n"
+	getopt.parse 0 ${@:1}
+	printf "%(%S)T\n"
 	return 0
 }
 
@@ -389,8 +332,8 @@ function time.second()
 #
 function time.month()
 {
-	getopt.parse "-:null:-:$*"
-	printf "%(%_m)T\n"
+	getopt.parse 0 ${@:1}
+	printf "%(%m)T\n"
 	return 0
 }
 
@@ -400,8 +343,8 @@ function time.month()
 #
 function time.month.str
 {
-	getopt.parse "-:null:-:$*"
-	echo "${__months[$(printf "%(%_m)T")]}"
+	getopt.parse 0 ${@:1}
+	echo "${__months[$(printf "%(%m)T")]}"
 	return 0
 }
 
@@ -412,7 +355,7 @@ function time.month.str
 #
 function time.weekday()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%w)T\n"
 	return 0
 }
@@ -423,7 +366,7 @@ function time.weekday()
 #
 function time.weekday.str()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	echo "${__weekdays[$(time.weekday)]}"
 	return 0
 }
@@ -434,7 +377,7 @@ function time.weekday.str()
 #
 function time.year()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf "%(%Y)T\n"
 	return 0
 }
@@ -446,8 +389,8 @@ function time.year()
 #
 function time.yearday()
 {
-	getopt.parse "-:null:-:$*"
-	printf "%(%_j)T\n"
+	getopt.parse 0 ${@:1}
+	printf "%(%j)T\n"
 	return 0
 }
 
@@ -458,30 +401,30 @@ function time.yearday()
 #
 function time.day()
 {
-	getopt.parse "-:null:-:$*"
-	printf "%(%_d)T\n"
+	getopt.parse 0 ${@:1}
+	printf "%(%d)T\n"
 	return 0
 }
 
 # func time.time => [uint]
 #
 # Retorna um inteiro positivo representando os segundos desde:
-# qua dez 31 21:00:00 1969.
+# 00:00:00 de 1 de janeiro de 1970 (Hora Universal Sincronizada - UTC)
 #
 function time.time()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	printf '%(%s)T\n'
 	return 0
 }
 
-# func time.ctime => [str]
+# func time.ctime <[uint]seconds> => [str]
 #
 # Converte o tempo em segundos para uma string data e hora local.
 #
 function time.ctime()
 {
-	getopt.parse "seconds:int:+:$1"
+	getopt.parse 1 "seconds:uint:+:$1" ${@:2}
 	printf "%(%a %b %d %H:%M:%S %Y %z)T\n" $1
 	return 0
 }
@@ -492,7 +435,7 @@ function time.ctime()
 #
 function time.tzset()
 {
-	getopt.parse "tzname:str:+:$1"
+	getopt.parse 1 "tzname:str:+:$1" ${@:2}
 	time.tzinfo "$1" 1>/dev/null
 	export TZ=$1
 	return 0
@@ -504,110 +447,181 @@ function time.tzset()
 #
 function time.tzreset()
 {
-	getopt.parse "-:null:-:$*"
+	getopt.parse 0 ${@:1}
 	unset TZ
 	return 0
 }
 
-# func time.asctime <[map]datetime> => [str]
+# func time.asctime <[time_t]struct> => [str]
 #
-# Converte a estrutura 'datetime' para string.
+# Converte a estrutura 'time_t' para string.
 #
 function time.asctime()
 {
-	getopt.parse "datetime:map:+:$1"
+	getopt.parse 1 "struct:time_t:+:$1" ${@:2}
 
-	declare -n __asctime_map=$1
-	
-	if ! (time.__check_time ${__asctime_map[tm_hour]} \
-							${__asctime_map[tm_min]} \
-							${__asctime_map[tm_sec]} &&
-		  time.__check_date ${__asctime_map[tm_wday]} \
-							${__asctime_map[tm_mday]} \
-							${__asctime_map[tm_mon]} \
-							${__asctime_map[tm_year]} \
-							${__asctime_map[tm_yday]}); then
-		
-		error.__exit 'datetime' 'map' "\n$(map.list $1)" "$__TIME_ERR_DATETIME"
+	if	! (time.__check_time $($1.tm_hour) \
+								$($1.tm_min) \
+								$($1.tm_sec) &&
+			time.__check_date 	$($1.tm_wday) \
+								$($1.tm_mday) \
+								$($1.tm_mon) \
+								$($1.tm_year) \
+								$($1.tm_yday)) 2>/dev/null; then
+		error.trace def 'time_t' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
+		return $?
 	fi
-	
+
 	printf "%s %s %d %02d:%02d:%02d %d %s\n" \
-		${__weekdays[${__asctime_map[tm_wday]}]:0:3} \
-		${__months[${__asctime_map[tm_mon]}]:0:3} \
-		${__asctime_map[tm_mday]} \
-		${__asctime_map[tm_hour]} \
-		${__asctime_map[tm_min]} \
-		${__asctime_map[tm_sec]} \
-		${__asctime_map[tm_year]} \
-		${__asctime_map[tm_isdst]}
-		
-	return 0	
+		${__weekdays[$($1.tm_wday)]:0:3} \
+		${__months[$($1.tm_mon)]:0:3} \
+		$($1.tm_mday) \
+		$($1.tm_hour) \
+		$($1.tm_min) \
+		$($1.tm_sec) \
+		$($1.tm_year) \
+		$($1.tm_isdst)
+
+	return 0
 }
 
-# func time.strftime <[str]format> <[map]datetime> => [str]
+# func time.isvalid <[time_t]struct> => [bool]
+#
+# Retorna 'true' se a data e hora contida na estrutura 'time_t' é valida, caso
+# contrário retorna 'false'.
+#
+function time.isvalid()
+{
+	getopt.parse 1 "struct:time_t:+:$1" ${@:2}
+
+	time.__check_time 	$($1.tm_hour) \
+						$($1.tm_min) \
+						$($1.tm_sec) &&
+	time.__check_date 	$($1.tm_wday) \
+						$($1.tm_mday) \
+						$($1.tm_mon) \
+						$($1.tm_year) \
+						$($1.tm_yday)
+
+	return $?
+}
+
+# func time.strftime <[time_t]struct> <[str]format> => [str]
+#
+# Converte a estrutura 'time_t' para o formato especificado em 'format'.
+#
+# Códigos de formato:
+#
+# %a - nome do dia da semana abreviado.
+# %A - nome do dia da semana completo.
+# %b - nome do mês abreviado.
+# %B - nome do mês completo.
+# %c - data e Hora local.
+# %d - dia do mês.
+# %m - mês.
+# %y - último dois digitos do ano.
+# %Y - ano.
+# %H - hora (00..23)
+# %I - hora (01..12)
+# %M - minuto (00..59)
+# %S - segundos (00..59)
+# %j - dia do ano (001...366)
+# %w - dia da semana (1..7)
+# %z - fuso horário.
+#
 function time.strftime()
 {
-	getopt.parse "format:str:+:$1" "datetime:map:+:$2"
+	getopt.parse 2 "struct:time_t:+:$1" "format:str:+:$2" ${@:3}
 
-	declare -n __dt_ref=$2
-	local __fmt=$1
+	local ch fmt week day month year hour min sec i
 
-	if ! (time.__check_time ${__dt_ref[tm_hour]} \
-							${__dt_ref[tm_min]} \
-							${__dt_ref[tm_sec]} &&
-		  time.__check_date ${__dt_ref[tm_wday]} \
-							${__dt_ref[tm_mday]} \
-							${__dt_ref[tm_mon]} \
-							${__dt_ref[tm_year]} \
-							${__dt_ref[tm_yday]}); then
-		
-		error.__exit 'datetime' 'map' "\n$(map.list $2)" "$__TIME_ERR_DATETIME"
+	fmt=$2
+
+	if	! (time.__check_time $($1.tm_hour) \
+								$($1.tm_min) \
+								$($1.tm_sec) &&
+			time.__check_date 	$($1.tm_wday) \
+								$($1.tm_mday) \
+								$($1.tm_mon) \
+								$($1.tm_year) \
+								$($1.tm_yday)) 2>/dev/null; then
+		error.trace def 'time_t' 'struct_t' "$1" "$__ERR_TIME_DATETIME"
+		return $?
 	fi
-	
-	for ((__i=0; __i < ${#__fmt}; __i++)); do
-		
-		__ch=${__fmt:$__i:2}
-		
-		case $__ch in
-			%a) __fmt=${__fmt//$__ch/${__weekdays[${__dt_ref[tm_wday]}]:0:3}};;
-			%A) __fmt=${__fmt//$__ch/${__weekdays[${__dt_ref[tm_wday]}]}};;
-			%b) __fmt=${__fmt//$__ch/${__months[${__dt_ref[tm_mon]}]:0:3}};;
-			%B) __fmt=${__fmt//$__ch/${__months[${__dt_ref[tm_mon]}]}};;
-			%c)	__week=${__weekdays[${__dt_ref[tm_wday]}]:0:3}
-				__day=${__dt_ref[tm_mday]}
-				__month=${__months[${__dt_ref[tm_mon]}]:0:3}
-				__year=${__dt_ref[tm_year]}
-				__hour=${__dt_ref[tm_hour]}
-				__min=${__dt_ref[tm_min]}
-				__sec=${__dt_ref[tm_sec]}
-				__fmt=${__fmt//$__ch/${__week} ${__day} ${__month} ${__year} ${__hour}:${__min}:${__sec}};;
 
-			%d) __fmt=${__fmt//$__ch/${__dt_ref[tm_mday]}};;
-			%m) __fmt=${__fmt//$__ch/${__dt_ref[tm_mon]}};;
-			%y) __fmt=${__fmt//$__ch/${__dt_ref[tm_year]: -2}};;
-			%Y) __fmt=${__fmt//$__ch/${__dt_ref[tm_year]}};;
-			%H) __fmt=${__fmt//$__ch/${__dt_ref[tm_hour]}};;
-			%I) __fmt=${__fmt//$__ch/$((${__dt_ref[tm_hour]}%12))};;
-			%M) __fmt=${__fmt//$__ch/${__dt_ref[tm_min]}};;
-			%S) __fmt=${__fmt//$__ch/${__dt_ref[tm_sec]}};;
-			%j) __fmt=${__fmt//$__ch/${__dt_ref[tm_yday]}};;
-			%w) __fmt=${__fmt//$__ch/${__dt_ref[tm_wday]}};;
-			%z) __fmt=${__fmt//$__ch/${__dt_ref[tm_isdst]}};;
+	for ((i=0; i < ${#fmt}; i++)); do
+		
+		ch=${fmt:$i:2}
+
+		case $ch in
+			%a) fmt=${fmt//$ch/${__weekdays[$($1.tm_wday)]:0:3}};;
+			%A) fmt=${fmt//$ch/${__weekdays[$($1.tm_wday)]}};;
+			%b) fmt=${fmt//$ch/${__months[$($1.tm_mon)]:0:3}};;
+			%B) fmt=${fmt//$ch/${__months[$($1.tm_mon)]}};;
+			%c)	week=${__weekdays[$($1.tm_wday)]:0:3}
+				day=$($1.tm_mday)
+				month=${__months[$($1.tm_mon)]:0:3}
+				year=$($1.tm_year)
+				hour=$($1.tm_hour)
+				min=$($1.tm_min)
+				sec=$($1.tm_sec)
+				fmt=${fmt//$ch/$week $day $month $year $hour:$min:$sec};;
+
+			%d) fmt=${fmt//$ch/$($1.tm_mday)};;
+			%m) fmt=${fmt//$ch/$($1.tm_mon)};;
+			%y) year=$($1.tm_year); fmt=${fmt//$ch/${year: -2}};;
+			%Y) fmt=${fmt//$ch/$($1.tm_year)};;
+			%H) fmt=${fmt//$ch/$($1.tm_hour)};;
+			%I) fmt=${fmt//$ch/$(($($1.tm_hour)%12))};;
+			%M) fmt=${fmt//$ch/$($1.tm_min)};;
+			%S) fmt=${fmt//$ch/$($1.tm_sec)};;
+			%j) fmt=${fmt//$ch/$($1.tm_yday)};;
+			%w) fmt=${fmt//$ch/$($1.tm_wday)};;
+			%z) fmt=${fmt//$ch/$($1.tm_isdst)};;
 		esac
 	done
 					
-	echo "$__fmt"
+	echo "$fmt"
 	
 	return 0	
+}
+
+# func time.format <[str]format> <[uint]seconds> => [str]
+#
+# Retorna uma string substituindo os códigos de formatação contidos 
+# em 'format' pela data e hora padrão convertidos de 'seconds'.
+#
+# Código de formato:
+#
+# %a - nome do dia da semana abreviado.
+# %A - nome do dia da semana completo.
+# %b - nome do mês abreviado.
+# %B - nome do mês completo.
+# %c - data e Hora local.
+# %d - dia do mês.
+# %m - mês.
+# %y - último dois digitos do ano.
+# %Y - ano.
+# %H - hora (00..23)
+# %I - hora (01..12)
+# %M - minuto (00..59)
+# %S - segundos (00..59)
+# %j - dia do ano (001...366)
+# %w - dia da semana (1..7)
+# %z - fuso horário.
+#
+function time.format(){
+	getopt.parse 2 "format:str:+:$1" "seconds:uint:+:$2" ${@:3}
+	printf "%($1)T\n" $2
+	return 0
 }
 
 function time.__check_date()
 {
-	# time.__check_date <week> <day> <month> <year> <yearday>
 	local week=$1 day=$2 month=$3 year=$4 yearday=$5 d=$2 m=$3 y=$4 w tyd 
 	local days=('0 31 28 31 30 31 30 31 31 30 31 30 31' 
 				'0 31 29 31 30 31 30 31 31 30 31 30 31')
-	
+
 	leap_year=$(((year % 4 == 0 && year % 100 != 0) || year % 400 == 0 ? 1 : 0))
 	tyd=$((leap_year == 0 ? 365 : 366))
 	w=$(($((d+=m<3 ? y--: y-2,23*m/9+d+4+y/4-y/100+y/400))%7))
@@ -643,8 +657,11 @@ function time.__check_time()
 
 function time.__init()
 {
-	[[ -e $__TIME_TZFILE ]] || error.__exit '' '' '' "$__TIME_ERR_TZFILE '$__TIME_TZFILE'"
-	[[ -e $__TIME_CTZFILE ]] || error.__exit '' '' '' "$__TIME_ERR_TZFILE '$__TIME_CTZFILE'"	
+	if [[ ! -e $__TIME_TZFILE ]]; then
+		error.trace def '' '' '' "$__ERR_TIME_TZFILE '$__TIME_TZFILE'"; return $?
+	elif [[ ! -e $__TIME_CTZFILE ]]; then
+		error.trace def '' '' '' "$__ERR_TIME_TZFILE '$__TIME_CTZFILE'"; return $?
+	fi
 
 	declare -Ag __timezones
 
@@ -657,35 +674,5 @@ function time.__init()
 
 time.__init
 
-readonly -f time.today \
-			time.gmtime \
-			time.localtime \
-			time.mtime \
-			time.tznames \
-			time.tzinfo \
-			time.tzname \
-			time.tzgmtime \
-			time.tztoday \
-			time.now \
-			time.date \
-			time.hour \
-			time.minute \
-			time.second \
-			time.month \
-			time.month.str \
-			time.weekday \
-			time.weekday.str \
-			time.year \
-			time.yearday \
-			time.day \
-			time.time \
-			time.ctime \
-			time.tzset \
-			time.tzreset \
-			time.asctime \
-			time.strftime \
-			time.__check_date \
-			time.__check_time \
-			time.__init
-
-# /* __TIME_SRC */
+source.__INIT__
+# /* __TIME_SH */

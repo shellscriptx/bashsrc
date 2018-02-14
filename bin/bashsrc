@@ -1,24 +1,34 @@
 #!/bin/bash
 
-#-------------------------------------------------------
-# Script: bashsrc (util)
-# Descrição: Utilitário para consulta de documentações
-# Desenvolvido por: Juliano Santos [SHAMAN]
-#-------------------------------------------------------
+#    Copyright 2018 Juliano Santos [SHAMAN]
+#
+#    This file is part of bashsrc.
+#
+#    bashsrc is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    bashsrc is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
+#
 
 readonly BASENAME=${0##*/}
+<<<<<<< HEAD
 readonly BASHSRC_VERSION=0.1.1-alpha
+=======
+readonly BASHSRC_VERSION=1.0.0
+>>>>>>> dev
 
 if [[ ${#@} -eq 0 ]]; then
 	echo "Uso: $BASENAME [OPÇÕES]"
-	echo "Tente '$BASENAME --help' para mais informações."
+	echo "Tente: '$BASENAME --help' para mais informações."
 	exit 0
-elif [[ ${BASH_VERSINFO[0]} -lt 4 ]]; then
-	exec 1>&2
-	echo "$BASENAME: erro: versão do 'bash' incompatível."
-	echo "atual: $BASH_VERSION" 
-	echo "requerida: 4.0 ou superior"
-	exit 1
 elif [[ ! $BASHSRC_PATH ]]; then
 	man ./intro.gz
 	exit 1
@@ -27,6 +37,24 @@ elif [[ ! -d "$BASHSRC_PATH" ]]; then
 	exit 1
 fi
 
+declare -A re=(
+[funcname]='^\s*[a-zA-Z0-9_.]+'
+[varname]='(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*'
+[comm]='^\s*#\s*\*'
+[func]='^\s*#\s*func\s+'
+[ntype]='(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]'
+[type]="^[^#]*__TYPE__\[(${re[ntype]})\]"
+[objtype]='^[^#]*__TYPE__\[([^]]+)\]='
+[sttype]='^[^#]*var\s+(\w+_[tT])\s+struct_t'
+[const]='^\s*(readonly|declare -[^r]*r[^r]*)\s+[a-zA-Z][a-zA-Z0-9_]+='
+[struct]="^[^#]*var\s+(${re[ntype]})\s+struct_t"
+[nocomm]='^[^#]+'
+[spc]='\s*'
+[stadd]='\.__add__\s+'
+[var]='[^#]*var\s+'
+[st]='\s+struct_t'
+)
+
 function usage()
 {
 	echo "$BASENAME: ferramenta para consulta de documentação e ambiente."
@@ -34,19 +62,22 @@ function usage()
 	echo
 	echo "Argumentos obrigatórios para opções longas também são para opções curtas."
 	echo
-	echo "-l, --list                    - Lista os sources disponíveis em '\$BASHSRC_PATH'"
-	echo "-e, --env                     - Exibe o ambiente configurado em '\$BASHSRC_PATH'."
-	echo "-d, --doc <src>[.funcname]    - Exibe a documentação do source ou função."
-	echo "                                'src' refere-se ao nome da biblioteca a ser"
-	echo "                                consultada, omitindo a extensão '.sh' do arquivo."
- 	echo "                                Se '.funcname' for omitido é retornado o protótipo"
-	echo "                                de todas as funções disponíveis em 'src'."
-	echo "-h, --help                      Exibe ajuda e sai."
-	echo "-v, --version                   Exibe a versão e sai."
+	echo "-l, --list                             - Lista os sources disponíveis em '\$BASHSRC_PATH'"
+	echo "-e, --env                              - Exibe o ambiente configurado em '\$BASHSRC_PATH'."
+	echo "-d, --doc <biblioteca>[.funcao|tipo_t] - Exibe a documentação da biblioteca, função ou tipo."
+    echo "                                         Deve ser informado o nome sem a extensão '.sh' do arquivo."
+ 	echo "                                         Se '.funcao' ou '.tipo_t' for omitido é retornado o protótipo"
+	echo "                                         de todas as funções disponíveis na biblioteca."
+	echo "-c, --check-conflicts                    Verifica se há conflito de tipos nas bibliotecas."
+	echo "-h, --help                               Exibe ajuda e sai."
+	echo "-v, --version                            Exibe a versão e sai."
 	echo
 	echo "Para visualizar a documentação inicial, digite:"
 	echo "$ $BASENAME man"
-
+	echo
+	echo "Desenvolvido por: Juliano Santos [SHAMAN]"
+	echo "Reportar falhas: <shellscriptx@gmail.com>"
+	echo "Wiki: <https://github.com/shellscriptx/bashsrc/wiki>"
 	exit 1
 }
 
@@ -55,67 +86,112 @@ function view_doc()
 	local srcname=(${1/./ })
 	local srcfile=${srcname[0]}.sh
 	local srcdir=$BASHSRC_PATH/src
-	local line var func match comm about
+	local line match prefix ver st stname
 
-	if [[ ${#srcname[@]} -eq 0 ]]; then
-		echo "$BASENAME: nome do source requerido" 1>&2
+	if [[ ${#@} -eq 0 ]]; then
+		echo "$BASENAME: requer nome da biblioteca" 1>&2
 		return 1
 	elif [[ ! -e "$srcdir/$srcfile" ]]; then
-		echo "$BASENAME: $srcname: source não encontrado" 1>&2
+		echo "$BASENAME: '$srcname' biblioteca não encontrada" 1>&2
 		return 1
 	fi
 	
-	shopt -s extglob
+	shopt -s extglob globasciiranges
 	set -f
 	
-	comm='^\s*#'
-
 	if [[ ${#srcname[@]} -eq 1 ]]; then
-		
-		var='^\s*(readonly|(typeset|declare)\s+-[a-zAF]*r[a-zAF]*)\s+[a-zA-Z]+[a-zA-Z_]*=.*'
-		func='^\s*#\s*func\s+[a-zA-Z0-9.-]+[a-zA-Z0-9._-]*.*'
-		about='^\s*#\s*\[about]'
-
 		while read line; do
-			[[ $line =~ ($var|$func) ]] && echo ${line#+(#)}
-		done < "$srcdir/$srcfile"
-	else
-
-		func="^\s*#\s*func\s+${1#builtin.}\s+"
-
-		while read line; do
-			if [[ ! $match ]]; then
-				if [[ $line =~ $func ]]; then
-					echo "${line#+(#)}"
-					match=1
-				fi
-			elif [[ $line =~ $comm ]]; then
-				echo "${line#+(#)}"
-			else
-				break
+			if [[ $line =~ ${re[comm]} ]]; then echo "${line#+(#)}"
+			elif [[ $line =~ ${re[func]} ]]; then echo "${line#+(#)}"
+			elif [[ $line =~ ${re[type]} ]]; then echo "type ${BASH_REMATCH[1]}"
+			elif [[ $line =~ ${re[const]} ]]; then echo "$line"
+			elif [[ $line =~ ${re[struct]} ]]; then echo "struct ${BASH_REMATCH[1]}"
 			fi
 		done < "$srcdir/$srcfile"
+	else
+		prefix=${1#builtin.}; prefix=${prefix##*+(${re[ntype]})${re[st]}}
+		while read line; do
+			[[ $ver -eq 1 && $line =~ ${re[nocomm]} ]] || 
+			[[ $ver -eq 2 && $line =~ ^${re[spc]}$ ]] && break
+			[[ $line =~ ^${re[var]}(${prefix#*.})${re[st]} ]] && 
+			stname=${BASH_REMATCH[1]}
+
+			if [[ $line =~ ${re[func]}${prefix} ]]; then
+				ver=1; match=1
+			elif [[ $line =~ __TYPE__\[(${1#*.})\] ]]; then
+				echo "type ${BASH_REMATCH[1]}"
+				echo
+				echo "Implementa o(s) método(s) do objeto '${BASH_REMATCH[1]}'."
+				echo
+				echo "'S' é o identificador da variável implementada."
+				echo
+				echo "Métodos:"
+				echo
+				ver=2
+				match=1
+			elif [[ $line =~ ^${re[spc]}(${stname}${re[stadd]})(.*)$ ]]; then
+				printf -v st '%s ' ${BASH_REMATCH[2]}
+				echo -e "struct $stname\n"
+				printf '%-15s %s\n' 'Membro' 'Tipo' '' '' $st
+				match=1
+			fi
+			
+			case $ver in
+				1) 	echo "${line#+(#)}";;
+				2)	[[ $line =~ ${re[funcname]} ]] && 
+					! [[ $line =~ __TYPE__ ]] && echo "S.${line##*.}";;
+			esac
+		done < "$srcdir/$srcfile"
 		
-		[[ $match ]] || echo "$BASENAME: '$1' função/documentação não encontrada" 1>&2
+		if ! [[ $match ]]; then
+			echo "$BASENAME: '$1' documentação não encontrada." 1>&2
+			return 1
+		fi
 	fi
 	
 	return 0
 }
 
+function check_conflicts()
+{
+   local srcfile cur old line
+
+	while read srcfile; do
+		while read line; do
+			[[ "$line" =~ ${re[objtype]} ]] ||
+			[[ "$line" =~ ${re[sttype]} ]] && 
+			echo "${BASH_REMATCH[1]}|$srcfile"
+		done < "$srcfile"
+	done < <(list_sources) | sort -d -t'|' -k1 | while read cur; do
+		if [[ "${old%|*}" == "${cur%|*}" ]]; then
+			echo -e "Conflito(s):\n"
+			echo "Tipo: ${old%|*}"
+			echo "Source 1: ${old#*|}"
+			echo "Source 2: ${cur#*|}"
+			echo
+			c=1
+		fi
+		old="$cur"
+	done
+
+	return 0
+}
+
 function list_sources()
 {
-	local src c
+	local dir file
+	local listdir=${1:-$BASHSRC_PATH/src}
 
-	echo -e "Diretório: $BASHSRC_PATH\n"
-	
-	for srcfile in "$BASHSRC_PATH/src/"*.sh; do
-		srcname=${srcfile##*/}
-		srcname=${srcname%.*}
-		echo "$srcname"
-		((c++))
+	for dir in "${listdir[@]}"; do
+		for file in "$dir/"*; do
+			if [[ -d "$file" ]]; then
+				list_sources "$file"
+			else
+				[[ $file =~ \.sh$ ]] &&
+				echo "$file"
+			fi
+		done
 	done
-	
-	echo -e "\nTotal: $c"
 
 	return 0
 }
@@ -124,6 +200,7 @@ case $1 in
 	-d|--doc) view_doc $2;;
 	-l|--list) list_sources;;
 	-e|--env) printf "BASHSRC_PATH=%s\nPATH=%s\n" $BASHSRC_PATH $PATH;;
+	-c|--check-conflicts) check_conflicts;;
 	-h|--help) usage;;
 	-v|--version) echo "$BASENAME $BASHSRC_VERSION";;
 	man) man $BASHSRC_PATH/bin/intro.gz;;
@@ -131,4 +208,4 @@ case $1 in
 		echo "Tente '$BASENAME --help' para mais informações." 1>&2;;
 esac
 
-exit 0
+exit $?
