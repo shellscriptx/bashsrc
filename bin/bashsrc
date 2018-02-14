@@ -19,11 +19,7 @@
 #
 
 readonly BASENAME=${0##*/}
-<<<<<<< HEAD
-readonly BASHSRC_VERSION=0.1.1-alpha
-=======
 readonly BASHSRC_VERSION=1.0.0
->>>>>>> dev
 
 if [[ ${#@} -eq 0 ]]; then
 	echo "Uso: $BASENAME [OPÇÕES]"
