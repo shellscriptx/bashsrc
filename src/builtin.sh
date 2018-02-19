@@ -191,6 +191,7 @@ readonly -A __FLAG_IN=(
 [array]='^[^[]+\[\]$'
 [szarray]='^[^[]+\[([0-9]|[1-9][0-9]+)\]$'
 [farray]='^([^[]+)\[([^]]+)\]$'
+[st_mident]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]+[a-zA-Z])?$'
 )
 
 # func has <[str]exp1> on <[str]exp2> => [bool]
@@ -244,9 +245,7 @@ function swap(){
 function sum()
 {
 	getopt.parse -1 "num:int:-:$1" ... "${@:2}"
-	local tmp=($*)
-	local nums=${tmp[@]}
-	echo $((${nums// /+}))
+	local n=$*; echo $((${n// /+}))
 	return 0
 }
 
@@ -1431,16 +1430,15 @@ function __sum__()
 	getopt.parse -1 "var:var:+:$1" "num:int:-:$2" ... "${@:3}"
 
 	declare -n __byref=$1
-	local __tmp __nums __elem
+	local __n __elem
 
-	__tmp=(${*:2})
-	__nums=${__tmp[@]}
-	
+	__n=${*:2}
+
 	for __elem in "${!__byref[@]}"; do
 		if [[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[int]} ]]; then
 			[[ $($1.__typeof__) == ptr_t ]] &&
-			__byref[$__elem]=$((${__byref[$__elem]}+${__nums// /+})) ||
-			echo "$((${__byref[$__elem]}+${__nums// /+}))"
+			__byref[$__elem]=$((${__byref[$__elem]}+${__n// /+})) ||
+			echo "$((${__byref[$__elem]}+${__n// /+}))"
 		fi
 	done
 
