@@ -60,7 +60,10 @@ function struct.__add__(){
 	set "${@:2}"
 
 	while [[ ${#@} -gt 0 ]]; do
-		if ! [[ $2 ]]; then
+		if ! [[ $1 =~ ${__FLAG_IN[st_mident]} ]]; then
+			error.trace def 'name' 'struct' "$1" "$__ERR_STRUCT_MEMBER_NAME"
+			return $?
+		elif ! [[ $2 ]]; then
 			error.trace def "$struct" "$1" '' "$__ERR_STRUCT_MEM_TYPE_REQUIRED"
 			return $?
 		elif [[ ${__INIT_OBJ_TYPE[$2]} == struct_t ]]; then
