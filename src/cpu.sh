@@ -23,9 +23,9 @@ readonly __CPU_SH=1
 
 source builtin.sh
 
-var cpuinfo_t struct_t
+var cpu_t struct_t
 
-cpuinfo_t.__add__ \
+cpu_t.__add__ \
 	processor		uint \
 	vendor_id		str \
 	family			str \
@@ -45,9 +45,9 @@ cpuinfo_t.__add__ \
 	clflush_size	uint \
 	address_size	str
 
-# func cpu.getinfo <[cpuinfo_t[]]struct> => [bool]
+# func cpu.getinfo <[cpu_t[]]struct> => [bool]
 #
-# Obtem as informações do processador e salva no array implementado por 'cpuinfo_t'.
+# Obtem as informações do processador e salva no array da estrutura 'cpu_t'.
 # Retorna 'true' para sucesso, caso contrário 'false.'
 #
 # Exemplo:
@@ -57,7 +57,7 @@ cpuinfo_t.__add__ \
 # source cpu.sh
 #
 # # Implementa um array de 4 elementos.
-# var info[4] cpuinfo_t
+# var info[4] cpu_t
 #
 # Obtem as informações.
 # cpu.getinfo info
@@ -99,7 +99,7 @@ cpuinfo_t.__add__ \
 #
 function cpu.getinfo()
 {
-	getopt.parse 1 "struct:cpuinfo_t[]:+:$1" ${@:2}
+	getopt.parse 1 "struct:cpu_t[]:+:$1" ${@:2}
 
 	local flag info i
 
@@ -128,7 +128,7 @@ function cpu.getinfo()
 			clflushsize)	$1[$i].clflush_size = "$info";;
 			addresssizes)	$1[$i].address_size = "$info";;
 		esac 2>/dev/null || {
-			error.trace def 'struct' "cpuinfo_t" '' "'$1[$i]' o índice está fora dos limites do array"
+			error.trace def 'struct' "cpu_t" '' "'$1[$i]' o índice está fora dos limites do array"
 			return $?
 		}
 	done < /proc/cpuinfo || error.trace def
