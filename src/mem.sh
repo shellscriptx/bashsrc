@@ -17,6 +17,12 @@
 #    You should have received a copy of the GNU General Public License
 #    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
+# *
+# * Implementa funções para obter informações sobre o uso da memória
+# * no sistema.
+# *
+# * Os valores obtidos são representados em Kilobyte's.
+# *
 
 [[ $__MEM_SH ]] && return 0
 
@@ -83,6 +89,11 @@ memstat_t.__add__ \
 	direct_map_4k	 	uint \
 	direct_map_2m	 	uint
 
+# func mem.stats <[memstat_t]struct> => [bool]
+#
+# Obtem as estatisticas de uso da memória do sistema e salva na estrutura 'memstat_t'.
+# Retorna 'true' para sucesso, caso contrário 'false'.
+#
 function mem.stats()
 {
 	getopt.parse 1 "struct:memstat_t:+:$1" "${@:2}"
@@ -90,14 +101,24 @@ function mem.stats()
 	return $?
 }
 
-function mem.meminfo()
+# func mem.physical <[mem_t]struct> => [bool]
+#
+# Obtem informações da memória física e salva na estrutura 'mem_t'.
+# Retorna 'true' para sucesso, caso contrário 'false'.
+#
+function mem.physical()
 {
 	getopt.parse 1 "struct:mem_t:+:$1" "${@:2}"
 	mem.__get_mem_info mem $1
 	return $?
 }
 
-function mem.swapinfo()
+# func mem.swap <[swap_t]struct> => [bool]
+#
+# Obtem informações da memória virtual e salva na estrutura 'swap_t'.
+# Retorna 'true' para sucesso, caso contrário 'false'.
+#
+function mem.swap()
 {
 	getopt.parse 1 "struct:swap_t:+:$1" "${@:2}"
 	mem.__get_mem_info swap $1
@@ -109,7 +130,8 @@ function mem.__get_mem_info()
 	local flag size
 	
 	while read flag size _; do
-		flag=${flag,,}; flag=${flag%:}
+		flag=${flag,,}
+		flag=${flag%:}
 		case $1 in
 			stats)
 				case $flag in
@@ -175,13 +197,13 @@ function mem.__get_mem_info()
 					'swapfree')				$2.free = $size;;
 				esac
 				;;
-		esac
-	done < /proc/meminfo || {
-		error.trace def
-		return $?
-	}
+		esac 2>/dev/null || {
+			error.trace def
+			return $?
+		}
+	done < /proc/meminfo 
 
-	return 0
+	return $?
 }
 
 source.__INIT__
