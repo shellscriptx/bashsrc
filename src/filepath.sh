@@ -282,6 +282,29 @@ function filepath.glob()
 	return $?
 }
 
+# func filepath.fnglob <[str]pattern> <[func]funcname> <[str]args> ...
+#
+# Chama 'funcname' a cada iteração, passando o padrão casado como argumento posicional '$1'.
+#
+function filepath.fnglob()
+{
+	getopt.parse -1 "pattern:str:+:$1" "funcname:func:+:$2" "str:args:-:$3" ${@:4}
+	
+	local file
+
+	if [ -x "${1%/*}" ]; then	
+		for file in "${1%/*}/"${1##*/}; do
+			[[ "$file" == "${1%/*}/${1##*/}" ]] && break
+			$2 "$file" "${@:3}"
+		done
+	else
+		error.trace def 'path' 'dir' "${1%/*}" "$__ERR_FILEPATH_READ_DIR"; return $?
+	fi
+	
+	return $?
+}
+
+
 # func filepath.listdir <[dir]dir> => [str]
 #
 # Retorna uma lista iterável com o caminho completo de todos os arquivos em 'path'.
