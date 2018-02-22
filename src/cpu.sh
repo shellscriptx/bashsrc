@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#!/bin/bash
-
 #    Copyright 2018 Juliano Santos [SHAMAN]
 #
 #    This file is part of bashsrc.
