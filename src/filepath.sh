@@ -23,6 +23,12 @@ readonly __FILEPATH_SH=1
 
 source builtin.sh
 
+# Erros
+readonly __ERR_FILEPATH_READ_DIR='acesso negado: não foi possível ler o diretório'
+readonly __ERR_FILEPATH_COPY_PATH='não foi possível copiar o arquivo ou diretório'
+readonly __ERR_FILEPATH_WRITE_DENIED='acesso negado: não foi possível criar o arquivo'
+readonly __ERR_FILEPATH_READ_DENIED='acesso negado: não foi possível ler o arquivo'
+
 __TYPE__[path_t]='
 filepath.ext
 filepath.basename
@@ -59,11 +65,52 @@ filepath.fileinfo.uid
 filepath.fileinfo.user
 '
 
-# Erros
-readonly __ERR_FILEPATH_READ_DIR='acesso negado: não foi possível ler o diretório'
-readonly __ERR_FILEPATH_COPY_PATH='não foi possível copiar o arquivo ou diretório'
-readonly __ERR_FILEPATH_WRITE_DENIED='acesso negado: não foi possível criar o arquivo'
-readonly __ERR_FILEPATH_READ_DENIED='acesso negado: não foi possível ler o arquivo'
+var stat_t struct_t
+
+stat_t.__add__ \
+    dev     uint \
+    inode	uint \
+    mode	hex \
+    nlink	uint \
+    uid		uint \
+    gid		uint \
+    size	uint \
+    blksize	uint \
+    blkcnt	uint \
+	atime	uint \
+	mtime	uint \
+	ctime	uint
+
+# func filepath.stat <[path]filename> <[stat_t]struct> => [bool]
+#
+# Retorna as informações de 'filename' e salva em 'struct'.
+#
+function filepath.stat()
+{
+    getopt.parse 2 "filename:path:+:$1" "struct:stat_t:+:$2" "${@:3}"
+    
+    local stat
+
+    read -a stat < <(stat -c '%d %i %f %h %u %g %s %o %B %X %Y %Z' "$1") 2>/dev/null || {
+        error.trace def "filename" "path" "$1" "não foi possível ler o arquivo"
+        return $?
+    }
+
+    $2.dev = ${stat[0]}
+    $2.inode = ${stat[1]}
+    $2.mode = ${stat[2]}
+    $2.nlink = ${stat[3]}
+    $2.uid = ${stat[4]}
+    $2.gid = ${stat[5]}
+    $2.size = ${stat[6]}
+    $2.blksize = ${stat[7]}
+    $2.blkcnt = ${stat[8]}
+	$2.atime = ${stat[9]}
+	$2.mtime = ${stat[10]}
+	$2.ctime = ${stat[11]}
+
+    return 0
+}
 
 # func filepath.ext <[str]path> => [str]
 #
