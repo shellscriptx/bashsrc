@@ -197,6 +197,7 @@ function mem.__get_mem_info()
 					'swapfree')				$2.free = $size;;
 				esac
 				;;
+			*) false;;
 		esac 2>/dev/null || {
 			error.trace def
 			return $?
