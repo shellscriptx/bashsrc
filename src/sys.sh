@@ -58,8 +58,8 @@ function sys.uname()
 	$1.nodename = "$(< $__SYS_KERNEL/hostname)"
 	$1.release = "$(< $__SYS_KERNEL/osrelease)"
 	$1.version = "$(< $__SYS_KERNEL/version)"
-	$1.machine = "$arch"
 	$1.domainname = "$(< $__SYS_KERNEL/domainname)"
+	$1.machine = "$arch"
 
 	return $?
 }
@@ -89,7 +89,7 @@ function sys.getdomainname()
 # func sys.access <[path]filepath> <[uint]mode> => [bool]
 #
 # Verifica as permissões do usuário para o arquivo especificado em 'filepath'.
-# Retorna 'true' se o usuário possui todas as permissões especificada em 'mode', caso contrário 'false'.
+# Retorna 'true' se o usuário possui as permissões em 'mode', caso contrário 'false'.
 #
 function sys.access()
 {
@@ -111,4 +111,4 @@ function sys.access()
 }
 
 source.__INIT__
-# /* __UTS_SH */
+# /* __SYS_SH */
