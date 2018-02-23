@@ -1,4 +1,4 @@
-## bashsrc 1.0.3
+## bashsrc 1.0.4
 
 ![bashsrc](https://github.com/shellscriptx/bashsrc/blob/dev/bashsrc.png)
 
