@@ -29,6 +29,11 @@ readonly __ERR_FILEPATH_COPY_PATH='não foi possível copiar o arquivo ou diret�
 readonly __ERR_FILEPATH_WRITE_DENIED='acesso negado: não foi possível criar o arquivo'
 readonly __ERR_FILEPATH_READ_DENIED='acesso negado: não foi possível ler o arquivo'
 
+readonly F_OK=0
+readonly X_OK=1
+readonly W_OK=2
+readonly R_OK=4
+
 __TYPE__[path_t]='
 filepath.ext
 filepath.basename
@@ -80,6 +85,30 @@ stat_t.__add__ \
 	atime	uint \
 	mtime	uint \
 	ctime	uint
+
+# func filepath.access <[path]filepath> <[uint]mode> => [bool]
+#
+# Verifica as permissões do usuário para o arquivo especificado em 'filepath'.
+# Retorna 'true' se o usuário possui as permissões em 'mode', caso contrário 'false'.
+#
+function filepath.access()
+{
+    getopt.parse 2 "filepath:path:+:$1" "mode:uint:+:$2" "${@:3}"
+
+    case $2 in
+        0) [[ -f $1 ]];;
+        1) [[ -x $1 ]];;
+        2) [[ -w $1 ]];;
+        3) [[ -x $1 && -w $1 ]];;
+        4) [[ -r $1 ]];;
+        5) [[ -x $1 && -r $1 ]];;
+        6) [[ -w $1 && -r $1 ]];;
+        7) [[ -x $1 && -w $1 && -r $1 ]];;
+        *) error.trace def 'mode' 'uint' 'modo de acesso inválido'; return $?;;
+    esac
+
+    return $?
+}
 
 # func filepath.stat <[path]filename> <[stat_t]struct> => [bool]
 #
