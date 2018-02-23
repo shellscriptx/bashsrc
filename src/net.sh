@@ -90,3 +90,6 @@ function net.getiface()
 	
 	return 0
 }
+
+source.__INIT__
+# /* __NET_SH */
