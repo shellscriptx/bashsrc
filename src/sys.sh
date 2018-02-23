@@ -26,11 +26,6 @@ source struct.sh
 
 readonly __SYS_KERNEL=/proc/sys/kernel
 
-readonly F_OK=0
-readonly X_OK=1
-readonly W_OK=2
-readonly R_OK=4
-
 var utsname_t struct_t
 
 utsname_t.__add__ \
@@ -84,30 +79,6 @@ function sys.getdomainname()
 	getopt.parse 0 "$@"
 	echo "$(< $__SYS_KERNEL/domainname)"
 	return $?
-}
-
-# func sys.access <[path]filepath> <[uint]mode> => [bool]
-#
-# Verifica as permissões do usuário para o arquivo especificado em 'filepath'.
-# Retorna 'true' se o usuário possui as permissões em 'mode', caso contrário 'false'.
-#
-function sys.access()
-{
-	getopt.parse 2 "filepath:path:+:$1" "mode:uint:+:$2" "${@:3}"
-
-	case $2 in
-		0) [[ -f $1 ]];;
-		1) [[ -x $1 ]];;
-		2) [[ -w $1 ]];;
-		3) [[ -x $1 && -w $1 ]];;
-		4) [[ -r $1 ]];;
-		5) [[ -x $1 && -r $1 ]];;
-		6) [[ -w $1 && -r $1 ]];;
-		7) [[ -x $1 && -w $1 && -r $1 ]];;
-		*) error.trace def 'mode' 'uint' 'modo de acesso inválido'; return $?;;
-	esac
-	
-	return $?	
 }
 
 source.__INIT__
