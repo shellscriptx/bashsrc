@@ -527,24 +527,25 @@ function filepath.copy()
 {
 	getopt.parse 3 "src:path:+:$1" "dest:dir:+:$2" "override:uint:+:$3" ${@:4}
 	
-	local flag err
+	local flag over param
 
 	if [ -w "$2" ]; then
 		case $3 in
-			0) return 0;;
-			1) ;;
-			*) err=1; error.trace def 'override' 'uint' "$3" 'flag inválida'; return $?;;
+			0) ;;
+			1) over='f';;
+			*) error.trace def 'override' 'uint' "$3" 'flag inválida'; return $?;;
 		esac
 		
-		if [ ! "$err" ]; then
+		[[ -d $1 ]] && flag='r'
+		param=${flag}${over}
 
-			[ -d "$1" ] && flag='r'
-
-			cp -${flag}f "$1" "$2" &>/dev/null ||
-			error.trace def 'dest' 'dir' "$1" "$__ERR_FILEPATH_COPY_PATH"; return $?
-		fi
+		cp ${param:+-$param} "$1" "$2" &>/dev/null || {
+			error.trace def 'dest' 'dir' "$1" "$__ERR_FILEPATH_COPY_PATH"
+			return $?
+		}
 	else	
-		error.trace def 'dest' 'dir' "$2" "$__ERR_FILEPATH_WRITE_DENIED"; return $?
+		error.trace def 'dest' 'dir' "$2" "$__ERR_FILEPATH_WRITE_DENIED"
+		return $?
 	fi
 		
 	return $?
