@@ -22,6 +22,7 @@
 readonly __FILEPATH_SH=1
 
 source builtin.sh
+source struct.sh
 
 # Erros
 readonly __ERR_FILEPATH_READ_DIR='acesso negado: não foi possível ler o diretório'
