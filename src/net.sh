@@ -27,68 +27,196 @@ source struct.sh
 readonly __SYS_NET=/sys/class/net
 
 var iface_t struct_t
+var ifacestat_t struct_t
+var inet_t struct_t
+var inet6_t struct_t
+
+inet_t.__add__ \
+	addr		ipv4 \
+	mask		ipv4 \
+	vlan		uint
+
+inet6_t.__add__ \
+	addr		ipv6 \
+	mask		ipv6 \
+	vlan		uint
+
+ifacestat_t.__add__ \
+	tx_packets		uint \
+	rx_packets		uint \
+	tx_bytes		uint \
+	rx_bytes		uint \
+	rx_dropped		uint \
+	tx_dropped		uint \
+	rx_errors		uint \
+	tx_errors		uint
 
 iface_t.__add__ \
 	name		str \
-	type		uint \
-	address		mac \
+	dev			str \
+	hwaddr		mac \
 	broadcast	mac \
-	addr_len	uint \
-	dev_id		hex \
-	dev_port	uint \
-	dev_type	str \
-	flags		hex \
-	ifindex		uint \
-	iflink		uint \
 	mtu			uint \
 	state		str \
-	ipv4		ipv4 \
-	ipv6		ipv6
-	
-function net.interfaces
+	inet		inet_t \
+	inet6		inet6_t \
+	data		ifacestat_t
+
+# func net.getifaces => [str]
+#
+# Retorna as interfaces de rede do sistema.
+#
+function net.getifaces()
 {
 	getopt.parse 0 "$@"
 
-	local iface
+	local iface; printf '%s\n' $__SYS_NET/* | \
+	while read iface; do echo "${iface##*/}"; done
 
-	while read iface; do
-		echo "${iface##*/}"
-	done < <(printf '%s\n' $__SYS_NET/*)
+	return $?
+}
+
+# func net.getifaddrs <[str]iface> <[iface_t]ifa> => [bool]
+#
+# Lê as informações da interface 'iface' e salva na estrutura apontada por 'ifa'.
+# Retorna 'true' para sucesso, caso contário 'false'.
+#
+function net.getifaddrs()
+{
+	getopt.parse 2 "iface:str:+:$1" "ifa:iface_t:+:$2" "${@:3}"
+
+	local iface dev ipv4 ipv6 inet vlan4 vlan6 stats bs bu bits mask4 mask6
+
+	net.__check_iface $1 || return $?
+		
+	iface=$__SYS_NET/$1
+	stats=$__SYS_NET/$1/statistics
+
+	inet='inet6?\s+([^/]+)/([0-9]+)'
+	
+	[[ $(< $iface/uevent) =~ DEVTYPE=([a-zA-Z0-9_]+) ]]
+	dev=${BASH_REMATCH[1]}
+	
+	[[ $(ip -4 -o addr show dev $1) =~ $inet ]]
+	ipv4=${BASH_REMATCH[1]}
+	vlan4=${BASH_REMATCH[2]}
+
+	[[ $(ip -6 -o addr show dev $1) =~ $inet ]]
+	ipv6=${BASH_REMATCH[1]}
+	vlan6=${BASH_REMATCH[2]}
+
+	vlan4=${vlan4:-0}
+	vlan6=${vlan6:-0}
+
+	printf -v bs '%*s' $vlan4
+	printf -v bu '%*s' $((32-vlan4))
+
+	bits=${bs// /1}${bu// /0}
+	printf -v mask4 '%d.%d.%d.%d' 	$((2#${bits:0:8}))	\
+									$((2#${bits:8:8})) 	\
+									$((2#${bits:16:8}))	\
+									$((2#${bits:24:8}))
+
+	printf -v bs '%*s' $vlan6
+	printf -v bu '%*s' $((128-vlan6))
+	
+	bits=${bs// /1}${bu// /0}
+	printf -v mask6 '%x:%x:%x:%x:%x:%x:%x:%x'	$((2#${bits:0:16}))		\
+												$((2#${bits:16:16})) 	\
+												$((2#${bits:32:16})) 	\
+												$((2#${bits:48:16})) 	\
+												$((2#${bits:64:16})) 	\
+												$((2#${bits:80:16})) 	\
+												$((2#${bits:96:16})) 	\
+												$((2#${bits:112:16}))
+
+	$2.name = "$1"
+	$2.dev = "$dev"
+	$2.hwaddr = "$(< $iface/address)"
+	$2.broadcast = "$(< $iface/broadcast)"
+	$2.mtu = "$(< $iface/mtu)"
+	$2.state = "$(< $iface/operstate)"
+	$2.inet.vlan = "$vlan4"
+	$2.inet6.vlan = "$vlan6"
+	$2.inet.addr = "$ipv4"
+	$2.inet6.addr = "$ipv6"
+	$2.inet.mask = "$mask4"
+	$2.inet6.mask = "$mask6"
+	
+	$2.data.tx_packets = "$(< $stats/tx_packets)"
+	$2.data.rx_packets = "$(< $stats/rx_packets)"
+	$2.data.tx_bytes = "$(< $stats/tx_bytes)"
+	$2.data.rx_bytes = "$(< $stats/rx_bytes)"
+	$2.data.tx_dropped = "$(< $stats/tx_dropped)"
+	$2.data.rx_dropped = "$(< $stats/rx_dropped)"
+	$2.data.tx_errors = "$(< $stats/tx_errors)"
+	$2.data.rx_errors = "$(< $stats/rx_errors)"
 	
 	return $?
 }
 
-function net.getiface()
+# func net.getifstats <[str]iface> <[ifacestat_t]ifa> => [bool]
+#
+# Lê os dados de estatísticas da interface 'iface' e salva na estrutura apontada por 'ifa'.
+# Retorna 'true' para sucesso, caso contrário 'false'.
+#
+function net.getifstats()
 {
-	getopt.parse 2 "iface:str:+:$1" "buf:iface_t:+:$2" "${@:3}"
+	getopt.parse 2 "iface:str:+:$1" "ifa:ifacestat_t:+:$2" "${@:3}"
 
-	if [[ -L $__SYS_NET/$1 ]]; then
-		
-		local iface=$__SYS_NET/$1
-		local devtype
-		
-		[[ $(< $iface/uevent) =~ DEVTYPE=([a-zA-Z0-9_]+) ]]
-		devtype=${BASH_REMATCH[1]}
-
-		$2.name = "$1"
-		$2.type = "$(< $iface/type)"
-		$2.address = "$(< $iface/address)"
-		$2.broadcast = "$(< $iface/broadcast)"
-		$2.addr_len = "$(< $iface/addr_len)"
-		$2.dev_id = "$(< $iface/dev_id)"
-		$2.dev_port = "$(< $iface/dev_port)"
-		$2.dev_type = "$devtype"
-		$2.flags = "$(< $iface/flags)"
-		$2.ifindex = "$(< $iface/ifindex)"
-		$2.iflink = "$(< $iface/iflink)"
-		$2.mtu = "$(< $iface/mtu)"
-		$2.state = "$(< $iface/operstate)"
-	else
-		error.trace def 'iface' 'str' "$1" "interface de rede não encontrada"
-		return $?
-	fi
+	local stats
 	
-	return 0
+	net.__check_iface $1 || return $?
+		
+	stats=$__SYS_NET/$1/statistics
+	
+	$2.tx_packets = "$(< $stats/tx_packets)"
+	$2.rx_packets = "$(< $stats/rx_packets)"
+	$2.tx_bytes = "$(< $stats/tx_bytes)"
+	$2.rx_bytes = "$(< $stats/rx_bytes)"
+	$2.tx_dropped = "$(< $stats/tx_dropped)"
+	$2.rx_dropped = "$(< $stats/rx_dropped)"
+	$2.tx_errors = "$(< $stats/tx_errors)"
+	$2.rx_errors = "$(< $stats/rx_errors)"
+	
+	return $?
+}
+
+# func net.getaddr <[str]iface> <[flag]family> => [str]
+#
+# Retorna o endereço ip da interface 'iface' no protocolo especificado em 'family'.
+#
+# Flag family:
+#
+# AF_INET
+# AF_INET6
+#
+function net.getaddr()
+{
+	getopt.parse 2 "iface:str:+:$1" "family:flag:+:$2" "${@:3}"
+
+	local af inet
+
+	net.__check_iface $1 || return $?
+	
+	case $2 in
+		AF_INET) af=4;;
+		AF_INET6) af=6;;
+		*) error.trace def 'family' 'flag' "$2" 'flag de protocolo inválida'; return $?;;
+	esac
+	
+	inet='inet6?\s+([^/]+)/([0-9]+)'
+	
+	[[ $(ip -$af -o addr show dev $1) =~ $inet ]]
+	echo "${BASH_REMATCH[1]}"
+	
+	return $?
+}
+
+function net.__check_iface()
+{
+	[[ -L $__SYS_NET/$1 ]] || error.trace def 'iface' 'str' "$1" "interface de rede não encontrada"
+	return $?
 }
 
 source.__INIT__
