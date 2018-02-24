@@ -51,6 +51,8 @@ filepath.scandir
 filepath.fnscandir
 filepath.fnlistdir
 filepath.copy
+filepath.access
+filepath.stat
 '
 
 __TYPE__[fileinfo_t]='
@@ -139,7 +141,7 @@ function filepath.stat()
 	$2.mtime = ${stat[10]}
 	$2.ctime = ${stat[11]}
 
-    return 0
+    return $?
 }
 
 # func filepath.ext <[str]path> => [str]
