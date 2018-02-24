@@ -19,7 +19,7 @@
 #
 
 readonly BASENAME=${0##*/}
-readonly BASHSRC_VERSION=1.0.0
+readonly BASHSRC_VERSION=1.0.1
 
 if [[ ${#@} -eq 0 ]]; then
 	echo "Uso: $BASENAME [OPÇÕES]"
@@ -108,7 +108,7 @@ function view_doc()
 		prefix=${1#builtin.}; prefix=${prefix##*+(${re[ntype]})${re[st]}}
 		while read line; do
 			[[ $ver -eq 1 && $line =~ ${re[nocomm]} ]] || 
-			[[ $ver -eq 2 && $line =~ ^${re[spc]}$ ]] && break
+			[[ $ver -eq 2 && $line =~ ^${re[spc]}$ ]] && ver=''
 			[[ $line =~ ^${re[var]}(${prefix#*.})${re[st]} ]] && 
 			stname=${BASH_REMATCH[1]}
 
