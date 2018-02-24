@@ -144,12 +144,12 @@ readonly -A __FLAG_TYPE=(
 [func]='.'
 [map]='.'
 [array]='.'
-[flag]='^[a-zA-Z]+$'
+[flag]='^[a-zA-Z0-9_]+$'
 [funcname]='^[a-zA-Z0-9_.-]+$'
 [var]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*(\[([0-9]|[1-9][0-9]+)\])?$'
 [varname]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*(\[[1-9][0-9]*\])?$'
 [srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]$'
-[st_member]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]+[a-zA-Z])?(\[([1-9][0-9]*)?\])?$'
+[st_member]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]*[a-zA-Z0-9])?(\[([1-9][0-9]*)?\])?$'
 [uint]='^(0|[1-9][0-9]*)$'
 [int]='^(0|[-+]?[1-9][0-9]*)$'
 [float]='^[-+]?[0-9](,[0-9]+)$'
@@ -191,7 +191,7 @@ readonly -A __FLAG_IN=(
 [array]='^[^[]+\[\]$'
 [szarray]='^[^[]+\[([0-9]|[1-9][0-9]+)\]$'
 [farray]='^([^[]+)\[([^]]+)\]$'
-[st_mident]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]+[a-zA-Z])?$'
+[st_mident]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]*[a-zA-Z0-9])?$'
 )
 
 # func has <[str]exp1> on <[str]exp2> => [bool]
@@ -1251,7 +1251,10 @@ function __del__()
 				__INIT_OBJ_SIZE[$var] \
 				__INIT_OBJ_ATTR[$var]
 
-	done || error.trace def
+	done || {
+		error.trace def
+		return $?
+	}
 
 	return 0
 }
