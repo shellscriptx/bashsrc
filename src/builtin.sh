@@ -174,7 +174,7 @@ readonly -A __FLAG_TYPE=(
 [yday]='^(00[1-9]|0[1-9][0-9]|[12][0-9]{2}|3([0-5][0-9]|6[0-6]))$'
 [wday]='^[1-7]$'
 [url]='^(https?|ftp|smtp)://(www\.)?[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+/?$'
-[email]='^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+[email]='^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$'
 [ipv4]='^(([0-9]|[1-9][0-9]|1[0-9]{,2}|2[0-4][0-9]|25[0-5])[.]){3}([0-9]|[1-9][0-9]|1[0-9]{,2}|2[0-4][0-9]|25[0-5])$'
 [ipv6]='^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$'
 [mac]='^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$'
@@ -193,6 +193,38 @@ readonly -A __FLAG_IN=(
 [farray]='^([^[]+)\[([^]]+)\]$'
 [st_mident]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]*[a-zA-Z0-9])?$'
 )
+
+# func input <[flag]type> <[str]prompt> <[var]varname> => [bool]
+#
+# Exibe o 'prompt' de inserção e salva em 'varname' os dados da entrada padrão.
+# Retorna 'true' se o valor inserido for do tipo especificado em 'type', 
+# caso contrário retorna 'false' e o valor de 'varname' é definido como nulo.
+#
+function input()
+{
+	getopt.parse 3 "type:flag:+:$1" "prompt:str:-:$2" "varname:var:+:$3" "${@:4}"
+	
+	if ! [[ ${__FLAG_TYPE[$1]} ]]; then
+		error.trace def 'type' 'str' "$1" "o identificador do tipo é inválido"
+		return $?
+	fi
+
+	local __val __attr
+	read -p "$2" __val
+	
+	case $1 in
+		map)		IFS=' ' read _ __attr _ < <(declare -p "$__val" 2>/dev/null); [[ $__attr =~ A ]];;
+		array)		IFS=' ' read _ __attr _ < <(declare -p "$__val" 2>/dev/null); [[ $__attr =~ a ]];;
+		func)		declare -Fp "$__val" &>/dev/null;;
+		keyword)	;;
+		dir)		[[ -d $__val ]];;
+		file)		[[ -f $__val ]];;
+		path)		[[ -e $__val ]];;
+		*)			[[ $__val =~ ${__FLAG_TYPE[$1]} ]];;
+	esac && read $3 <<< "$__val"
+	
+	return $?
+}
 
 # func has <[str]exp1> on <[str]exp2> => [bool]
 #
