@@ -132,11 +132,9 @@ function net.getifstats()
 {
 	getopt.parse 2 "iface:str:+:$1" "ifa:ifacestat_t:+:$2" "${@:3}"
 
-	local stats
-	
 	net.__check_iface $1 || return $?
 		
-	stats=$__SYS_NET/$1/statistics
+	local stats=$__SYS_NET/$1/statistics
 	
 	$2.tx_packets = "$(< $stats/tx_packets)"
 	$2.rx_packets = "$(< $stats/rx_packets)"
