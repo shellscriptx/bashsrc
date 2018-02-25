@@ -58,8 +58,8 @@ iface_t.__add__ \
 	broadcast	mac \
 	mtu			uint \
 	state		str \
-	inet		inet_t \
-	inet6		inet6_t \
+	ipv4		inet_t \
+	ipv6		inet6_t \
 	data		ifacestat_t
 
 # func net.getifaces => [str]
@@ -85,50 +85,18 @@ function net.getifaddrs()
 {
 	getopt.parse 2 "iface:str:+:$1" "ifa:iface_t:+:$2" "${@:3}"
 
-	local iface dev ipv4 ipv6 inet vlan4 vlan6 stats bs bu bits mask4 mask6
-
 	net.__check_iface $1 || return $?
-		
+	
+	local iface stats dev inet4 inet6
+	
 	iface=$__SYS_NET/$1
 	stats=$__SYS_NET/$1/statistics
 
-	inet='inet6?\s+([^/]+)/([0-9]+)'
-	
 	[[ $(< $iface/uevent) =~ DEVTYPE=([a-zA-Z0-9_]+) ]]
 	dev=${BASH_REMATCH[1]}
-	
-	[[ $(ip -4 -o addr show dev $1) =~ $inet ]]
-	ipv4=${BASH_REMATCH[1]}
-	vlan4=${BASH_REMATCH[2]}
 
-	[[ $(ip -6 -o addr show dev $1) =~ $inet ]]
-	ipv6=${BASH_REMATCH[1]}
-	vlan6=${BASH_REMATCH[2]}
-
-	vlan4=${vlan4:-0}
-	vlan6=${vlan6:-0}
-
-	printf -v bs '%*s' $vlan4
-	printf -v bu '%*s' $((32-vlan4))
-
-	bits=${bs// /1}${bu// /0}
-	printf -v mask4 '%d.%d.%d.%d' 	$((2#${bits:0:8}))	\
-									$((2#${bits:8:8})) 	\
-									$((2#${bits:16:8}))	\
-									$((2#${bits:24:8}))
-
-	printf -v bs '%*s' $vlan6
-	printf -v bu '%*s' $((128-vlan6))
-	
-	bits=${bs// /1}${bu// /0}
-	printf -v mask6 '%x:%x:%x:%x:%x:%x:%x:%x'	$((2#${bits:0:16}))		\
-												$((2#${bits:16:16})) 	\
-												$((2#${bits:32:16})) 	\
-												$((2#${bits:48:16})) 	\
-												$((2#${bits:64:16})) 	\
-												$((2#${bits:80:16})) 	\
-												$((2#${bits:96:16})) 	\
-												$((2#${bits:112:16}))
+	IFS='|' read -a inet4 <<< $(net.__get_ifa_addr 4 $1)
+	IFS='|' read -a inet6 <<< $(net.__get_ifa_addr 6 $1)
 
 	$2.name = "$1"
 	$2.dev = "$dev"
@@ -136,12 +104,12 @@ function net.getifaddrs()
 	$2.broadcast = "$(< $iface/broadcast)"
 	$2.mtu = "$(< $iface/mtu)"
 	$2.state = "$(< $iface/operstate)"
-	$2.inet.vlan = "$vlan4"
-	$2.inet6.vlan = "$vlan6"
-	$2.inet.addr = "$ipv4"
-	$2.inet6.addr = "$ipv6"
-	$2.inet.mask = "$mask4"
-	$2.inet6.mask = "$mask6"
+	$2.ipv4.addr = "${inet4[0]}"
+	$2.ipv4.mask = "${inet4[1]}"
+	$2.ipv4.vlan = "${inet4[2]}"
+	$2.ipv6.addr = "${inet6[0]}"
+	$2.ipv6.mask = "${inet6[1]}"
+	$2.ipv6.vlan = "${inet6[2]}"
 	
 	$2.data.tx_packets = "$(< $stats/tx_packets)"
 	$2.data.rx_packets = "$(< $stats/rx_packets)"
@@ -182,35 +150,90 @@ function net.getifstats()
 	return $?
 }
 
-# func net.getaddr <[str]iface> <[flag]family> => [str]
+# func net.getifaddr <[str]iface> <[inet_t]ifa> => [bool]
 #
-# Retorna o endereço ip da interface 'iface' no protocolo especificado em 'family'.
+# Obtem o endereço ipv4 da interface 'iface' e salva na estrtura apontada por 'ifa'.
 #
-# Flag family:
-#
-# AF_INET
-# AF_INET6
-#
-function net.getaddr()
+function net.getifaddr()
 {
-	getopt.parse 2 "iface:str:+:$1" "family:flag:+:$2" "${@:3}"
-
-	local af inet
-
+	getopt.parse 2 "iface:str:+:$1" "ifa:inet_t:+:$2" "${@:3}"
+	
 	net.__check_iface $1 || return $?
+
+	local inet
 	
-	case $2 in
-		AF_INET) af=4;;
-		AF_INET6) af=6;;
-		*) error.trace def 'family' 'flag' "$2" 'flag de protocolo inválida'; return $?;;
-	esac
-	
-	inet='inet6?\s+([^/]+)/([0-9]+)'
-	
-	[[ $(ip -$af -o addr show dev $1) =~ $inet ]]
-	echo "${BASH_REMATCH[1]}"
+	IFS='|' read -a inet <<< $(net.__get_ifa_addr 4 $1)
+
+	$2.addr = ${inet[0]}
+	$2.mask = ${inet[1]}
+	$2.vlan = ${inet[2]}
 	
 	return $?
+}
+
+# func net.getifaddr6 <[str]iface> <[inet6_t]ifa> => [bool]
+#
+# Obtem o endereço ipv6 da interface 'iface' e salva na estrtura apontada por 'ifa'.
+#
+function net.getifaddr6()
+{
+	getopt.parse 2 "iface:str:+:$1" "ifa:inet6_t:+:$2" "${@:3}"
+	
+	net.__check_iface $1 || return $?
+
+	local inet
+	
+	IFS='|' read -a inet <<< $(net.__get_ifa_addr 6 $1)
+
+	$2.addr = ${inet[0]}
+	$2.mask = ${inet[1]}
+	$2.vlan = ${inet[2]}
+	
+	return $?
+}
+
+function net.__get_ifa_addr()
+{
+	local ip mask vlan bsize bs bu bits
+
+	bsize=$(($1 == 4 ? 32 : $(($1 == 6 ? 128 : 0))))
+	
+	((bsize == 0)) && return 1
+
+	inet='inet6?\s+([^/]+)/([0-9]+)'
+
+	[[ $(ip -$1 -o addr show dev $2) =~ $inet ]] || return 1
+
+	ip=${BASH_REMATCH[1]}
+	vlan=${BASH_REMATCH[2]}
+
+	printf -v bs '%*s' $vlan
+	printf -v bu '%*s' $((bsize-vlan))
+
+	bits=${bs// /1}${bu// /0}
+
+	case $1 in
+		4)
+			printf -v mask '%d.%d.%d.%d'	$((2#${bits:0:8}))	\
+											$((2#${bits:8:8})) 	\
+											$((2#${bits:16:8}))	\
+											$((2#${bits:24:8}))
+			;;
+		6)
+			printf -v mask '%x:%x:%x:%x:%x:%x:%x:%x'	$((2#${bits:0:16}))		\
+														$((2#${bits:16:16})) 	\
+														$((2#${bits:32:16})) 	\
+														$((2#${bits:48:16})) 	\
+														$((2#${bits:64:16})) 	\
+														$((2#${bits:80:16})) 	\
+														$((2#${bits:96:16})) 	\
+														$((2#${bits:112:16}))
+			;;
+	esac
+
+	printf '%s|%s|%d\n' $ip $mask $vlan
+
+	return 0
 }
 
 function net.__check_iface()
