@@ -216,7 +216,6 @@ function input()
 		map)		IFS=' ' read _ __attr _ < <(declare -p "$__val" 2>/dev/null); [[ $__attr =~ A ]];;
 		array)		IFS=' ' read _ __attr _ < <(declare -p "$__val" 2>/dev/null); [[ $__attr =~ a ]];;
 		func)		declare -Fp "$__val" &>/dev/null;;
-		keyword)	;;
 		dir)		[[ -d $__val ]];;
 		file)		[[ -f $__val ]];;
 		path)		[[ -e $__val ]];;
