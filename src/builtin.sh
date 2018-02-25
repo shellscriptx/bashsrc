@@ -205,7 +205,7 @@ function input()
 	getopt.parse 3 "type:flag:+:$1" "prompt:str:-:$2" "varname:var:+:$3" "${@:4}"
 	
 	if ! [[ ${__FLAG_TYPE[$1]} ]]; then
-		error.trace def 'type' 'str' "$1" "o identificador do tipo é inválido"
+		error.trace def 'type' 'flag' "$1" "o identificador do tipo é inválido"
 		return $?
 	fi
 
