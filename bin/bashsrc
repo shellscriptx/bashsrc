@@ -19,7 +19,7 @@
 #
 
 readonly BASENAME=${0##*/}
-readonly BASHSRC_VERSION=1.0.1
+readonly BASHSRC_VERSION=1.0.2
 
 if [[ ${#@} -eq 0 ]]; then
 	echo "Uso: $BASENAME [OPÇÕES]"
@@ -82,7 +82,7 @@ function view_doc()
 	local srcname=(${1/./ })
 	local srcfile=${srcname[0]}.sh
 	local srcdir=$BASHSRC_PATH/src
-	local line match prefix ver st stname
+	local line match prefix ver st stname func
 
 	if [[ ${#@} -eq 0 ]]; then
 		echo "$BASENAME: requer nome da biblioteca" 1>&2
@@ -108,11 +108,13 @@ function view_doc()
 		prefix=${1#builtin.}; prefix=${prefix##*+(${re[ntype]})${re[st]}}
 		while read line; do
 			[[ $ver -eq 1 && $line =~ ${re[nocomm]} ]] || 
-			[[ $ver -eq 2 && $line =~ ^${re[spc]}$ ]] && ver=''
+			[[ $ver -eq 2 && $line =~ ^${re[spc]}$ ]] && break
 			[[ $line =~ ^${re[var]}(${prefix#*.})${re[st]} ]] && 
 			stname=${BASH_REMATCH[1]}
+			
+			func="${re[func]}${prefix}\s+"
 
-			if [[ $line =~ ${re[func]}${prefix} ]]; then
+			if [[ $line =~ $func ]]; then
 				ver=1; match=1
 			elif [[ $line =~ __TYPE__\[(${1#*.})\] ]]; then
 				echo "type ${BASH_REMATCH[1]}"
