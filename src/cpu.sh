@@ -33,7 +33,7 @@ cpu_t.__add__ \
 	model_name		str  \
 	stepping		uint \
 	microcode		hex \
-	mhz				dec \
+	mhz				float \
 	cache_size		size \
 	physical_id		uint \
 	core_id			uint \
@@ -41,7 +41,7 @@ cpu_t.__add__ \
 	apicid			uint \
 	init_apicid		uint \
 	flags			str \
-	bogomips		dec \
+	bogomips		float \
 	clflush_size	uint \
 	address_size	str
 

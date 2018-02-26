@@ -151,9 +151,8 @@ readonly -A __FLAG_TYPE=(
 [srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]$'
 [st_member]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]*[a-zA-Z0-9])?(\[([1-9][0-9]*)?\])?$'
 [uint]='^(0|[1-9][0-9]*)$'
-[int]='^(0|[-+]?[1-9][0-9]*)$'
-[float]='^[-+]?[0-9](,[0-9]+)$'
-[dec]='^[-+]?[0-9]+(.[0-9]+)$'
+[int]='^(0|[+-]?[1-9][0-9]*)$'
+[float]='^[+-]?(0|[1-9][0-9]*)[,.][0-9]+$'
 [char]='^.$'
 [str]='^.+$'
 [bool]='^(true|false)$'
@@ -198,7 +197,7 @@ readonly -A __FLAG_IN=(
 #
 # Exibe o 'prompt' de inserção e salva em 'varname' os dados da entrada padrão.
 # Retorna 'true' se o valor inserido for do tipo especificado em 'type', 
-# caso contrário retorna 'false' e o valor de 'varname' é definido como nulo.
+# caso contrário retorna 'false' e o valor é definido como nulo.
 #
 function input()
 {
