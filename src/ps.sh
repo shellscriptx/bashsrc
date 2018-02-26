@@ -83,8 +83,8 @@ psstat_t.__add__ \
 
 __TYPE__[pid_t]='
 ps.getprocess
-ps.getpidio
-ps.getmmap
+ps.getpio
+ps.getpmmap
 '
 
 function ps.getprocess()
@@ -128,15 +128,13 @@ function ps.getpid()
 	return $ok
 }
 
-function ps.getpidio()
+function ps.getpio()
 {
 	getopt.parse 2 "pid:uint:+:$1" "buf:psio_t:+:$2" "${@:3}"
 	
 	ps.__check_pid $1 || return $?
 	
-	local pid flag bytes
-
-	pid=/proc/$1
+	local flag bytes
 
 	while read flag bytes; do
 		case ${flag%:} in
@@ -148,21 +146,19 @@ function ps.getpidio()
 			write_bytes)				$2.wbytes = "$bytes";;
 			cancelled_write_bytes) 		$2.cwbytes = "$bytes";;
 		esac
-	done < $pid/io
+	done < /proc/$1/io
 
 	return $?	
 }
 
-function ps.getmmap()
+function ps.getpmmap()
 {
 	getopt.parse 2 "pid:uint:+:$1" "mapbuf:array:+:$2" "${@:3}"
 	
 	ps.__check_pid $1 || return $?
 
-	local __pid __addr  __perms __offset __dev __inode __path __i
+	local __addr  __perms __offset __dev __inode __path __i
 
-	__pid=/proc/$1
-	
 	while read __addr __perms __offset __dev __inode __path; do
 		printf -v $2[$((__i++))] '%s|%s|%s|%s|%s|%s\n' 	"$__addr" \
 														"$__perms" \
@@ -170,7 +166,7 @@ function ps.getmmap()
 														"$__dev" \
 														"$__inode" \
 														"$__path"
-	done < $__pid/maps
+	done < /proc/$1/maps
 
 	return $?
 }
@@ -178,5 +174,4 @@ function ps.getmmap()
 function ps.__check_pid(){ [[ -d /proc/$1 ]] || error.trace def 'pid' 'uint' "$1" "O pid do processo não existe"; return $?; }
 
 source.__INIT__
-# /* __PS_SH */
 # /* __PS_SH */
