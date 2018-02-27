@@ -191,6 +191,8 @@ readonly -A __FLAG_IN=(
 [szarray]='^[^[]+\[([0-9]|[1-9][0-9]+)\]$'
 [farray]='^([^[]+)\[([^]]+)\]$'
 [st_mident]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]*[a-zA-Z0-9])?$'
+[proc_stat]='\s[RSDZTWXKPtx](\s-?[0-9]+)+$'
+[parenth]='\(([^\)]+)\)'
 )
 
 # func input <[flag]type> <[str]prompt> <[var]varname> => [bool]

@@ -114,6 +114,11 @@ function view_doc()
 			
 			func="${re[func]}${prefix}\s+"
 
+<<<<<<< HEAD
+=======
+			func="${re[func]}${prefix}\s+"
+
+>>>>>>> dev
 			if [[ $line =~ $func ]]; then
 				ver=1; match=1
 			elif [[ $line =~ __TYPE__\[(${1#*.})\] ]]; then
