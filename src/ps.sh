@@ -146,7 +146,7 @@ function ps.getpio()
 			write_bytes)				$2.wbytes = "$bytes";;
 			cancelled_write_bytes) 		$2.cwbytes = "$bytes";;
 		esac
-	done < /proc/$1/io
+	done < /proc/$1/io || error.trace def
 
 	return $?	
 }
@@ -166,7 +166,7 @@ function ps.getpmmap()
 														"$__dev" \
 														"$__inode" \
 														"$__path"
-	done < /proc/$1/maps
+	done < /proc/$1/maps || error.trace def
 
 	return $?
 }
