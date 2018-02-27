@@ -101,13 +101,55 @@ psstat_t.__add__ \
 
 
 __TYPE__[pid_t]='
-ps.process
+ps.proc
 ps.io
 ps.mmap
 ps.stats
 '
 
-function ps.process()
+# func ps.getallpids => [uint]
+#
+# Retorna uma lista iterável contendo o pid de todos os
+# processos em execução.
+#
+function ps.getallpids()
+{
+	getopt.parse 0 "$@"
+
+	while read proc; do
+		echo "${proc##*/}"
+	done < <(printf '%s\n' /proc/[0-9]*)
+
+	return $?
+}
+
+# func ps.pidof <[str]procname> => [uint]
+#
+# Retorna o pid do processo apontado por 'procname'.
+#
+function ps.pidof()
+{
+	getopt.parse 1 "procname:str:+:$1" "${@:2}"
+	
+	local ok proc
+
+	ok=1
+
+	while read proc; do
+		if [[ -e $proc/cmdline && $(< $proc/cmdline) == *@($1)* ]]; then
+			echo "${proc##*/}"
+			ok=0
+		fi
+	done < <(printf '%s\n' /proc/[0-9]*)
+
+	return $ok
+}
+
+# func ps.proc <[uint]pid> <[ps_t]buf>
+#
+# Obtem os atributos do 'pid' e salva na estrutura apontada por 'buf'.
+#
+function ps.proc()
 {
 	getopt.parse 2 "pid:uint:+:$1" "buf:ps_t:+:$2" "${@:3}"
 	
@@ -128,26 +170,11 @@ function ps.process()
 	return $?
 }
 
-function ps.pid()
-{
-	getopt.parse 1 "name:str:+:$1" "${@:2}"
-
-	local pname proc ok
-	
-	ok=1
-
-	printf '%s\n' /proc/[0-9]* | \
-	while read proc; do
-		pname=$(readlink $proc/exe) || continue
-		if [[ ${pname##*/} == $1 ]]; then
-			echo "${proc##*/}"
-			ok=0
-		fi
-	done
-
-	return $ok
-}
-
+# func ps.io <[uint]pid> <[psio_t]buf>
+#
+# Salva as estatísticas de leitura e escrita do processo 
+# na estrutura apontada por 'buf'.
+#
 function ps.io()
 {
 	getopt.parse 2 "pid:uint:+:$1" "buf:psio_t:+:$2" "${@:3}"
@@ -162,15 +189,19 @@ function ps.io()
 			wchar)						$2.wchar = "$bytes";;
 			syscr)						$2.syscr = "$bytes";;
 			syscw)						$2.syscw = "$bytes";;
-			read_bytes) 				$2.rbytes = "$bytes";;
+			read_bytes)					$2.rbytes = "$bytes";;
 			write_bytes)				$2.wbytes = "$bytes";;
-			cancelled_write_bytes) 		$2.cwbytes = "$bytes";;
+			cancelled_write_bytes)		$2.cwbytes = "$bytes";;
 		esac
 	done < /proc/$1/io || error.trace def
 
 	return $?	
 }
 
+# func ps.mmap <[uint]pid> <[array]buf>
+#
+# Mapeia os atributos de acesso do 'pid' na memória e salva no array apontado por 'buf'.
+#
 function ps.mmap()
 {
 	getopt.parse 2 "pid:uint:+:$1" "mapbuf:array:+:$2" "${@:3}"
@@ -191,6 +222,11 @@ function ps.mmap()
 	return $?
 }
 
+# func ps.stats <[uint]pid> <[psstat_t]buf>
+#
+# Lê as estatíticas e propriedades do processo referênciado por 'pid' e salva na
+# estrutura apontada por 'buf'.
+#
 function ps.stats()
 {
 	getopt.parse 2 "pid:uint:+:$1" "buf:psstat_t:+:$2" "${@:3}"
