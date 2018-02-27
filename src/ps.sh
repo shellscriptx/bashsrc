@@ -145,7 +145,7 @@ function ps.pidof()
 	return $ok
 }
 
-# func ps.proc <[uint]pid> <[ps_t]buf>
+# func ps.proc <[uint]pid> <[ps_t]buf> => [bool]
 #
 # Obtem os atributos do 'pid' e salva na estrutura apontada por 'buf'.
 #
@@ -170,7 +170,7 @@ function ps.proc()
 	return $?
 }
 
-# func ps.io <[uint]pid> <[psio_t]buf>
+# func ps.io <[uint]pid> <[psio_t]buf> => [bool]
 #
 # Salva as estatísticas de leitura e escrita do processo 
 # na estrutura apontada por 'buf'.
@@ -185,22 +185,26 @@ function ps.io()
 
 	while read flag bytes; do
 		case ${flag%:} in
-			rchar)						$2.rchar = "$bytes";;
-			wchar)						$2.wchar = "$bytes";;
-			syscr)						$2.syscr = "$bytes";;
-			syscw)						$2.syscw = "$bytes";;
-			read_bytes)					$2.rbytes = "$bytes";;
-			write_bytes)				$2.wbytes = "$bytes";;
-			cancelled_write_bytes)		$2.cwbytes = "$bytes";;
+			rchar)		$2.rchar = "$bytes";;
+			wchar)		$2.wchar = "$bytes";;
+			syscr)		$2.syscr = "$bytes";;
+			syscw)		$2.syscw = "$bytes";;
+			rbytes)		$2.rbytes = "$bytes";;
+			wbytes)		$2.wbytes = "$bytes";;
+			cwbytes)	$2.cwbytes = "$bytes";;
 		esac
 	done < /proc/$1/io || error.trace def
 
 	return $?	
 }
 
-# func ps.mmap <[uint]pid> <[array]buf>
+# func ps.mmap <[uint]pid> <[array]buf> => [bool]
 #
 # Mapeia os atributos de acesso do 'pid' na memória e salva no array apontado por 'buf'.
+#
+# Os elementos são armazenados em um array indexado, sendo um endereçamento por vetor no seguinte formato:
+#
+# address|perms|offset|dev|inode|pathname
 #
 function ps.mmap()
 {
@@ -222,7 +226,7 @@ function ps.mmap()
 	return $?
 }
 
-# func ps.stats <[uint]pid> <[psstat_t]buf>
+# func ps.stats <[uint]pid> <[psstat_t]buf> => [bool]
 #
 # Lê as estatíticas e propriedades do processo referênciado por 'pid' e salva na
 # estrutura apontada por 'buf'.
