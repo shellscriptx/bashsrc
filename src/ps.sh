@@ -158,7 +158,7 @@ function ps.proc()
 	local exe pid
 	
 	pid=/proc/$1
-	exe=$(readlink $pid/exe)
+	exe=$(readlink $pid/exe) || { error.trace def; return 1; }
 
 	$2.pid = "$1"
 	$2.comm = "$(< $pid/comm)"
@@ -236,7 +236,7 @@ function ps.stats()
 	local pid inf stat exe comm
 	
 	pid=/proc/$1
-	inf=$(< $pid/stat) || error.trace def
+	inf=$(< $pid/stat) || { error.trace def; return 1; }
 	exe=$(readlink $pid/exe)
 
 	[[ $inf =~ ${__FLAG_IN[proc_stat]} ]]
