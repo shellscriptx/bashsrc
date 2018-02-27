@@ -46,7 +46,8 @@ psio_t.__add__ \
 	cwbytes		uint
 
 psstat_t.__add__ \
-	proc		ps_t \
+	pid			uint \
+	comm		str \
 	state		char \
 	ppid		int \
 	pgrp		int \
@@ -62,9 +63,9 @@ psstat_t.__add__ \
 	stime		int \
 	cutime		int \
 	cstime		int \
-	counter		int \
 	priority	int \
-	timeout		uint \
+	nice		int \
+	threads		uint \
 	itrealvalue	uint \
 	starttime	uint \
 	vsize		uint \
@@ -79,15 +80,34 @@ psstat_t.__add__ \
 	blocked		int \
 	sigignore	int \
 	sigcatch	int \
-	wchan		uint
+	wchan		uint \
+	nswap		uint \
+	cnswap		uint \
+	exit_signal	int \
+	processor	int \
+	rt_priority uint \
+	policy		uint \
+	delayacct_blkio_ticks 	uint \
+	guest_time		uint \
+	cguest_time 	int \
+	start_data		uint \
+	end_data		uint \
+	start_brk		uint \
+	arg_start		uint \
+	arg_end			uint \
+	env_start		uint \
+	env_end			uint \
+	exit_code		int
+
 
 __TYPE__[pid_t]='
-ps.getprocess
-ps.getpio
-ps.getpmmap
+ps.process
+ps.io
+ps.mmap
+ps.stats
 '
 
-function ps.getprocess()
+function ps.process()
 {
 	getopt.parse 2 "pid:uint:+:$1" "buf:ps_t:+:$2" "${@:3}"
 	
@@ -108,7 +128,7 @@ function ps.getprocess()
 	return $?
 }
 
-function ps.getpid()
+function ps.pid()
 {
 	getopt.parse 1 "name:str:+:$1" "${@:2}"
 
@@ -128,7 +148,7 @@ function ps.getpid()
 	return $ok
 }
 
-function ps.getpio()
+function ps.io()
 {
 	getopt.parse 2 "pid:uint:+:$1" "buf:psio_t:+:$2" "${@:3}"
 	
@@ -151,7 +171,7 @@ function ps.getpio()
 	return $?	
 }
 
-function ps.getpmmap()
+function ps.mmap()
 {
 	getopt.parse 2 "pid:uint:+:$1" "mapbuf:array:+:$2" "${@:3}"
 	
@@ -169,6 +189,80 @@ function ps.getpmmap()
 	done < /proc/$1/maps || error.trace def
 
 	return $?
+}
+
+function ps.stats()
+{
+	getopt.parse 2 "pid:uint:+:$1" "buf:psstat_t:+:$2" "${@:3}"
+
+	ps.__check_pid $1 || return $?
+
+	local pid inf stat exe comm
+	
+	pid=/proc/$1
+	inf=$(< $pid/stat) || error.trace def
+	exe=$(readlink $pid/exe)
+
+	[[ $inf =~ ${__FLAG_IN[proc_stat]} ]]
+	read -a stat <<< "$BASH_REMATCH"
+
+	[[ $inf =~ ${__FLAG_IN[parenth]} ]]
+	comm=${BASH_REMATCH[1]}
+	
+	$2.pid = "$1"
+	$2.comm = "$comm"
+	$2.state = "${stat[0]}"
+	$2.ppid = "${stat[1]}"
+	$2.pgrp = "${stat[2]}"
+	$2.session = "${stat[3]}"
+	$2.tty = "${stat[4]}"
+	$2.tpgid = "${stat[5]}"
+	$2.flags = "${stat[6]}"
+	$2.minflt = "${stat[7]}"
+	$2.cminflt = "${stat[8]}"
+	$2.majflt = "${stat[9]}"
+	$2.cmajflt = "${stat[10]}"
+	$2.utime = "${stat[11]}"
+	$2.stime = "${stat[12]}"
+	$2.cutime = "${stat[13]}"
+	$2.cstime = "${stat[14]}"
+	$2.priority = "${stat[15]}"
+	$2.nice = "${stat[16]}"
+	$2.threads = "${stat[17]}"
+	$2.itrealvalue = "${stat[18]}"
+	$2.starttime = "${stat[19]}"
+	$2.vsize = "${stat[20]}"
+	$2.rss = "${stat[21]}"
+	$2.rlim = "${stat[22]}"
+	$2.startcode = "${stat[23]}"
+	$2.endcode = "${stat[24]}"
+	$2.startstack = "${stat[25]}"
+	$2.kstkesp = "${stat[26]}"
+	$2.kstkeip = "${stat[27]}"
+	$2.signal = "${stat[28]}"
+	$2.blocked = "${stat[29]}"
+	$2.sigignore = "${stat[30]}"
+	$2.sigcatch = "${stat[31]}"
+	$2.wchan = "${stat[32]}"
+	$2.nswap = "${stat[33]}"
+	$2.cnswap = "${stat[34]}"
+	$2.exit_signal = "${stat[35]}"
+	$2.processor = "${stat[36]}"
+	$2.rt_priority = "${stat[37]}"
+	$2.policy = "${stat[38]}"
+	$2.delayacct_blkio_ticks = "${stat[39]}"
+	$2.guest_time = "${stat[40]}"
+	$2.cguest_time = "${stat[41]}"
+	$2.start_data = "${stat[42]}"
+	$2.end_data = "${stat[43]}"
+	$2.start_brk = "${stat[44]}"
+	$2.arg_start = "${stat[45]}"
+	$2.arg_end = "${stat[46]}"
+	$2.env_start = "${stat[47]}"
+	$2.env_end = "${stat[48]}"
+	$2.exit_code = "${stat[49]}"
+
+	return $?	
 }
 
 function ps.__check_pid(){ [[ -d /proc/$1 ]] || error.trace def 'pid' 'uint' "$1" "O pid do processo não existe"; return $?; }
