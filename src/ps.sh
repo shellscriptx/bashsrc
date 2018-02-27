@@ -185,13 +185,13 @@ function ps.io()
 
 	while read flag bytes; do
 		case ${flag%:} in
-			rchar)		$2.rchar = "$bytes";;
-			wchar)		$2.wchar = "$bytes";;
-			syscr)		$2.syscr = "$bytes";;
-			syscw)		$2.syscw = "$bytes";;
-			rbytes)		$2.rbytes = "$bytes";;
-			wbytes)		$2.wbytes = "$bytes";;
-			cwbytes)	$2.cwbytes = "$bytes";;
+			rchar)					$2.rchar = "$bytes";;
+			wchar)					$2.wchar = "$bytes";;
+			syscr)					$2.syscr = "$bytes";;
+			syscw)					$2.syscw = "$bytes";;
+			read_bytes)				$2.rbytes = "$bytes";;
+			write_bytes)			$2.wbytes = "$bytes";;
+			cancelled_write_bytes)	$2.cwbytes = "$bytes";;
 		esac
 	done < /proc/$1/io || error.trace def
 
