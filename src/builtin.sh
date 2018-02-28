@@ -1914,7 +1914,7 @@ function __repr__()
 {
     getopt.parse 1 "varname:var:+:$1" "${@:2}"
 		
-	local __attr __ind __type __out __mem __i __out
+	local __attr __ind __type __out __mem __i __out __noimp
 	local -n __byref=$1
 	
 	IFS=' ' read _ __attr _ < <(declare -p $1 2>/dev/null)
@@ -1931,11 +1931,12 @@ function __repr__()
 
 	if isobj $1; then
 		__type=$($1.__typeof__)
+		__noimp='__@(del|typeof|sizeof|imp|attr|repr)__'
 		if [[ $(__typeof__ $($1.__typeof__)) == struct_t ]]; then
     		case $($1.__attr__) in
            		var)
                		for __mem in $($1.__imp__); do
-                   		if [[ ${__mem#*.} != __@(del|typeof|sizeof|imp|attr|repr)__ ]]; then
+                   		if [[ ${__mem#*.} != $__noimp ]]; then
                        		__out+="${__mem#*.}:${__STRUCT_VAL_MEMBERS[$1.${__mem#*.}]}|"
                    		fi
                		done
@@ -1945,7 +1946,7 @@ function __repr__()
 					for ((__i=0; __i < $($1.__sizeof__); __i++)); do
 						echo -n "$1[$__i]|$__type|"
 						for __mem in $($1.__imp__); do
-							if [[ ${__mem#*.} != __@(del|typeof|sizeof|imp|attr|repr)__ ]]; then
+						if [[ ${__mem#*.} != $__noimp ]]; then
 								__out+="${__mem#*.}:${__STRUCT_VAL_MEMBERS[$1[$__i].${__mem#*.}]}|"
 							fi
 						done
