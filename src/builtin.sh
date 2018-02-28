@@ -87,6 +87,7 @@ __swapcase__
 __ins__
 __app__
 __sum__
+__isval__
 '
 
 __TYPE__[ptr_t]='
@@ -111,6 +112,7 @@ __typeof__
 __sizeof__
 __imp__
 __attr__
+__repr__
 '
 
 readonly __ARRAY_T=(
@@ -1359,44 +1361,73 @@ function __len__()
 	return 0
 }
 
-# func __quote__ <[var]name> => [str]
+# func __quote__ <[var]varname> => [str]
 #
 # Retorna o contéudo da variável escapando os caracteres especiais e não 
 # imprimíveis com '\'.
 #
 function __quote__()
 {
-	getopt.parse 1 "var:var:+:$1" ${@:2}
+	getopt.parse 1 "varname:var:+:$1" ${@:2}
 	
 	declare -n __byref=$1
 	printf "%q\n" "${__byref[@]}"
 	return 0
 }
 
-# func __typeval__ <[var]name> => [str]|[str]
+# func __typeval__ <[var]varname> => [str]
 #
-# Retorna o índice/chave e o tipo do dado armazenado na variável.
-# Se 'name' for um array, retorna o tipo de todos os elementos.
+# Retorna o tipo do dado armazenado em 'varname'.
 #
-# string - cadeia de caracteres
-# int    - número inteiro
-# float  - número de ponto flutuante.
-
 function __typeval__()
 {
-	getopt.parse 1 "var:var:+:$1" ${@:2}
+	getopt.parse 1 "varname:var:+:$1" "${@:2}"
 	
 	declare -n __byref=$1
 	local __elem __type
 
 	for	__elem in "${!__byref[@]}"; do
-		for __type in int float string; do
+		for __type in 	uint int float char bool zone \
+						bin hex oct size 12h 24h date \
+						url email ipv4 ipv6 mac str; do
 			[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[$__type]} ]] && break
 		done
 		echo "$__elem|$__type"
 	done
 	
 	return 0
+}
+
+# func __isval__ <[var]varname> <[flag]type> => [bool]
+#
+# Retorna 'true' se o valor de 'varname' atende aos critérios de 'type',
+# caso contrário 'false'.
+# Se 'varname' for um array, retorna 'true' somente se todos os elementos
+# satisfazem o tipo estabelecido.
+#
+# Flags suportadas:
+#
+# uint, int, float, char, str, bool, zone, bin, hex, oct, size, 12h, 24,
+# date, url, email, ipv4, ipv6 e mac.
+#
+function __isval__()
+{
+	getopt.parse 2 "varname:var:+:$1" "type:flag:+:$2" "${@:3}"
+	
+	local -n __byref=$1
+	local __ret
+
+	for __elem in "${!__byref[@]}"; do
+		case $2 in
+			uint|int|float|char|str|bool|zone| \
+			bin|hex|oct|size|12h|24h|date| \
+			url|email|ipv4|ipv6|mac) [[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[$2]} ]];;
+			*) error.trace def 'type' 'flag' "$2" "flag não suportada"; return $?;;
+		esac
+		__ret+="$?|"
+	done
+
+	return $((${__ret%|}))
 }
 
 # func __isnum__ <[var]name> => [bool]
@@ -1867,6 +1898,66 @@ function __iter__()
 	fi	
 
 	return $?
+}
+
+# func __repr__ <[var]varname> => [str]
+#
+# Retorna a representação da variável ou objeto implementado.
+# 
+# Tipo                   Retorno
+#
+# var, array             nome|tipo|indice|valor
+# map                    nome|tipo|chave|valor
+# struct                 nome|tipo|membro1:valor|membro2:valor ...
+#
+function __repr__()
+{
+    getopt.parse 1 "varname:var:+:$1" "${@:2}"
+		
+	local __attr __ind __type __out __mem __i __out
+	local -n __byref=$1
+	
+	IFS=' ' read _ __attr _ < <(declare -p $1 2>/dev/null)
+
+	case $__attr in
+		*a*) __type='array';;
+		*A*) __type='map';;
+		-*) __type='var';;
+	esac
+
+	for __ind in "${!__byref[@]}"; do 
+		echo "$1|$__type|$__ind|${__byref[$__ind]}"
+	done
+
+	if isobj $1; then
+		__type=$($1.__typeof__)
+		if [[ $(__typeof__ $($1.__typeof__)) == struct_t ]]; then
+    		case $($1.__attr__) in
+           		var)
+               		for __mem in $($1.__imp__); do
+                   		if [[ ${__mem#*.} != __@(del|typeof|sizeof|imp|attr|repr)__ ]]; then
+                       		__out+="${__mem#*.}:${__STRUCT_VAL_MEMBERS[$1.${__mem#*.}]}|"
+                   		fi
+               		done
+               		echo "$1|$__type|${__out%|}"
+               		;;
+           		array)
+					for ((__i=0; __i < $($1.__sizeof__); __i++)); do
+						echo -n "$1[$__i]|$__type|"
+						for __mem in $($1.__imp__); do
+							if [[ ${__mem#*.} != __@(del|typeof|sizeof|imp|attr|repr)__ ]]; then
+								__out+="${__mem#*.}:${__STRUCT_VAL_MEMBERS[$1[$__i].${__mem#*.}]}|"
+							fi
+						done
+					echo "${__out%|}"
+					__out=''
+					done
+				;;
+			esac
+		fi
+	fi
+
+    return $?
 }
 
 function source.__INIT__()
