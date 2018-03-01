@@ -135,6 +135,7 @@ readonly __ERR_BUILTIN_SRC_TYPE='o tipo do objeto é invalido'
 readonly __ERR_BUILTIN_DEL_OBJ='não foi possível deletar o objeto'
 readonly __ERR_BUILTIN_TYPE_ARRAY='o tipo já é implementado por array'
 readonly __ERR_BUILTIN_IMPLICIT_TYPE='a implementação do tipo é implícita'
+readonly __ERR_BUILTIN_ARRAY_ZLEN='não é possível inicializar um array de comprimento zero'
 
 readonly NULL=0
 
@@ -1194,7 +1195,7 @@ function var()
 		fi
 
 		if [[ $cv && $cv -eq 0 ]]; then
-			error.trace def 'varname' 'var' "$var[0]" 'não é possível inicializar um array de comprimento zero'
+			error.trace def 'varname' 'var' "$var[0]" "$__ERR_BUILTIN_ARRAY_ZLEN"
 			return $?
 		elif [[ $attr && $type == @($narr) ]]; then
 			error.trace def 'varname' "$type" "$var" "$__ERR_BUILTIN_TYPE_ARRAY"
@@ -1318,8 +1319,8 @@ function __imp__()
 	local imp
 	for imp in 	${__INIT_SRC_TYPES[${__INIT_OBJ_TYPE[${1%%[*}]}]} \
 				${__INIT_SRC_TYPES[obj_t]}; do
-		echo "$1.${imp##*.}"
-	done
+		printf '%s ' "$1.${imp##*.}"
+	done; echo
 
 	return $?
 }
@@ -1908,28 +1909,34 @@ function __iter__()
 # 
 # Tipo                   Retorno
 #
-# var, array             nome|tipo|indice|valor
+# var                    nome|tipo|valor
+# array                  nome|tipo|indice|valor
 # map                    nome|tipo|chave|valor
 # struct                 nome|tipo|membro1:valor|membro2:valor ...
+# func                   nome|tipo|método1|método2 ...
 #
 function __repr__()
 {
     getopt.parse 1 "varname:var:+:$1" "${@:2}"
 		
-	local __attr __ind __type __out __mem __i __out __noimp
+	local __attr __ind __type __out __mem __i __out __noimp __arr
 	local -n __byref=$1
 	
 	IFS=' ' read _ __attr _ < <(declare -p $1 2>/dev/null)
 
 	case $__attr in
-		*a*) __type='array';;
-		*A*) __type='map';;
+		*a*) __type='array'; __arr=1;;
+		*A*) __type='map'; __arr=1;;
 		-*) __type='var';;
 	esac
 
-	for __ind in "${!__byref[@]}"; do 
-		echo "$1|$__type|$__ind|${__byref[$__ind]}"
-	done
+	if [[ $__arr ]]; then
+		for __ind in "${!__byref[@]}"; do 
+			echo "$1|$__type|$__ind|${__byref[$__ind]}"
+		done
+	else
+		echo "$1|$__type|$__byref"
+	fi
 
 	if isobj $1; then
 		__type=$($1.__typeof__)
@@ -1957,6 +1964,9 @@ function __repr__()
 					done
 				;;
 			esac
+		else
+			for __mem in $($1.__imp__); do out+="${__mem##*.}|"; done
+			echo "$1|func|${out%|}"
 		fi
 	fi
 
