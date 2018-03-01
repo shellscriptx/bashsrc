@@ -87,6 +87,7 @@ __swapcase__
 __ins__
 __app__
 __sum__
+__isval__
 '
 
 __TYPE__[ptr_t]='
@@ -111,6 +112,7 @@ __typeof__
 __sizeof__
 __imp__
 __attr__
+__repr__
 '
 
 readonly __ARRAY_T=(
@@ -133,6 +135,7 @@ readonly __ERR_BUILTIN_SRC_TYPE='o tipo do objeto é invalido'
 readonly __ERR_BUILTIN_DEL_OBJ='não foi possível deletar o objeto'
 readonly __ERR_BUILTIN_TYPE_ARRAY='o tipo já é implementado por array'
 readonly __ERR_BUILTIN_IMPLICIT_TYPE='a implementação do tipo é implícita'
+readonly __ERR_BUILTIN_ARRAY_ZLEN='não é possível inicializar um array de comprimento zero'
 
 readonly NULL=0
 
@@ -147,7 +150,6 @@ readonly -A __FLAG_TYPE=(
 [flag]='^[a-zA-Z0-9_]+$'
 [funcname]='^[a-zA-Z0-9_.-]+$'
 [var]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*(\[([0-9]|[1-9][0-9]+)\])?$'
-[varname]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*(\[[1-9][0-9]*\])?$'
 [srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]$'
 [st_member]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]*[a-zA-Z0-9])?(\[([1-9][0-9]*)?\])?$'
 [uint]='^(0|[1-9][0-9]*)$'
@@ -1157,7 +1159,7 @@ function del(){ __del__ "$@"; return $?; }
 #
 function var()
 {
-	getopt.parse -1 "varname:varname:+:$1" ... "${@:1:$((${#@}-1))}"
+	getopt.parse -1 "varname:var:+:$1" ... "${@:1:$((${#@}-1))}"
 	
 	local type fn proto fnref fntype var types
 	local vet cv c narr obj attr init objm imp
@@ -1192,7 +1194,10 @@ function var()
 			attr=array
 		fi
 
-		if [[ $attr && $type == @($narr) ]]; then
+		if [[ $cv && $cv -eq 0 ]]; then
+			error.trace def 'varname' 'var' "$var[0]" "$__ERR_BUILTIN_ARRAY_ZLEN"
+			return $?
+		elif [[ $attr && $type == @($narr) ]]; then
 			error.trace def 'varname' "$type" "$var" "$__ERR_BUILTIN_TYPE_ARRAY"
 			return $?
 		elif [[ ${__INIT_OBJ[$var]} ]]; then
@@ -1314,8 +1319,8 @@ function __imp__()
 	local imp
 	for imp in 	${__INIT_SRC_TYPES[${__INIT_OBJ_TYPE[${1%%[*}]}]} \
 				${__INIT_SRC_TYPES[obj_t]}; do
-		echo "$1.${imp##*.}"
-	done
+		printf '%s ' "$1.${imp##*.}"
+	done; echo
 
 	return $?
 }
@@ -1359,44 +1364,73 @@ function __len__()
 	return 0
 }
 
-# func __quote__ <[var]name> => [str]
+# func __quote__ <[var]varname> => [str]
 #
 # Retorna o contéudo da variável escapando os caracteres especiais e não 
 # imprimíveis com '\'.
 #
 function __quote__()
 {
-	getopt.parse 1 "var:var:+:$1" ${@:2}
+	getopt.parse 1 "varname:var:+:$1" ${@:2}
 	
 	declare -n __byref=$1
 	printf "%q\n" "${__byref[@]}"
 	return 0
 }
 
-# func __typeval__ <[var]name> => [str]|[str]
+# func __typeval__ <[var]varname> => [str]
 #
-# Retorna o índice/chave e o tipo do dado armazenado na variável.
-# Se 'name' for um array, retorna o tipo de todos os elementos.
+# Retorna o tipo do dado armazenado em 'varname'.
 #
-# string - cadeia de caracteres
-# int    - número inteiro
-# float  - número de ponto flutuante.
-
 function __typeval__()
 {
-	getopt.parse 1 "var:var:+:$1" ${@:2}
+	getopt.parse 1 "varname:var:+:$1" "${@:2}"
 	
 	declare -n __byref=$1
 	local __elem __type
 
 	for	__elem in "${!__byref[@]}"; do
-		for __type in int float string; do
+		for __type in 	uint int float char bool zone \
+						bin hex oct size 12h 24h date \
+						url email ipv4 ipv6 mac str; do
 			[[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[$__type]} ]] && break
 		done
 		echo "$__elem|$__type"
 	done
 	
 	return 0
+}
+
+# func __isval__ <[var]varname> <[flag]type> => [bool]
+#
+# Retorna 'true' se o valor de 'varname' atende aos critérios de 'type',
+# caso contrário 'false'.
+# Se 'varname' for um array, retorna 'true' somente se todos os elementos
+# satisfazem o tipo estabelecido.
+#
+# Flags suportadas:
+#
+# uint, int, float, char, str, bool, zone, bin, hex, oct, size, 12h, 24,
+# date, url, email, ipv4, ipv6 e mac.
+#
+function __isval__()
+{
+	getopt.parse 2 "varname:var:+:$1" "type:flag:+:$2" "${@:3}"
+	
+	local -n __byref=$1
+	local __ret
+
+	for __elem in "${!__byref[@]}"; do
+		case $2 in
+			uint|int|float|char|str|bool|zone| \
+			bin|hex|oct|size|12h|24h|date| \
+			url|email|ipv4|ipv6|mac) [[ ${__byref[$__elem]} =~ ${__FLAG_TYPE[$2]} ]];;
+			*) error.trace def 'type' 'flag' "$2" "flag não suportada"; return $?;;
+		esac
+		__ret+="$?|"
+	done
+
+	return $((${__ret%|}))
 }
 
 # func __isnum__ <[var]name> => [bool]
@@ -1869,6 +1903,78 @@ function __iter__()
 	return $?
 }
 
+# func __repr__ <[var]varname> => [str]
+#
+# Retorna a representação da variável ou objeto implementado.
+# 
+# Tipo                   Retorno
+#
+# var                    nome|tipo|valor
+# array                  nome|tipo|indice|valor
+# map                    nome|tipo|chave|valor
+# struct                 nome|tipo|membro1:valor|membro2:valor ...
+# func                   nome|tipo|método1|método2 ...
+#
+function __repr__()
+{
+    getopt.parse 1 "varname:var:+:$1" "${@:2}"
+		
+	local __attr __ind __type __out __mem __i __out __noimp __arr __err
+	local -n __byref=$1
+	
+	IFS=' ' read _ __attr _ < <(declare -p $1 2>/dev/null)
+
+	case $__attr in
+		*a*) __type='array'; __arr=1;;
+		*A*) __type='map'; __arr=1;;
+		-*) echo "$1|var|$__byref";;
+		*) __err=1;;
+	esac
+
+	if [[ $__arr ]]; then
+		for __ind in "${!__byref[@]}"; do 
+			echo "$1|$__type|$__ind|${__byref[$__ind]}"
+		done
+	fi
+
+	if isobj $1; then
+		__type=$($1.__typeof__)
+		__noimp='__@(del|typeof|sizeof|imp|attr|repr)__'
+		if [[ $(__typeof__ $($1.__typeof__)) == struct_t ]]; then
+    		case $($1.__attr__) in
+           		var)
+               		for __mem in $($1.__imp__); do
+                   		if [[ ${__mem#*.} != $__noimp ]]; then
+                       		__out+="${__mem#*.}:${__STRUCT_VAL_MEMBERS[$1.${__mem#*.}]}|"
+                   		fi
+               		done
+               		echo "$1|$__type|${__out%|}"
+               		;;
+           		array)
+					for ((__i=0; __i < $($1.__sizeof__); __i++)); do
+						echo -n "$1[$__i]|$__type|"
+						for __mem in $($1.__imp__); do
+						if [[ ${__mem#*.} != $__noimp ]]; then
+								__out+="${__mem#*.}:${__STRUCT_VAL_MEMBERS[$1[$__i].${__mem#*.}]}|"
+							fi
+						done
+					echo "${__out%|}"
+					__out=''
+					done
+				;;
+			esac
+		else
+			for __mem in $($1.__imp__); do out+="${__mem##*.}|"; done
+			echo "$1|func|${out%|}"
+		fi
+	elif [[ $__err ]]; then
+		error.trace def 'varname' 'var' "$1" 'a variável ou objeto não existe'
+		return $?
+	fi
+
+    return $?
+}
+
 function source.__INIT__()
 {
 	local attr type fn types func pkg err deps
@@ -1920,5 +2026,4 @@ source struct.sh
 source error.sh
 
 source.__INIT__
-
 # /* BUILTIN_SH */
