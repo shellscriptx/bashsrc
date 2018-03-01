@@ -149,7 +149,6 @@ readonly -A __FLAG_TYPE=(
 [flag]='^[a-zA-Z0-9_]+$'
 [funcname]='^[a-zA-Z0-9_.-]+$'
 [var]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*(\[([0-9]|[1-9][0-9]+)\])?$'
-[varname]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*(\[[1-9][0-9]*\])?$'
 [srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]$'
 [st_member]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]*[a-zA-Z0-9])?(\[([1-9][0-9]*)?\])?$'
 [uint]='^(0|[1-9][0-9]*)$'
@@ -1159,7 +1158,7 @@ function del(){ __del__ "$@"; return $?; }
 #
 function var()
 {
-	getopt.parse -1 "varname:varname:+:$1" ... "${@:1:$((${#@}-1))}"
+	getopt.parse -1 "varname:var:+:$1" ... "${@:1:$((${#@}-1))}"
 	
 	local type fn proto fnref fntype var types
 	local vet cv c narr obj attr init objm imp
@@ -1194,7 +1193,10 @@ function var()
 			attr=array
 		fi
 
-		if [[ $attr && $type == @($narr) ]]; then
+		if [[ $cv && $cv -eq 0 ]]; then
+			error.trace def 'varname' 'var' "$var[0]" 'não é possível inicializar um array de comprimento zero'
+			return $?
+		elif [[ $attr && $type == @($narr) ]]; then
 			error.trace def 'varname' "$type" "$var" "$__ERR_BUILTIN_TYPE_ARRAY"
 			return $?
 		elif [[ ${__INIT_OBJ[$var]} ]]; then
