@@ -2026,5 +2026,4 @@ source struct.sh
 source error.sh
 
 source.__INIT__
-
 # /* BUILTIN_SH */
