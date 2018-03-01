@@ -1919,7 +1919,7 @@ function __repr__()
 {
     getopt.parse 1 "varname:var:+:$1" "${@:2}"
 		
-	local __attr __ind __type __out __mem __i __out __noimp __arr
+	local __attr __ind __type __out __mem __i __out __noimp __arr __err
 	local -n __byref=$1
 	
 	IFS=' ' read _ __attr _ < <(declare -p $1 2>/dev/null)
@@ -1927,15 +1927,14 @@ function __repr__()
 	case $__attr in
 		*a*) __type='array'; __arr=1;;
 		*A*) __type='map'; __arr=1;;
-		-*) __type='var';;
+		-*) echo "$1|var|$__byref";;
+		*) __err=1;;
 	esac
 
 	if [[ $__arr ]]; then
 		for __ind in "${!__byref[@]}"; do 
 			echo "$1|$__type|$__ind|${__byref[$__ind]}"
 		done
-	else
-		echo "$1|$__type|$__byref"
 	fi
 
 	if isobj $1; then
@@ -1968,6 +1967,9 @@ function __repr__()
 			for __mem in $($1.__imp__); do out+="${__mem##*.}|"; done
 			echo "$1|func|${out%|}"
 		fi
+	elif [[ $__err ]]; then
+		error.trace def 'varname' 'var' "$1" 'a variável ou objeto não existe'
+		return $?
 	fi
 
     return $?
