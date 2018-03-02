@@ -57,7 +57,7 @@ __TYPE__[textutil_t]='
 textutil.output
 textutil.align
 textutil.index
-textutil.banner
+textutil.label
 '
 
 var color_t struct_t
@@ -314,7 +314,7 @@ function textutil.align()
 	return 0
 }
 
-function textutil.banner()
+function textutil.label()
 {
 	getopt.parse 2 "text:str:-:$1" "font:flag:+:$2" "${@:3}"
 
