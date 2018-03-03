@@ -26,7 +26,7 @@ source struct.sh
 
 source textutil.fonts
 
-readonly C_ESC='\x1b'
+readonly __C_ESC='\x1b'
 
 readonly AT_RESET=0
 readonly AT_BOLD=1
@@ -102,9 +102,9 @@ function textutil.text()
 {
 	getopt.parse 5 "text:str:-:$1" "align:flag:+:$2" "foreground:uint:+:$3" "background:uint:+:$4" "attr:uint:+:$5" "${@:6}"
 	
-	echo -en "${C_ESC}[${5};${4};${3}m"
+	echo -en "${__C_ESC}[${5};${4};${3}m"
 	textutil.align "$1" "$2"	
-	echo -en "${C_ESC}[0;m"
+	echo -en "${__C_ESC}[0;m"
 
 	return 0
 }
@@ -117,9 +117,9 @@ function textutil.ttext()
 {
 	getopt.parse 1 "textopt:text_t:+:$1" "${@:2}"
 
-	echo -en "${C_ESC}[$($1.pos.y);$($1.pos.x)H${C_ESC}[$($1.attr);$($1.color.bg);$($1.color.fg)m"
+	echo -en "${__C_ESC}[$($1.pos.y);$($1.pos.x)H${__C_ESC}[$($1.attr);$($1.color.bg);$($1.color.fg)m"
 	textutil.align "$($1.text)" "$($1.align)"
-	echo -en "${C_ESC}[0;m"
+	echo -en "${__C_ESC}[0;m"
 	
 	return 0
 }
@@ -156,7 +156,7 @@ function textutil.color()
 {
 	getopt.parse 2 "foreground:uint:+:$1" "background:uint:+:$2" "${@:3}"
 
-	echo -en "${C_ESC}[${2};${1}m"
+	echo -en "${__C_ESC}[${2};${1}m"
 	return 0
 }
 
@@ -168,7 +168,7 @@ function textutil.attr()
 {
 	getopt.parse 1 "attr:uint:+:$1" "${@:2}"
 	
-	echo -en "${C_ESC}[$1m"
+	echo -en "${__C_ESC}[$1m"
 	return 0
 }
 
@@ -180,7 +180,7 @@ function textutil.gotoxy()
 {
 	getopt.parse 2 "x:uint:+:$1" "y:uint:+:$2" "${@:3}"
 	
-	echo -en "${C_ESC}[${2};${1}H"
+	echo -en "${__C_ESC}[${2};${1}H"
 	return 0
 }
 
@@ -192,7 +192,7 @@ function textutil.hcpos()
 {
 	getopt.parse 0 "$@"
 	
-	echo -en "${C_ESC}[H"
+	echo -en "${__C_ESC}[H"
 	return 0
 }
 
@@ -204,7 +204,7 @@ function textutil.scpos()
 {
 	getopt.parse 0 "$@"
 
-	echo -ne "${C_ESC}7"
+	echo -ne "${__C_ESC}7"
 	return 0
 }
 
@@ -216,7 +216,7 @@ function textutil.rcpos()
 {
 	getopt.parse 0 "$@"
 
-	echo -en "${C_ESC}8"
+	echo -en "${__C_ESC}8"
 	return 0
 }
 
@@ -229,7 +229,7 @@ function textutil.cursor()
 	getopt.parse 1 "status:bool:+:$1" "${@:2}"
 
 	local def
-	[[ $1 == true ]] && def="${C_ESC}[?25h" || def="${C_ESC}[?25l"
+	[[ $1 == true ]] && def="${__C_ESC}[?25h" || def="${__C_ESC}[?25l"
 	echo -en "$def"
 
 	return 0
@@ -243,7 +243,7 @@ function textutil.clrctoe()
 {
 	getopt.parse 0 "$@"
 
-	echo -en "${C_ESC}[K"
+	echo -en "${__C_ESC}[K"
 	return 0
 }
 
@@ -255,7 +255,7 @@ function textutil.clrbtoc()
 {
 	getopt.parse 0 "$@"
 
-	echo -en "${C_ESC}[1K"
+	echo -en "${__C_ESC}[1K"
 	return 0
 }
 
@@ -267,7 +267,7 @@ function textutil.clrc()
 {
 	getopt.parse 0 "$@"
 
-	echo -en "${C_ESC}[2K"
+	echo -en "${__C_ESC}[2K"
 	return 0
 }
 
@@ -281,7 +281,7 @@ function textutil.getpos()
 
 	local pos x y
 	
-	echo -en "${C_ESC}[6n"
+	echo -en "${__C_ESC}[6n"
 	read -sd R pos
 
 	pos=${pos#*[}
@@ -327,48 +327,33 @@ function textutil.align()
 
 # func textutil.label <[str]text> <[flag]font> <[flag]mode> <[flag]align> <[uint]foreground> <[uint]background> = [str]
 #
-# Converte o texto em um letreiro com os atributos especificados.
+# Converte o texto em um label com os atributos especificados.
 #
 # font - fonte do texto.
-# mode - modo de exibição da letreiro. (normal ou iris)
+# mode - modo de exibição do label. (normal, iris, random)
 # align - alinhamento do texto. (left, center ou right)
 # foreground - cor do primeiro plano. (constantes FG_*)
 # backgorund - cor do segundo plano. (constantes BG_*)
 #
 # Se 'mode' for igual à 'iris' a cor definida em 'foreground' é ignorada.
 #
-# Font:
-#
-# mini
-# banner
-# big
-# block
-# bubble
-# digital
-# lean
-# standard
-# smslant
-# smshadow
-# smscript
-# small
-# slant
-# shadow
-# script
+# Fonts: mini, banner, big, block, bubble, digital, lean, standard, smslant
+# smshadow, smscript, small, slant, shadow, script
 #
 function textutil.label()
 {
 	getopt.parse 6 "text:str:-:$1" "font:flag:+:$2" "mode:flag:+:$3" "align:flag:+:$4" "foreground:uint:+:$5" "background:uint:+:$6" "${@:7}"
 
-	local i ch asc line spc cols c
+	local i ch asc line spc cols c fg
 
 	if ! [[ ${__FONT_SIZE[$2]} ]]; then
 		error.trace def 'font' 'flag' "$2" 'fonte não encontrada'
 		return $?
 	fi
-	
+
 	IFS=' ' read _ cols < <(stty size)
 
-	for ((i=0; i<${__FONT_SIZE[$2]}; i++)); do
+	for ((c=30, i=0; i<${__FONT_SIZE[$2]}; i++, c++)); do
 		
 		while read -n1 ch; do
 			printf -v asc '%d' \'"${ch:- }"
@@ -376,11 +361,12 @@ function textutil.label()
 		done <<< "$1"
 		
 		case $3 in
-			iris) c="3$((RANDOM%8))";;
-			normal) c=$5;;
+			iris) ((c > 37)) && c=30; fg=$c;;
+			random) fg=$(((RANDOM%8)+30));;
+			normal) fg=$5;;
 			*) error.trace def 'mode' 'flag' "$3" 'flag inválida'; return $?;;
 		esac
-
+		
 		case $4 in
 			center)	spc=$(((cols/2)+(${#line}/2)+1));;
 			right) spc=$cols;;
@@ -388,20 +374,20 @@ function textutil.label()
 			*) error.trace def 'align' 'flag' "$2" 'flag inválida'; return $?;;
 		esac
 
-		echo -en "${C_ESC}[${6};${c}m"
+		echo -en "${__C_ESC}[${6};${fg}m"
 		printf '%*s\n' $spc "$line"
 
 		line=''
 	done
 
-	echo -en "${C_ESC}[0;m"
+	echo -en "${__C_ESC}[0;m"
 
 	return 0
 }
 
 # func textutil.tlabel <[label_t]labelopt> => [str]
 #
-# Covnerte a estrutura apontada por 'labelopt' em um letreiro.
+# Covnerte a estrutura apontada por 'labelopt' em um label.
 #
 function textutil.tlabel()
 {
