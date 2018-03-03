@@ -840,12 +840,11 @@ function string.repeat()
 	local str tmp	
 	while read str; do
 		for ((i=0; i < $2; i++)); do
-			tmp+=$str
+			echo -n "$str"
 		done
-		echo "$tmp"
+		echo
 	done <<< "$1"
 	
-#	for ((i=0; i < $2; i++)); do echo -n "$1"; done; echo
 	return 0
 }
 
