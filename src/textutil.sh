@@ -26,35 +26,35 @@ source struct.sh
 
 readonly C_ESC='\x1b'
 
-readonly A_RESET=0
-readonly A_BOLD=1
-readonly A_DIM=2
-readonly A_SMSO=3
-readonly A_UNDER=4
-readonly A_BLINK=5
-readonly A_REVERSE=7
-readonly A_HIDDEN=8
+readonly AT_RESET=0
+readonly AT_BOLD=1
+readonly AT_DIM=2
+readonly AT_SMSO=3
+readonly AT_UNDER=4
+readonly AT_BLINK=5
+readonly AT_REVERSE=7
+readonly AT_HIDDEN=8
 
-readonly F_BLACK=30
-readonly F_RED=31
-readonly F_GREEN=32
-readonly F_YELLOW=33
-readonly F_BLUE=34
-readonly F_MAGENTA=35
-readonly F_CYAN=36
-readonly F_WHITE=37
+readonly FG_BLACK=30
+readonly FG_RED=31
+readonly FG_GREEN=32
+readonly FG_YELLOW=33
+readonly FG_BLUE=34
+readonly FG_MAGENTA=35
+readonly FG_CYAN=36
+readonly FG_WHITE=37
 
-readonly B_BLACK=40
-readonly B_RED=41
-readonly B_GREEN=42
-readonly B_YELLOW=43
-readonly B_BLUE=44
-readonly B_MAGENTA=45
-readonly B_CYAN=46
-readonly B_WHITE=47
+readonly BG_BLACK=40
+readonly BG_RED=41
+readonly BG_GREEN=42
+readonly BG_YELLOW=43
+readonly BG_BLUE=44
+readonly BG_MAGENTA=45
+readonly BG_CYAN=46
+readonly BG_WHITE=47
 
 __TYPE__[textutil_t]='
-textutil.output
+textutil.text
 textutil.align
 textutil.index
 textutil.label
@@ -63,6 +63,7 @@ textutil.label
 var color_t struct_t
 var text_t struct_t
 var pos_t struct_t
+var label_t struct_t
 
 pos_t.__add__ \
 	x	uint \
@@ -79,30 +80,38 @@ text_t.__add__ \
 	color	color_t \
 	pos		pos_t
 
-# func textutil.output <[str]text> <[uint]fg> <[uint]bg> <[uint]attr> => [str]
+label_t.__add__ \
+	text	str \
+	font	flag \
+	mode	flag \
+	align	flag \
+	color	color_t
+
+# func textutil.text <[str]text> <[flag]align> <[uint]foreground> <[uint]background> <[uint]attr> => [str]
 #
 # Retorna 'text' aplicando os atributos especificados.
 #
-# fg   - cor do primeiro plano. (constantes 'F_*')
-# bg   - cor de fundo. (constantes 'B_*')
-# attr - atributo do texto. (constantes 'A_*')
+# align - alinhamento do texto. (left, center ou right)
+# fg    - cor do primeiro plano. (constantes 'FG_*')
+# bg    - cor de fundo. (constantes 'BG_*')
+# attr  - atributo do texto. (constantes 'AT_*')
 #
-function textutil.output()
+function textutil.text()
 {
-	getopt.parse 4 "text:str:-:$1" "fg:uint:+:$2" "bg:uint:+:$3" "attr:uint:+:$4" "${@:5}"
+	getopt.parse 5 "text:str:-:$1" "align:flag:+:$2" "foreground:uint:+:$3" "background:uint:+:$4" "attr:uint:+:$5" "${@:6}"
 	
-	local line;	while read line; do
-		echo -e "${C_ESC}[${4};${3};${2}m${line}${C_ESC}[0;m"
-	done <<< "$1"
+	echo -en "${C_ESC}[${5};${4};${3}m"
+	textutil.align "$1" "$2"	
+	echo -en "${C_ESC}[0;m"
 
 	return 0
 }
 
-# func textutil.text <[text_t]textopt> => [str]
+# func textutil.ttext <[text_t]textopt> => [str]
 #
-# Retorna o texto armazenado na estrutura 'textopt' aplicando os atributos definidos.
+# Retorna a estrutura apontada por 'textopt' aplicando os atributos definidos.
 #
-function textutil.text()
+function textutil.ttext()
 {
 	getopt.parse 1 "textopt:text_t:+:$1" "${@:2}"
 
@@ -139,7 +148,7 @@ function textutil.index()
 
 # func textutil.color <[uint]foreground> <[uint]background>
 #
-# Define a paleta de cores. (constantes 'F_*' e 'B_*')
+# Define a paleta de cores. (constantes 'FG_*' e 'BG_*')
 #
 function textutil.color()
 {
@@ -151,7 +160,7 @@ function textutil.color()
 
 # func textutil.attr <[uint]attr>
 #
-# Define os atributos do texto. (constantes 'A_*')
+# Define os atributos do texto. (constantes 'AT_*')
 #
 function textutil.attr()
 {
@@ -305,8 +314,8 @@ function textutil.align()
 		case $2 in
 			center) spc=$(((cols/2)+(${#line}/2)+1));;
 			right) spc=$cols;;
-			left) spc=$2;;
-			*) error.trace def 'align' 'flag' "$2" 'flag de alinhamento inválida'; return $?;;
+			left) spc=0;;
+			*) error.trace def 'align' 'flag' "$2" 'flag inválida'; return $?;;
 		esac	
 		printf '%*s\n' $spc "${line}"
 	done <<< "$1"
@@ -314,24 +323,89 @@ function textutil.align()
 	return 0
 }
 
+# func textutil.label <[str]text> <[flag]font> <[flag]mode> <[flag]align> <[uint]foreground> <[uint]background> = [str]
+#
+# Converte o texto em um letreiro com os atributos especificados.
+#
+# font - fonte do texto.
+# mode - modo de exibição da letreiro. (normal ou iris)
+# align - alinhamento do texto. (left, center ou right)
+# foreground - cor do primeiro plano. (constantes FG_*)
+# backgorund - cor do segundo plano. (constantes BG_*)
+#
+# Se 'mode' for igual à 'iris' a cor definida em 'foreground' é ignorada.
+#
+# Font:
+#
+# mini
+# banner
+# big
+# block
+# bubble
+# digital
+# lean
+# standard
+# smslant
+# smshadow
+# smscript
+# small
+# slant
+# shadow
+# script
+#
 function textutil.label()
 {
-	getopt.parse 2 "text:str:-:$1" "font:flag:+:$2" "${@:3}"
+	getopt.parse 6 "text:str:-:$1" "font:flag:+:$2" "mode:flag:+:$3" "align:flag:+:$4" "foreground:uint:+:$5" "background:uint:+:$6" "${@:7}"
+
+	local i ch asc line spc cols c
 
 	if ! [[ ${__FONT_SIZE[$2]} ]]; then
-		error.trace def 'font' 'flag' "$2" 'fonte inválida'
+		error.trace def 'font' 'flag' "$2" 'fonte não encontrada'
 		return $?
 	fi
-
-	local i ch asc
+	
+	IFS=' ' read _ cols < <(stty size)
 
 	for ((i=0; i<${__FONT_SIZE[$2]}; i++)); do
+		
 		while read -n1 ch; do
 			printf -v asc '%d' \'"${ch:- }"
-			echo -en "${__FONT[$2:$asc:$i]}"
+			line+=${__FONT[$2:$asc:$i]}
 		done <<< "$1"
-		echo
+		
+		case $3 in
+			iris) c="3$((RANDOM%8))";;
+			normal) c=$5;;
+			*) error.trace def 'mode' 'flag' "$3" 'flag inválida'; return $?;;
+		esac
+
+		case $4 in
+			center)	spc=$(((cols/2)+(${#line}/2)+1));;
+			right) spc=$cols;;
+			left) spc=0;;
+			*) error.trace def 'align' 'flag' "$2" 'flag inválida'; return $?;;
+		esac
+
+		echo -en "${C_ESC}[${6};${c}m"
+		printf '%*s\n' $spc "$line"
+
+		line=''
 	done
+
+	echo -en "${C_ESC}[0;m"
+
+	return 0
+}
+
+# func textutil.tlabel <[label_t]labelopt> => [str]
+#
+# Covnerte a estrutura apontada por 'labelopt' em um letreiro.
+#
+function textutil.tlabel()
+{
+	getopt.parse 1 "labelopt:label_t:+:$1" "${@:2}"
+	textutil.label "$($1.text)" "$($1.font)" "$($1.mode)" "$($1.align)" "$($1.color.fg)" "$($1.color.bg)"
+	return $?
 }
 
 readonly -A __FONT_SIZE=(
