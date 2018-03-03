@@ -109,6 +109,108 @@ function textutil.text()
 	return 0
 }
 
+# func textutil.label <[str]text> <[flag]font> <[flag]mode> <[flag]align> <[uint]foreground> <[uint]background> = [str]
+#
+# Converte o texto em um label com os atributos especificados.
+#
+# font - fonte do texto.
+# mode - modo de exibição do label. (normal, iris, random)
+# align - alinhamento do texto. (left, center ou right)
+# foreground - cor do primeiro plano. (constantes FG_*)
+# backgorund - cor do segundo plano. (constantes BG_*)
+#
+# Se 'mode' for igual à 'iris' a cor definida em 'foreground' é ignorada.
+#
+# Fonts: mini, banner, big, block, bubble, digital, lean, standard, smslant
+# smshadow, smscript, small, slant, shadow, script
+#
+function textutil.label()
+{
+	getopt.parse 6 "text:str:-:$1" "font:flag:+:$2" "mode:flag:+:$3" "align:flag:+:$4" "foreground:uint:+:$5" "background:uint:+:$6" "${@:7}"
+
+	local i ch asc line spc cols c fg
+
+	if ! [[ ${__FONT_SIZE[$2]} ]]; then
+		error.trace def 'font' 'flag' "$2" 'fonte não encontrada'
+		return $?
+	fi
+
+	IFS=' ' read _ cols < <(stty size)
+
+	for ((c=30, i=0; i<${__FONT_SIZE[$2]}; i++, c++)); do
+		
+		while read -n1 ch; do
+			printf -v asc '%d' \'"${ch:- }"
+			line+=${__FONT[$2:$asc:$i]}
+		done <<< "$1"
+		
+		case $3 in
+			iris) ((c > 37)) && c=30; fg=$c;;
+			random) fg=$(((RANDOM%8)+30));;
+			normal) fg=$5;;
+			*) error.trace def 'mode' 'flag' "$3" 'flag inválida'; return $?;;
+		esac
+		
+		case $4 in
+			center)	spc=$(((cols/2)+(${#line}/2)+1));;
+			right) spc=$cols;;
+			left) spc=0;;
+			*) error.trace def 'align' 'flag' "$2" 'flag inválida'; return $?;;
+		esac
+
+		echo -en "${__C_ESC}[${6};${fg}m"
+		printf '%*s\n' $spc "$line"
+
+		line=''
+	done
+
+	echo -en "${__C_ESC}[0;m"
+
+	return 0
+}
+
+# func textutil.align <[str]text> <[flag]align> => [str]
+#
+# Exibe 'text' aplicando o alinhamento especificado.
+#
+# Flag    Descrição
+#
+# left    alinhado à esquerda.
+# center  centralizado.
+# right   alinhado à direita.
+#
+function textutil.align()
+{
+	getopt.parse 2 "text:str:-:$1" "align:flag:+:$2" "${@:3}"
+
+	local cols line spc
+
+	read _ cols < <(stty size)
+
+	while read line; do
+		case $2 in
+			center) spc=$(((cols/2)+(${#line}/2)+1));;
+			right) spc=$cols;;
+			left) spc=0;;
+			*) error.trace def 'align' 'flag' "$2" 'flag inválida'; return $?;;
+		esac	
+		printf '%*s\n' $spc "${line}"
+	done <<< "$1"
+
+	return 0
+}
+
+# func textutil.tlabel <[label_t]labelopt> => [str]
+#
+# Covnerte a estrutura apontada por 'labelopt' em um label.
+#
+function textutil.tlabel()
+{
+	getopt.parse 1 "labelopt:label_t:+:$1" "${@:2}"
+	textutil.label "$($1.text)" "$($1.font)" "$($1.mode)" "$($1.align)" "$($1.color.fg)" "$($1.color.bg)"
+	return $?
+}
+
 # func textutil.ttext <[text_t]textopt> => [str]
 #
 # Retorna a estrutura apontada por 'textopt' aplicando os atributos definidos.
@@ -294,108 +396,5 @@ function textutil.getpos()
 	return 0
 }
 
-# func textutil.align <[str]text> <[flag]align> => [str]
-#
-# Exibe 'text' aplicando o alinhamento especificado.
-#
-# Flag    Descrição
-#
-# left    alinhado à esquerda.
-# center  centralizado.
-# right   alinhado à direita.
-#
-function textutil.align()
-{
-	getopt.parse 2 "text:str:-:$1" "align:flag:+:$2" "${@:3}"
-
-	local cols line spc
-
-	read _ cols < <(stty size)
-
-	while read line; do
-		case $2 in
-			center) spc=$(((cols/2)+(${#line}/2)+1));;
-			right) spc=$cols;;
-			left) spc=0;;
-			*) error.trace def 'align' 'flag' "$2" 'flag inválida'; return $?;;
-		esac	
-		printf '%*s\n' $spc "${line}"
-	done <<< "$1"
-
-	return 0
-}
-
-# func textutil.label <[str]text> <[flag]font> <[flag]mode> <[flag]align> <[uint]foreground> <[uint]background> = [str]
-#
-# Converte o texto em um label com os atributos especificados.
-#
-# font - fonte do texto.
-# mode - modo de exibição do label. (normal, iris, random)
-# align - alinhamento do texto. (left, center ou right)
-# foreground - cor do primeiro plano. (constantes FG_*)
-# backgorund - cor do segundo plano. (constantes BG_*)
-#
-# Se 'mode' for igual à 'iris' a cor definida em 'foreground' é ignorada.
-#
-# Fonts: mini, banner, big, block, bubble, digital, lean, standard, smslant
-# smshadow, smscript, small, slant, shadow, script
-#
-function textutil.label()
-{
-	getopt.parse 6 "text:str:-:$1" "font:flag:+:$2" "mode:flag:+:$3" "align:flag:+:$4" "foreground:uint:+:$5" "background:uint:+:$6" "${@:7}"
-
-	local i ch asc line spc cols c fg
-
-	if ! [[ ${__FONT_SIZE[$2]} ]]; then
-		error.trace def 'font' 'flag' "$2" 'fonte não encontrada'
-		return $?
-	fi
-
-	IFS=' ' read _ cols < <(stty size)
-
-	for ((c=30, i=0; i<${__FONT_SIZE[$2]}; i++, c++)); do
-		
-		while read -n1 ch; do
-			printf -v asc '%d' \'"${ch:- }"
-			line+=${__FONT[$2:$asc:$i]}
-		done <<< "$1"
-		
-		case $3 in
-			iris) ((c > 37)) && c=30; fg=$c;;
-			random) fg=$(((RANDOM%8)+30));;
-			normal) fg=$5;;
-			*) error.trace def 'mode' 'flag' "$3" 'flag inválida'; return $?;;
-		esac
-		
-		case $4 in
-			center)	spc=$(((cols/2)+(${#line}/2)+1));;
-			right) spc=$cols;;
-			left) spc=0;;
-			*) error.trace def 'align' 'flag' "$2" 'flag inválida'; return $?;;
-		esac
-
-		echo -en "${__C_ESC}[${6};${fg}m"
-		printf '%*s\n' $spc "$line"
-
-		line=''
-	done
-
-	echo -en "${__C_ESC}[0;m"
-
-	return 0
-}
-
-# func textutil.tlabel <[label_t]labelopt> => [str]
-#
-# Covnerte a estrutura apontada por 'labelopt' em um label.
-#
-function textutil.tlabel()
-{
-	getopt.parse 1 "labelopt:label_t:+:$1" "${@:2}"
-	textutil.label "$($1.text)" "$($1.font)" "$($1.mode)" "$($1.align)" "$($1.color.fg)" "$($1.color.bg)"
-	return $?
-}
-
 source.__INIT__
 # /* __TEXTUTIL_SH */
-
