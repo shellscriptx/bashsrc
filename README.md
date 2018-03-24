@@ -1,6 +1,6 @@
 ## bashsrc 1.0.8
 
-![bashsrc](https://github.com/shellscriptx/bashsrc/blob/dev/bashsrc.png)
+![bashsrc](bashsrc.png)
 
 ### Sobre
 
