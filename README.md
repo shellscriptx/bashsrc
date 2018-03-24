@@ -1,6 +1,6 @@
 ## bashsrc 1.0.8
 
-![bashsrc](https://raw.githubusercontent.com/shellscriptx/bashsrc/master/bashsrc.png)
+![](https://raw.githubusercontent.com/shellscriptx/bashsrc/master/bashsrc.png)
 
 ### Sobre
 
