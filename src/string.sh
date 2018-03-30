@@ -71,6 +71,7 @@ string.slice
 string.filter
 string.len
 string.field
+string.mreplace
 '
 
 # erros
@@ -610,6 +611,32 @@ function string.rmsuffix()
 	return 0	
 }
 
+# func string.mreplace <[str]exp> <[str]old> <[str]new> ... => [str]
+#
+# Substitui todas as ocorrências de 'old' por 'new'.
+# Pode ser especificado mais de conjunto de substituição.
+#
+function string.mreplace()
+{
+	getopt.parse -1 "exp:str:-:$1" "old:str:-:$2" "new:str:-:$3" ... "${@:4}"
+
+	local exp sub line
+
+	exp=$1
+	sub=("${@:2}")
+
+	while read line; do
+		set -- "${sub[@]}"
+		while [[ $# -gt 0 ]]; do
+			line=${line//$1/$2}
+			shift 2		
+		done
+		echo "$line"
+	done <<< "$exp"
+
+	return 0
+}
+
 # func string.replace <[str]exp> <[str]old> <[str]new> <[int]count> => [str]
 #
 # Retorna uma cópia de 'exp' substituindo 'old' por 'new' em 'count' ocorrências.
@@ -1070,13 +1097,14 @@ function string.filter()
 function string.field()
 {
     getopt.parse -1 "exp:str:-:$1" "sep:char:-:$2" "field:int:+:$3" ... "${@:4}"
-	
-	local i line field
-	while read line; do
-		IFS="$2" read -a field <<< "${2}${line}"
-		for i in ${@:3}; do
-			echo -n "${field[$i]} "
-		done; echo
+
+	local index field
+
+	while IFS="$2" read -a item; do
+		for field in ${@:3}; do
+			echo -n "${item[$((field-1))]} "
+		done
+		echo
 	done <<< "$1" 2>/dev/null
 
 	return 0
