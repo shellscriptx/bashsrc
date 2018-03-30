@@ -620,16 +620,19 @@ function string.mreplace()
 {
 	getopt.parse -1 "exp:str:-:$1" "old:str:-:$2" "new:str:-:$3" ... "${@:4}"
 
-	local exp=$1
+	local exp sub line
 
-	set "${@:2}"
+	exp=$1
+	sub=("${@:2}")
 
-	while [[ $# -gt 0 ]]; do
-		exp=${exp//$1/$2}
-		shift 2		
-	done
-
-	echo "$exp"
+	while read line; do
+		set -- "${sub[@]}"
+		while [[ $# -gt 0 ]]; do
+			line=${line//$1/$2}
+			shift 2		
+		done
+		echo "$line"
+	done <<< "$exp"
 
 	return 0
 }
