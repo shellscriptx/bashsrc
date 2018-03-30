@@ -108,7 +108,7 @@ function view_doc()
 		prefix=${1#builtin.}; prefix=${prefix##*+(${re[ntype]})${re[st]}}
 		while read line; do
 			[[ $ver -eq 1 && $line =~ ${re[nocomm]} ]] || 
-			[[ $ver -eq 2 && $line =~ ^${re[spc]}$ ]] && ver=''
+			[[ $ver -eq 2 && $line =~ ^${re[spc]}$ ]] && break
 			[[ $line =~ ^${re[var]}(${prefix#*.})${re[st]} ]] && 
 			stname=${BASH_REMATCH[1]}
 
