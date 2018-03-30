@@ -306,7 +306,7 @@ function fnmap(){
 	case $__type in
 		*a*) for __item in "${__obj_ref[@]}"; do $2 "$__item" "${@:3}"; done;;
 		*A*) for __key in "${!__obj_ref[@]}"; do $2 "$__key" "${@:3}"; done;;
-		*) for ((__ch=0; __ch < ${#__obj_ref}; __ch++)); do echo -n "$($2 "${__obj_ref:$__ch:1}" "${@:3}")"; done;;
+		*) while read -N1 __ch; do printf '%s' "$($2 "$__ch" "${@:3}")"; done <<< "$__obj_ref"; echo;;
 	esac
 
 	return 0
@@ -367,8 +367,7 @@ function filter()
 	case $__type in
 		*a*) for __item in "${__obj_ref[@]}"; do $2 "$__item" "${@:3}" && echo "$__item"; done;;
 		*A*) for __key in "${!__obj_ref[@]}"; do $2 "$__key" "${@:3}" && echo "$__key"; done;;
-		*) for ((__ch=0; __ch < ${#__obj_ref}; __ch++)); do $2 "${__obj_ref:$__ch:1}" "${@:3}" && 
-			echo -n "${__obj_ref:$__ch:1}"; done; echo;;
+		*) while read -N1 __ch; do $2 "$__ch" "${@:3}" && printf '%s' "$__ch"; done <<< "$__obj_ref"; echo;;
 	esac
 
 	return 0
@@ -1913,7 +1912,7 @@ function __iter__()
 # array                  nome|tipo|indice|valor
 # map                    nome|tipo|chave|valor
 # struct                 nome|tipo|membro1:valor|membro2:valor ...
-# func                   nome|tipo|método1|método2 ...
+# @func                   nome|tipo|método1|método2 ...
 #
 function __repr__()
 {
