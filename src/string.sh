@@ -1102,7 +1102,7 @@ function string.field()
 
 	while IFS="$2" read -a item; do
 		for field in ${@:3}; do
-			echo -n "${item[$((field-1))]} "
+			echo -n "${item[$((field > 0 ? field - 1 : field))]} "
 		done
 		echo
 	done <<< "$1" 2>/dev/null
