@@ -209,8 +209,9 @@ function error.trace()
 					echo "Argumento(s): '$4'"
 					;;
 				deps)
-					echo "Source: $3"
-					echo "Dependência(s): $4"
+					echo "Source: <$2>"
+					echo "Dependência: [$3]"
+					echo "Versão requerida: $4"
 					;;
 				st)
 					echo "Estrutura: <$2>"
