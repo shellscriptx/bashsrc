@@ -35,13 +35,13 @@ readonly __BUILTIN_SH=1
 
 declare -A	__INIT_SRC_TYPES \
 			__TYPE__ \
+			__DEP__ \
 			__INIT_OBJ_METHOD \
 			__INIT_OBJ_TYPE \
 			__INIT_OBJ_SIZE \
 			__INIT_OBJ_ATTR \
 			__INIT_OBJ
 		
-declare	__DEPS__
 declare __ON_ERROR_RESUME=false
 
 declare __ERR__ \
@@ -1974,22 +1974,70 @@ function __repr__()
     return $?
 }
 
+function builtin.__check_package_depends()
+{
+	local attr bin ver op opt opts
+	
+	if IFS=' ' read _ attr _ < <(declare -p __TYPE__ 2>/dev/null) && ! [[ $attr =~ A ]]; then
+		error.trace src '' "${BASH_SOURCE[-2]}" '' "'__DEP__' não é um array associativo"
+		return $?
+	fi
+
+	for bin in "${!__DEP__[@]}"; do
+
+		if ! command -v $bin &>/dev/null; then
+			error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" 'o pacote requerido está ausente'
+			return $?
+		elif ! [[ $($bin --version 2>/dev/null) =~ [0-9]+(\.[0-9]+)+ ]]; then
+			error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" 'não foi possível obter a versão do pacote'
+			continue
+		fi
+
+		IFS=',' read -a opts <<< ${__DEP__[$bin]}
+		
+		for opt in "${opts[@]}"; do
+			
+			IFS=' ' read -a opt <<< $opt
+
+			op=${opt[0]}
+			ver=${opt[1]}
+		
+			if [[ $ver != @(+([0-9])+(.+([0-9]))) ]]; then
+				error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" 'notação de versionamento inválida'
+				return $?
+			fi
+
+			case $op in
+				'>') [[ ${BASH_REMATCH//./,} -gt ${ver//./,} ]];;
+				'<') [[ ${BASH_REMATCH//./,} -lt ${ver//./,} ]];;
+				'>=') [[ ${BASH_REMATCH//./,} -ge ${ver//./,} ]];;
+				'<=') [[ ${BASH_REMATCH//./,} -le ${ver//./,} ]];;
+				'<>') [[ ${BASH_REMATCH//./,} -ne ${ver//./,} ]];;
+				*) error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" "'$op' operador condicional inválido"; return $?;;
+			esac
+			
+			if [[ $? -eq 1 ]]; then
+				error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" "a versão instalada é incompatível"
+				return $?
+			fi
+		done
+	done
+
+	# clear
+	__DEP__=()
+
+	return 0
+}
+
 function source.__INIT__()
 {
 	local attr type fn types func pkg err deps
 
 	printf -v types '%s|' ${!__INIT_SRC_TYPES[@]}
 	types=${types%|}
+
+	builtin.__check_package_depends
 	
-	for pkg in $__DEPS__; do
-		command -v $pkg &>/dev/null || { err=1; deps+="$pkg, "; }
-	done
-
-	if [[ $err ]]; then
-		error.trace deps '' "${BASH_SOURCE[-2]}" "${deps%, }" "$__ERR_BUILTIN_DEPS"
-		return $?
-	fi
-
 	if IFS=' ' read _ attr _ < <(declare -p __TYPE__ 2>/dev/null) && ! [[ $attr =~ A ]]; then
 		error.trace src '' "${BASH_SOURCE[-2]}" '' "'__TYPE__' não é um array associativo"
 		return $?
@@ -2014,8 +2062,6 @@ function source.__INIT__()
 	done
 
 	while IFS=' ' read _ _ func; do readonly -f $func; done < <(declare -Fp)
-	
-	__DEPS__=''
 	
 	return 0
 }
