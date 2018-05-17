@@ -42,7 +42,7 @@ struct.__members__
 struct.__items__
 '
 
-# func struct.__add__ <[struct_t]name> <[str]member> ...
+# func struct.__add__ <[struct_t]name> <[str]member> <[flag]type> ...
 #
 # Adiciona 'N' membros a estrutura 'name'.
 #
