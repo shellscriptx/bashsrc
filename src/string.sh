@@ -863,15 +863,9 @@ function string.reverse()
 function string.repeat()
 {
 	getopt.parse 2 "exp:str:-:$1" "count:uint:+:$2" "${@:3}"
-
-	local str tmp	
-	while read str; do
-		for ((i=0; i < $2; i++)); do
-			echo -n "$str"
-		done
-		echo
-	done <<< "$1"
-	
+	local str
+	printf -v str '%*s' $2;
+	printf '%s\n' "${str// /$1}"
 	return 0
 }
 
