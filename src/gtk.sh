@@ -31,7 +31,7 @@ readonly -A __GTK_WIDGET=(
 [gtk_button]=BTN
 [gtk_passwordbox]=H
 [gtk_spin_button]=NUM
-[gtk_editbox]=
+[gtk_entry]=
 [gtk_readonlybox]=RO
 [gtk_checkbox]=CHK
 [gtk_combobox]=CB
@@ -85,7 +85,11 @@ var gtk_form_t			struct_t
 var gtk_icons_t			struct_t
 var gtk_list_t			struct_t
 var gtk_multi_progress_t	struct_t
-var gtk_notebook_t		struct_t
+var gtk_picture_t		struct_t
+var gtk_print_t			struct_t
+var gtk_progress_t		struct_t
+var gtk_scale_t			struct_t
+var gtk_text_info_t		struct_t
 
 # widget
 gtk_widget_t.__add__	type		flag 	\
@@ -102,14 +106,14 @@ gtk_widget_button_t.__add__	label		str	\
 				tooltip		str	\
 				icon		str	\
 				id		uint
-# column
+# coluna
 gtk_widget_column_t.__add__	type	flag	\
 				label	str
 
 gtk_widget_bar_t.__add__	type	flag	\
 				label	str
 
-# geral
+# Configurações gerais.
 gtk_window_t.__add__	title			str 			\
 			icon			file 			\
 			width			uint 			\
@@ -151,7 +155,8 @@ gtk_window_t.__add__	title			str 			\
 			parent_win		str 			\
 			kill_parent		flag 			\
 			print_xid		bool			\
-			output			file
+			stdout			str			\
+			stderr			str
 
 # calendário
 gtk_calendar_t.__add__	window		gtk_window_t	\
@@ -172,7 +177,9 @@ gtk_color_t.__add__	window		gtk_window_t	\
 			alpha		bool
 
 # caixa drag-n-grop
-gtk_dnd_t.__add__	window		gtk_window_t
+gtk_dnd_t.__add__	window		gtk_window_t	\
+			tooltip		bool		\
+			command		str
 
 # caixa de entrada
 gtk_entry_t.__add__	window		gtk_window_t 	\
@@ -257,12 +264,86 @@ gtk_multi_progress_t.__add__	window		gtk_window_t		\
 				auto_close	bool			\
 				auto_kill	bool
 
-# Guias
-gtk_notebook_t.__add__		key		uint	\
-				tab		str	\
-				tab_pos		flag	\
-				tab_borders	uint
+# Foto
+gtk_picture_t.__add__		window		gtk_window_t	\
+				size		flag		\
+				inc		uint		\
+				filename	file
 
+# Caixa de dialog de impressão
+gtk_print_t.__add__		window		gtk_window_t	\
+				type		flag		\
+				headers		bool		\
+				add_preview	bool		\
+				filename	file		\
+				fontname	str
+				
+# Caixa de progresso
+gtk_progress_t.__add__		window		gtk_window_t	\
+				progress_text	str		\
+				percentage	uint		\
+				rtl		bool		\
+				auto_close	bool		\
+				auto_kill	bool		\
+				pulsate		bool		\
+				enable_log	str		\
+				log_on_top	bool		\
+				log_expanded	bool		\
+				log_height	uint
+				
+
+# Escala
+gtk_scale_t.__add__		window		gtk_window_t	\
+				value		uint		\
+				min_value	uint		\
+				max_value	uint		\
+				step		uint		\
+				page		uint		\
+				print_partial	bool		\
+				hide_value	bool		\
+				invert		bool		\
+				inc_buttons	bool		\
+				mark		str		
+
+# Texto informativo
+gtk_text_info_t.__add__		window		gtk_window_t	\
+				filename	file		\
+				editable	bool		\
+				fore		flag		\
+				back		flag		\
+				fontname	str		\
+				wrap		bool		\
+				justify		flag		\
+				margins		uint		\
+				tail		bool		\
+				show_cursor	bool		\
+				show_uri	bool		\
+				uri_color	flag		\
+				lang		flag		\
+				listen		bool
+
+# func  gtk.show <[var]gtk_object> =>  [bool]
+#
+# Inicializa o objeto apontado por 'gtk_object'.
+#
+# Objetos:
+#
+# gtk_calendar_t 
+# gtk_color_t
+# gtk_dnd_t
+# gtk_entry_t
+# gtk_file_t
+# gtk_font_t
+# gtk_form_t
+# gtk_icons_t
+# gtk_list_t
+# gtk_multi_progress_t
+# gtk_picture_t
+# gtk_print_t
+# gtk_progress_t
+# gtk_scale_t
+# gtk_text_info_t
+#
 function gtk.show()
 {
 	getopt.parse 1 "gtk_object:var:+:$1" ${@:2}
@@ -456,15 +537,94 @@ function gtk.show()
 					done
 				fi
 			;;
-		gtk_notebook_t)
-				object='notebook'
+		gtk_picture_t)
+				object='picture'
 				
-				local	key=$($1.key)			\
-					tab=$($1.tab)			\
-					tab_pos=$($1.tab_pos)		\
-					tab_borders=$($1.tab_borders)
+				local	size=$($1.size)		\
+					inc=$($1.inc)		\
+					filename=$($1.filename)
 			;;
-		gtk_dnd_t)	object='dnd';;
+		gtk_print_t)
+				object='print'
+				
+				local	type=$($1.type)			\
+					headers=$($1.headers)		\
+					add_preview=$($1.add_preview)	\
+					filename=$($1.filename)		\
+					fontname=$($1.fontname)
+					headers=${headers#false}
+					add_preview=${add_preview#false}
+			;;
+		gtk_progress_t)
+				object='progress'
+				
+				local	progress_text=$($1.progress_text)	\
+					percentage=$($1.percentage)		\
+					pulsate=$($1.pulsate)			\
+					auto_close=$($1.auto_close)		\
+					auto_kill=$($1.auto_kill)		\
+					rtl=$($1.rtl)				\
+					enable_log=$($1.enable_log)		\
+					log_expanded=$($1.log_expanded)		\
+					log_on_top=$($1.log_on_top)		\
+					log_height=$($1.log_height)
+					pulsate=${pulsate#false}
+					auto_close=${auto_close#false}
+					auto_kill=${auto_kill#false}
+					rtl=${rtl#false}
+					log_expanded=${log_expanded#false}
+					log_on_top=${log_on_top#false}
+				;;
+		gtk_scale_t)
+				object='scale'
+				
+				local	value=$($1.value)			\
+					min_value=$($1.min_value)		\
+					max_value=$($1.max_value)		\
+					step=$($1.step)				\
+					page=$($1.page)				\
+					print_partial=$($1.print_partial)	\
+					hide_value=$($1.hide_value)		\
+					invert=$($1.invert)			\
+					inc_buttons=$($1.inc_buttons)		\
+					mark=$($1.mark)
+					print_partial=${print_partial#false}
+					hide_value=${hide_value#false}
+					invert=${invert#false}
+					inc_buttons=${inc_buttons#false}
+					mark=${mark:+--mark \'${mark//\!/\' --mark \'}\'}
+					;;
+		gtk_text_info_t)
+				object='text-info'
+				
+				local	filename=$($1.filename)		\
+					editable=$($1.editable)		\
+					fore=$($1.fore)			\
+					back=$($1.back)			\
+					fontname=$($1.fontname)		\
+					wrap=$($1.wrap)			\
+					justify=$($1.justify)		\
+					margins=$($1.margins)		\
+					tail=$($1.tail)			\
+					show_cursor=$($1.show_cursor)	\
+					show_uri=$($1.show_uri)		\
+					uri_color=$($1.uri_color)	\
+					lang=$($1.lang)			\
+					listen=$($1.listen)
+					editable=${editable#false}
+					wrap=${wrap#false}
+					tail=${tail#false}
+					show_cursor=${show_cursor#false}
+					show_uri=${show_uri#false}
+					listen=${listen#false}
+			;;
+		gtk_dnd_t)
+				object='dnd'
+				
+				local	tooltip=$($1.tooltip)	\
+					command=$($1.command)
+					tooltip=${tooltip#false}
+			;;
 		*)	error.trace def 'gtk_object' 'var' "$objtype" 'tipo do objeto inválido'; return $?;;
 	esac
 
@@ -507,9 +667,11 @@ function gtk.show()
 		tabnum=$($1.window.tabnum)				\
 		parent_win=$($1.window.parent_win)			\
 		kill_parent=$($1.window.kill_parent)			\
-		print_xid=$($1.window.print_xid	)
+		print_xid=$($1.window.print_xid	)			\
+		stdout=$($1.window.stdout)				\
+		stderr=$($1.window.stderr)
 
-	# opcional
+	# Opcional
 	image_on_top=${image_on_top#false}
 	no_buttons=${no_buttons#false}
 	no_markup=${no_markup#false}
@@ -536,7 +698,7 @@ function gtk.show()
 		done
 	fi
 
-	# inicializa objeto
+	# config
 	obj_parse="	${object:+--$object}
 			${title:+--title '$title'}
 			${window_icon:+--window-icon '$window_icon'}
@@ -651,16 +813,53 @@ function gtk.show()
 			${tab:+--tab '$tab'}
 			${tab_pos:+--tab-pos '$tab_pos'}
 			${tab_borders:+--tab-borders '$tab_borders'}
-			${output:+&> '$output'}
-			${plug:+&}"
+			${size:+--size '$size'}
+			${inc:+--inc '$inc'}
+			${filename:+--filename '$filename'}
+			${type:+--type '$type'}
+			${headers:+--headers}
+			${add_preview:+--add-preview}
+			${fontname:+--fontname '$fontname'}
+			${progress_text:+--progress-text '$progress_text'}
+			${percentage:+--percentage '$percentage'}
+			${pulsate:+--pulsate}
+			${rtl:+--rtl}
+			${enable_log:+--enable-log  '$enable_log'}
+			${log_expanded:+--log-expanded}
+			${log_on_top:+--log-on-top}
+			${log_height:+--log-height '$log_height'}
+			${value:+--value '$value'}
+			${min_value:+--min-value '$min_value'}
+			${max_value:+--max-value '$max_value'}
+			${step:+--step	'$step'}
+			${page:+--page '$page'}
+			${print_partial:+--print-partial}
+			${hide_value:+--hide-value}
+			${invert:+--invert}
+			${inc_buttons:+--inc-buttons}
+			${mark}
+			${editable:+--editable}
+			${fore:+--fore '$fore'}
+			${back:+--back '$back'}
+			${wrap:+--wrap}
+			${justify:+--justify '$justify'}
+			${margins:+--margins '$margins'}
+			${tail:+--tail}
+			${show_cursor:+--show-cursor}
+			${show_uri:+--show-uri}
+			${uri_color:+--uri-color '$uri_color'}
+			${lang:+--lang '$lang'}
+			${listen:+--listen}
+			${tooltip:+--tooltip '$tooltip'}
+			${command:+--command '$command'}
+			${stdout:+1> '$output'}
+			${stderr:+2> '$stderr'}"
 
-		echo $obj_parse
+		# Inicializa o objeto e carrega suas configurações.
 		eval yad $obj_parse
 
 		return $?
 }
-
-export -f gtk.show
 
 source.__INIT__
 # /* __GTK_SH */
