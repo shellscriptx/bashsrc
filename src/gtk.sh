@@ -468,12 +468,21 @@ function gtk.init()
 				
 				if [[ $obj ]]; then
 					local 	widgets=${!__GTK_WIDGET[@]}
-					local 	widget callback fields widget_call exec i
+					local 	widget callback fields widget_call widget_call_type exec i
 					for ((i=0; i < $($obj.__sizeof__); i++)); do
 						widget=$($obj[$i].type)
 						callback=$($obj[$i].callback)
 						widget_call=$($obj[$i].widget_call)
 						exec=$($obj[$i].exec)
+						
+						if [[ $widget_call ]]; then
+							widget_call_type=$(__typeof__ $widget_call)
+							if [[ $widget_call_type != gtk_@(calendar|color|dnd|entry|file|font|form|icons|list|multi_progress|picture|print|progress|scale|text_info)_t ]]; then
+								error.trace def 'widget_call' 'var' "$widget_call" "'${widget_call_type:-null}' widget inválido"
+								return $?
+							fi						
+						fi
+
 						if [[ $widget != @(${widgets[@]// /|}) ]]; then
 							error.trace def 'widget' 'gtk_widget_t' "$widget" "$obj[$i]: objeto widget inválido"
 							return $?
@@ -913,7 +922,7 @@ function gtk.init()
 			${quoted_output:+--quoted-output}
 			${stdout:+1> '$output'}
 			${stderr:+2> '$stderr'}"
-		done
+	done
 
 	return $?
 }
@@ -931,8 +940,9 @@ function gtk.show()
 		error.trace def 'gtk_object' 'var' "$1" 'o objeto não foi inicializado'
 		return $?
 	fi
-
-	eval yad ${__GTK_WIDGET_OBJ_INIT[$1]}
+	
+	gtk.init ${!__GTK_WIDGET_OBJ_INIT[@]}	# Atualizar
+	eval yad ${__GTK_WIDGET_OBJ_INIT[$1]}	# Executar
 
 	return $?
 }
