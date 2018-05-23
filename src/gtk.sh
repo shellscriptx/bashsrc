@@ -168,7 +168,7 @@ gtk_calendar_t.__add__	window		gtk_window_t	\
 
 # paleta de cores
 gtk_color_t.__add__	window		gtk_window_t	\
-			init_color	flag		\
+			init_color	str		\
 			gtk_palette	bool		\
 			palette		file		\
 			expand_palette	bool		\
@@ -191,28 +191,43 @@ gtk_entry_t.__add__	window		gtk_window_t 	\
 			licon		str 		\
 			licon_action	str 		\
 			ricon		str 		\
-			ricon_action	str
+			ricon_action	str		\
+			num_output	bool
 
 # caixa de seleção de arquivos
 gtk_file_t.__add__	window			gtk_window_t	\
+			filename		str		\
+			multiple		bool		\
 			directory		bool		\
 			save			bool		\
+			separator		str		\
+			quoted_output		bool		\
 			confirm_overwrite	str
 
 # caixa de seleção de fontes
 gtk_font_t.__add__	window		gtk_window_t 	\
+			fontname	str		\
 			preview		str 		\
-			separate_output	bool
+			separate_output	bool		\
+			separator	str		\
+			quoted_output	bool
 
 # formulário
 gtk_form_t.__add__	window		gtk_window_t	\
 			widget		gtk_widget_t[]	\
 			align		flag		\
 			columns		uint		\
+			separator	str		\
+			item_separator	str		\
+			date_format	str		\
+			float_precision	uint		\
+			complete	flag		\
 			scroll		bool		\
 			output_by_row	bool		\
 			focus_field	uint		\
-			cycle_read	bool
+			cycle_read	bool		\
+			quoted_output	bool		\
+			num_output	bool
 
 # icones
 gtk_icons_t.__add__	window		gtk_window_t	\
@@ -224,6 +239,7 @@ gtk_icons_t.__add__	window		gtk_window_t	\
 			sort_by_name	bool		\
 			descend		bool		\
 			single_click	bool		\
+			listen		bool		\
 			monitor		bool
 
 # lista
@@ -388,25 +404,38 @@ function gtk.show()
 				licon=$($1.licon)		\
 				licon_action=$($1.licon_action) \
 				ricon=$($1.ricon) 		\
-				ricon_action=$($1.ricon_action)
+				ricon_action=$($1.ricon_action) \
+				num_output=$($1.num_output)
 				completion=${completion#false}
 				numeric=${numeric#false}
+				num_output=${num_output#false}
+				entry_text=${entry_text//\!/\' \'}
 		;;
 		gtk_file_t)
 			object='file'
 
-			local	directory=$($1.directory)	\
+			local	filename=$($1.filename)		\
+				multiple=$($1.multiple)		\
+				directory=$($1.directory)	\
 				save=$($1.save)			\
-				confirm_overwrite=$($1.confirm_overwrite)
+				separator=$($1.separator)	\
+				confirm_overwrite=$($1.confirm_overwrite)	\
+				quoted_output=$($1.quoted_output)
+				multiple=${multiple#false}
 				directory=${directory#false}
 				save=${save#false}
+				quoted_output=${quoted_output#false}
 			;;
 		gtk_font_t)
 			object='font'
 					
-			local	preview=$($1.preview) \
-				separate_output=$($1.separate_output)
+			local	fontname=$($1.fontname)			\
+				preview=$($1.preview) 			\
+				separate_output=$($1.separate_output)	\
+				separator=$($1.separator)		\
+				quoted_output=$($1.quoted_output)
 				separate_output=${separate_output#false}
+				quoted_output=${quoted_output#false}
 			;;
 		gtk_form_t)
 			object='form'
@@ -414,13 +443,22 @@ function gtk.show()
 			local	obj=$($1.widget)			\
 				align=$($1.align)			\
 				columns=$($1.columns)			\
+				separator=$($1.separator)		\
+				item_separator=$($1.item_separator)	\
+				date_format=$($1.date_format)		\
+				float_precision=$($1.float_precision)	\
+				complete=$($1.complete)			\
+				quoted_output=$($1.quoted_output)	\
 				scroll=$($1.scroll)			\
 				output_by_row=$($1.output_by_row) 	\
+				num_output=$($1.num_output)		\
 				focus_field=$($1.focus_field)		\
 				cycle_read=$($1.cycle_read)
 				scroll=${scroll#false}
 				output_by_row=${output_by_row#false}
 				cycle_read=${cycle_read#false}
+				num_output=${num_output#false}
+				quoted_output=${quoted_output#false}
 			
 			if [[ $obj ]]; then
 				local 	widgets=${!__GTK_WIDGET[@]}
@@ -450,13 +488,15 @@ function gtk.show()
 				sort_by_name=$($1.sort_by_name)	\
 				descend=$($1.descend)		\
 				single_click=$($1.single_click)	\
-				monitor=$($1.monitor)
+				monitor=$($1.monitor)		\
+				listen=$($1.listen)
 				compact=${compact#false}
 				generic=${generic#false}
 				sort_by_name=${sort_by_name#false}
 				descend=${descend#false}
 				single_click=${single_click#false}
 				monitor=${monitor#false}
+				listen=${listen#false}
 			;;
 		gtk_list_t)
 			object='list'
@@ -754,6 +794,7 @@ function gtk.show()
 			${alpha:+--alpha}
 			${entry_label:+--entry-label '$entry_label'}
 			${entry_text:+--entry-text '$entry_text'}
+			${num_output:+--num-output}
 			${hide_text:+--hide-text '$hide_text'}
 			${completion:+--completion}
 			${numeric:+--numeric}
@@ -770,6 +811,10 @@ function gtk.show()
 			${output_by_row:+--output-by-row}
 			${focus_field:+--focus-field '$focus_field'}
 			${cycle_read:+--cycle-read}
+			${item_separator:+--item-separator '$item_separator'}
+			${date_format:+--date-format '$date_format'}
+			${float_precision:+--float-precision '$float_precision'}
+			${complete:+--complete '$complete'}
 			${read_dir:+--read-dir '$read_dir'}
 			${compact:+--compact}
 			${generic:+--generic}
@@ -852,6 +897,12 @@ function gtk.show()
 			${listen:+--listen}
 			${tooltip:+--tooltip '$tooltip'}
 			${command:+--command '$command'}
+			${multiple:+--multiple}
+			${directory:+--directory}
+			${save:+--save}
+			${separator:+--separator '$separator'}
+			${confirm_overwrite:+--confirm-overwrite '$confirm_overwrite'}
+			${quoted_output:+--quoted-output}
 			${stdout:+1> '$output'}
 			${stderr:+2> '$stderr'}"
 
