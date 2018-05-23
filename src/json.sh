@@ -88,7 +88,7 @@ function json.value()
 
 # func json.filter <[str]json> <[flag]type> ... => [str]
 #
-# Extrai o valor de todas as chaves com base no tipo de dado armazenado.
+# Retorna uma lista iterável com os valores das chaves do(s) tipo(s) especificado(s).
 # Obs: pode ser especificado um ou mais tipos.
 #
 # Tipos: array, object, string, number ou boolean
