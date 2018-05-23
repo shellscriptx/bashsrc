@@ -26,6 +26,8 @@ source builtin.sh
 # Dependência.
 __DEP__[yad]='>= 0.38.0'
 
+declare -A __GTK_WIDGET_OBJ_INIT
+
 # widgets/objects
 readonly -A __GTK_WIDGET=(
 [gtk_button]=BTN
@@ -92,14 +94,15 @@ var gtk_scale_t			struct_t
 var gtk_text_info_t		struct_t
 
 # widget
-gtk_widget_t.__add__	type		flag 	\
-			label		str	\
-			icon		str	\
-			tooltip		str	\
-			id		uint 	\
-			value		str	\
-			exec		str	\
-			callback	uint	
+gtk_widget_t.__add__	type		flag 			\
+			label		str			\
+			icon		str			\
+			tooltip		str			\
+			id		uint 			\
+			value		str			\
+			exec		str			\
+			callback	uint			\
+			widget_call	var
 
 # botão
 gtk_widget_button_t.__add__	label		str	\
@@ -360,386 +363,391 @@ gtk_text_info_t.__add__		window		gtk_window_t	\
 # gtk_scale_t
 # gtk_text_info_t
 #
-function gtk.show()
+function gtk.init()
 {
-	getopt.parse 1 "gtk_object:var:+:$1" ${@:2}
+	getopt.parse -1 "gtk_object:var:+:$1" ... "$@"
 
-	local 	objtype=$(__typeof__ $1)
-	local	object				
+	local objtype object gtk_object
 
-	case $objtype in
-		gtk_calendar_t)
-			object='calendar'
+	for gtk_object in "$@"; do
+		local 	objtype=$(__typeof__ $gtk_object)
+		local	object				
 
-			local 	day=$($1.day)			\
-				month=$($1.month)		\
-				year=$($1.year)			\
-				details=$($1.details)		\
-				show_weeks=$($1.show_weeks)
-				show_weeks=${show_weeks#false}
+		case $objtype in
+			gtk_calendar_t)
+				object='calendar'
+
+				local 	day=$($gtk_object.day)			\
+					month=$($gtk_object.month)		\
+					year=$($gtk_object.year)		\
+					details=$($gtk_object.details)		\
+					show_weeks=$($gtk_object.show_weeks)
+					show_weeks=${show_weeks#false}
+				;;
+			gtk_color_t)
+				object='color'
+	
+				local	init_color=$($gtk_object.init_color) 		\
+					gtk_palette=$($gtk_object.gtk_palette) 		\
+					palette=$($gtk_object.palette) 			\
+					expand_palette=$($gtk_object.expand_palette)	\
+					mode=$($gtk_object.mode) 			\
+					extra=$($gtk_object.extra) 			\
+					alpha=$($gtk_object.alpha)
+					gtk_palette=${gtk_palette#false}
+					expand_palette=${expand_palette#false}
+					extra=${extra#false}
+					alpha=${alpha#false}
+				;;
+			gtk_entry_t)
+				object='entry'
+	
+				local	entry_label=$($gtk_object.entry_label)		\
+					entry_text=$($gtk_object.entry_text) 		\
+					hide_text=$($gtk_object.hide_text) 		\
+					completion=$($gtk_object.completion) 		\
+					numeric=$($gtk_object.numeric) 			\
+					licon=$($gtk_object.licon)			\
+					licon_action=$($gtk_object.licon_action) 	\
+					ricon=$($gtk_object.ricon) 			\
+					ricon_action=$($gtk_object.ricon_action) 	\
+					num_output=$($gtk_object.num_output)
+					completion=${completion#false}
+					numeric=${numeric#false}
+					num_output=${num_output#false}
+					entry_text=${entry_text//\!/\' \'}
 			;;
-		gtk_color_t)
-			object='color'
-
-			local	init_color=$($1.init_color) 		\
-				gtk_palette=$($1.gtk_palette) 		\
-				palette=$($1.palette) 			\
-				expand_palette=$($1.expand_palette)	\
-				mode=$($1.mode) 			\
-				extra=$($1.extra) 			\
-				alpha=$($1.alpha)
-				gtk_palette=${gtk_palette#false}
-				expand_palette=${expand_palette#false}
-				extra=${extra#false}
-				alpha=${alpha#false}
-			;;
-		gtk_entry_t)
-			object='entry'
-
-			local	entry_label=$($1.entry_label)		\
-				entry_text=$($1.entry_text) 	\
-				hide_text=$($1.hide_text) 	\
-				completion=$($1.completion) 	\
-				numeric=$($1.numeric) 		\
-				licon=$($1.licon)		\
-				licon_action=$($1.licon_action) \
-				ricon=$($1.ricon) 		\
-				ricon_action=$($1.ricon_action) \
-				num_output=$($1.num_output)
-				completion=${completion#false}
-				numeric=${numeric#false}
-				num_output=${num_output#false}
-				entry_text=${entry_text//\!/\' \'}
-		;;
-		gtk_file_t)
-			object='file'
-
-			local	filename=$($1.filename)		\
-				multiple=$($1.multiple)		\
-				directory=$($1.directory)	\
-				save=$($1.save)			\
-				separator=$($1.separator)	\
-				confirm_overwrite=$($1.confirm_overwrite)	\
-				quoted_output=$($1.quoted_output)
-				multiple=${multiple#false}
-				directory=${directory#false}
-				save=${save#false}
-				quoted_output=${quoted_output#false}
-			;;
-		gtk_font_t)
-			object='font'
-					
-			local	fontname=$($1.fontname)			\
-				preview=$($1.preview) 			\
-				separate_output=$($1.separate_output)	\
-				separator=$($1.separator)		\
-				quoted_output=$($1.quoted_output)
-				separate_output=${separate_output#false}
-				quoted_output=${quoted_output#false}
-			;;
-		gtk_form_t)
-			object='form'
-
-			local	obj=$($1.widget)			\
-				align=$($1.align)			\
-				columns=$($1.columns)			\
-				separator=$($1.separator)		\
-				item_separator=$($1.item_separator)	\
-				date_format=$($1.date_format)		\
-				float_precision=$($1.float_precision)	\
-				complete=$($1.complete)			\
-				quoted_output=$($1.quoted_output)	\
-				scroll=$($1.scroll)			\
-				output_by_row=$($1.output_by_row) 	\
-				num_output=$($1.num_output)		\
-				focus_field=$($1.focus_field)		\
-				cycle_read=$($1.cycle_read)
-				scroll=${scroll#false}
-				output_by_row=${output_by_row#false}
-				cycle_read=${cycle_read#false}
-				num_output=${num_output#false}
-				quoted_output=${quoted_output#false}
-			
-			if [[ $obj ]]; then
-				local 	widgets=${!__GTK_WIDGET[@]}
-				local 	widget callback fields i
-				for ((i=0; i < $($obj.__sizeof__); i++)); do
-					widget=$($obj[$i].type)
-					callback=$($obj[$i].callback)
-					if [[ $widget != @(${widgets[@]// /|}) ]]; then
-						error.trace def 'widget' 'gtk_widget_t' "$widget" "$obj[$i]: objeto widget inválido"
-						return $?
-					elif [[ $widget == @(gtk_button|gtk_toogle_button) ]]; then
-						fields[$i]="--field '$($obj[$i].label)"'!'"$($obj[$i].icon)"'!'"$($obj[$i].tooltip):${__GTK_WIDGET[$widget]}' \"${callback:+@echo ${callback}:\$(}bash -c '$($obj[$i].exec)'${callback:+)}\""
-					else
-						fields[$i]="--field '$($obj[$i].label):${__GTK_WIDGET[$widget]}' '$($obj[$i].value)'"
-					fi
-				done
-			fi
-			;;
-		gtk_icons_t)
-			object='icons'
-			
-			local	read_dir=$($1.read_dir)		\
-				compact=$($1.compact)		\
-				generic=$($1.generic)		\
-				item_width=$($1.item_width)	\
-				term=$($1.term)			\
-				sort_by_name=$($1.sort_by_name)	\
-				descend=$($1.descend)		\
-				single_click=$($1.single_click)	\
-				monitor=$($1.monitor)		\
-				listen=$($1.listen)
-				compact=${compact#false}
-				generic=${generic#false}
-				sort_by_name=${sort_by_name#false}
-				descend=${descend#false}
-				single_click=${single_click#false}
-				monitor=${monitor#false}
-				listen=${listen#false}
-			;;
-		gtk_list_t)
-			object='list'
-			
-			local	column=$($1.columns)			\
-				checklist=$($1.checklist)		\
-				radiolist=$($1.radiolist)		\
-				no_headers=$($1.no_headers)		\
-				no_click=$($1.no_click)			\
-				no_rules_hint=($1.no_rules_hint)	\
-				grid_lines=$($1.grid_lines)		\
-				print_all=$($1.print_all)		\
-				editable_cols=$($1.editable_cols)	\
-				wrap_width=$($1.wrap_width)		\
-				wrap_cols=$($1.wrap_cols)		\
-				ellipsize=$($1.ellipsize)		\
-				ellipsize_cols=$($1.ellipsize_cols)	\
-				print_column=$($1.print_column)		\
-				hide_column=$($1.hide_column)		\
-				expand_column=$($1.expand_column)	\
-				search_column=$($1.search_column)	\
-				tooltip_column=$($1.tooltip_column)	\
-				sep_column=$($1.sep_column)		\
-				sep_value=$($1.sep_value)		\
-				limit=$($1.limit)			\
-				dclick_action=$($1.dclick_action)	\
-				select_action=$($1.select_action)	\
-				add_action=$($1.add_action)		\
-				regex_search=$($1.regex_search)		\
-				no_selection=$($1.no_selection)		\
-				lstvalue=$($1.value)
-				lstvalue="'${lstvalue//\!/\' \'}'"
-				checklist=${checklist#false}
-				radiolist=${radiolist#false}
-				no_headers=${no_headers#false}
-				no_click=${no_click#false}
-				no_rules_hint=${no_rules_hint#false}
-				print_all=${print_all#false}
-				regex_search=${regex_search#false}
-				no_selection=${no_selection#false}
-
-				if [[ $column ]]; then
-					local col_types=${!__GTK_WIDGET_COLUMN_TYPE[@]}
-					local lstcolumns col_type i
-					for ((i=0; i < $($column.__sizeof__); i++)); do
-						col_type=$($column[$i].type)
-						if [[ $col_type == @(${col_types[@]// /|}) ]]; then
-							lstcolumns[$i]="--column '$($column[$i].label):${__GTK_WIDGET_COLUMN_TYPE[$col_type]}'"
-						else
-							error.trace def 'column' 'gtk_widget_column_t' "$col_type" "$column[$i]: tipo da coluna inválida"
+			gtk_file_t)
+				object='file'
+	
+				local	filename=$($gtk_object.filename)			\
+					multiple=$($gtk_object.multiple)			\
+					directory=$($gtk_object.directory)			\
+					save=$($gtk_object.save)				\
+					separator=$($gtk_object.separator)			\
+					confirm_overwrite=$($gtk_object.confirm_overwrite)	\
+					quoted_output=$($gtk_object.quoted_output)
+					multiple=${multiple#false}
+					directory=${directory#false}
+					save=${save#false}
+					quoted_output=${quoted_output#false}
+				;;
+			gtk_font_t)
+				object='font'
+						
+				local	fontname=$($gtk_object.fontname)		\
+					preview=$($gtk_object.preview) 			\
+					separate_output=$($gtk_object.separate_output)	\
+					separator=$($gtk_object.separator)		\
+					quoted_output=$($gtk_object.quoted_output)
+					separate_output=${separate_output#false}
+					quoted_output=${quoted_output#false}
+				;;
+			gtk_form_t)
+				object='form'
+	
+				local	obj=$($gtk_object.widget)			\
+					align=$($gtk_object.align)			\
+					columns=$($gtk_object.columns)			\
+					separator=$($gtk_object.separator)		\
+					item_separator=$($gtk_object.item_separator)	\
+					date_format=$($gtk_object.date_format)		\
+					float_precision=$($gtk_object.float_precision)	\
+					complete=$($gtk_object.complete)		\
+					quoted_output=$($gtk_object.quoted_output)	\
+					scroll=$($gtk_object.scroll)			\
+					output_by_row=$($gtk_object.output_by_row) 	\
+					num_output=$($gtk_object.num_output)		\
+					focus_field=$($gtk_object.focus_field)		\
+					cycle_read=$($gtk_object.cycle_read)		
+					scroll=${scroll#false}
+					output_by_row=${output_by_row#false}
+					cycle_read=${cycle_read#false}
+					num_output=${num_output#false}
+					quoted_output=${quoted_output#false}
+				
+				if [[ $obj ]]; then
+					local 	widgets=${!__GTK_WIDGET[@]}
+					local 	widget callback fields widget_call exec i
+					for ((i=0; i < $($obj.__sizeof__); i++)); do
+						widget=$($obj[$i].type)
+						callback=$($obj[$i].callback)
+						widget_call=$($obj[$i].widget_call)
+						exec=$($obj[$i].exec)
+						if [[ $widget != @(${widgets[@]// /|}) ]]; then
+							error.trace def 'widget' 'gtk_widget_t' "$widget" "$obj[$i]: objeto widget inválido"
 							return $?
+						elif [[ $widget == @(gtk_button|gtk_toogle_button) ]]; then
+							fields[$i]="--field '$($obj[$i].label)"'!'"$($obj[$i].icon)"'!'"$($obj[$i].tooltip):${__GTK_WIDGET[$widget]}' \"${callback:+@echo ${callback}:\$(}bash -c '${exec:+$exec;}${widget_call:+yad ${__GTK_WIDGET_OBJ_INIT[$widget_call]//\'/\\\"}}'${callback:+)}\""
+						else
+							fields[$i]="--field '$($obj[$i].label):${__GTK_WIDGET[$widget]}' '$($obj[$i].value)'"
 						fi
 					done
 				fi
-			;;
-		gtk_multi_progress_t)
-				object='multi-progress'
+				;;
+			gtk_icons_t)
+				object='icons'
 				
-				local	bar=$($1.bar)			\
-					watch_bar=$($1.watch_bar)	\
-					align=$($1.align)		\
-					auto_close=$($1.auto_close)	\
-					auto_kill=$($1.auto_kill)
-					auto_close=${auto_close#false}
-					auto_kill=${auto_kill#false}
-
-				if [[ $bar ]]; then
-					local bar_types=${!__GTK_WIDGET_BAR_TYPE[@]}
-					local bars bar_type i
-					for ((i=0; i < $($bar.__sizeof__); i++)); do
-						bar_type=$($bar[$i].type)
-						if [[ $bar_type == @(${bar_types[@]// /|}) ]]; then
+				local	read_dir=$($gtk_object.read_dir)		\
+					compact=$($gtk_object.compact)			\
+					generic=$($gtk_object.generic)			\
+					item_width=$($gtk_object.item_width)		\
+					term=$($gtk_object.term)			\
+					sort_by_name=$($gtk_object.sort_by_name)	\
+					descend=$($gtk_object.descend)			\
+					single_click=$($gtk_object.single_click)	\
+					monitor=$($gtk_object.monitor)			\
+					listen=$($gtk_object.listen)
+					compact=${compact#false}
+					generic=${generic#false}
+					sort_by_name=${sort_by_name#false}
+					descend=${descend#false}
+					single_click=${single_click#false}
+					monitor=${monitor#false}
+					listen=${listen#false}
+				;;
+			gtk_list_t)
+				object='list'
+				
+				local	column=$($gtk_object.columns)			\
+					checklist=$($gtk_object.checklist)		\
+					radiolist=$($gtk_object.radiolist)		\
+					no_headers=$($gtk_object.no_headers)		\
+					no_click=$($gtk_object.no_click)		\
+					no_rules_hint=($gtk_object.no_rules_hint)	\
+					grid_lines=$($gtk_object.grid_lines)		\
+					print_all=$($gtk_object.print_all)		\
+					editable_cols=$($gtk_object.editable_cols)	\
+					wrap_width=$($gtk_object.wrap_width)		\
+					wrap_cols=$($gtk_object.wrap_cols)		\
+					ellipsize=$($gtk_object.ellipsize)		\
+					ellipsize_cols=$($gtk_object.ellipsize_cols)	\
+					print_column=$($gtk_object.print_column)	\
+					hide_column=$($gtk_object.hide_column)		\
+					expand_column=$($gtk_object.expand_column)	\
+					search_column=$($gtk_object.search_column)	\
+					tooltip_column=$($gtk_object.tooltip_column)	\
+					sep_column=$($gtk_object.sep_column)		\
+					sep_value=$($gtk_object.sep_value)		\
+					limit=$($gtk_object.limit)			\
+					dclick_action=$($gtk_object.dclick_action)	\
+					select_action=$($gtk_object.select_action)	\
+					add_action=$($gtk_object.add_action)		\
+					regex_search=$($gtk_object.regex_search)	\
+					no_selection=$($gtk_object.no_selection)	\
+					lstvalue=$($gtk_object.value)
+					lstvalue="'${lstvalue//\!/\' \'}'"
+					checklist=${checklist#false}
+					radiolist=${radiolist#false}
+					no_headers=${no_headers#false}
+					no_click=${no_click#false}
+					no_rules_hint=${no_rules_hint#false}
+					print_all=${print_all#false}
+					regex_search=${regex_search#false}
+					no_selection=${no_selection#false}
+	
+					if [[ $column ]]; then
+						local col_types=${!__GTK_WIDGET_COLUMN_TYPE[@]}
+						local lstcolumns col_type i
+						for ((i=0; i < $($column.__sizeof__); i++)); do
+							col_type=$($column[$i].type)
+							if [[ $col_type == @(${col_types[@]// /|}) ]]; then
+								lstcolumns[$i]="--column '$($column[$i].label):${__GTK_WIDGET_COLUMN_TYPE[$col_type]}'"
+							else
+								error.trace def 'column' 'gtk_widget_column_t' "$col_type" "$column[$i]: tipo da coluna inválida	"
+								return $?
+							fi
+						done
+					fi
+				;;
+			gtk_multi_progress_t)
+					object='multi-progress'
+					
+					local	bar=$($gtk_object.bar)			\
+						watch_bar=$($gtk_object.watch_bar)	\
+						align=$($gtk_object.align)		\
+						auto_close=$($gtk_object.auto_close)	\
+						auto_kill=$($gtk_object.auto_kill)
+						auto_close=${auto_close#false}
+						auto_kill=${auto_kill#false}
+	
+					if [[ $bar ]]; then
+						local bar_types=${!__GTK_WIDGET_BAR_TYPE[@]}
+						local bars bar_type i
+						for ((i=0; i < $($bar.__sizeof__); i++)); do
+							bar_type=$($bar[$i].type)
+							if [[ $bar_type == @(${bar_types[@]// /|}) ]]; then
 							bars[$i]="--bar '$($bar[$i].label):${__GTK_WIDGET_BAR_TYPE[$bar_type]}'"
 						else
 							error.trace def 'bar' 'gtk_widget_bar_t' "$bar_type" "$bar[$i]: tipo da barra de progresso inválida"
 							return $?
 						fi
-					done
-				fi
-			;;
-		gtk_picture_t)
-				object='picture'
-				
-				local	size=$($1.size)		\
-					inc=$($1.inc)		\
-					filename=$($1.filename)
-			;;
-		gtk_print_t)
-				object='print'
-				
-				local	type=$($1.type)			\
-					headers=$($1.headers)		\
-					add_preview=$($1.add_preview)	\
-					filename=$($1.filename)		\
-					fontname=$($1.fontname)
-					headers=${headers#false}
-					add_preview=${add_preview#false}
-			;;
-		gtk_progress_t)
-				object='progress'
-				
-				local	progress_text=$($1.progress_text)	\
-					percentage=$($1.percentage)		\
-					pulsate=$($1.pulsate)			\
-					auto_close=$($1.auto_close)		\
-					auto_kill=$($1.auto_kill)		\
-					rtl=$($1.rtl)				\
-					enable_log=$($1.enable_log)		\
-					log_expanded=$($1.log_expanded)		\
-					log_on_top=$($1.log_on_top)		\
-					log_height=$($1.log_height)
-					pulsate=${pulsate#false}
-					auto_close=${auto_close#false}
-					auto_kill=${auto_kill#false}
-					rtl=${rtl#false}
-					log_expanded=${log_expanded#false}
-					log_on_top=${log_on_top#false}
+						done
+					fi
 				;;
-		gtk_scale_t)
-				object='scale'
-				
-				local	value=$($1.value)			\
-					min_value=$($1.min_value)		\
-					max_value=$($1.max_value)		\
-					step=$($1.step)				\
-					page=$($1.page)				\
-					print_partial=$($1.print_partial)	\
-					hide_value=$($1.hide_value)		\
-					invert=$($1.invert)			\
-					inc_buttons=$($1.inc_buttons)		\
-					mark=$($1.mark)
-					print_partial=${print_partial#false}
-					hide_value=${hide_value#false}
-					invert=${invert#false}
-					inc_buttons=${inc_buttons#false}
-					mark=${mark:+--mark \'${mark//\!/\' --mark \'}\'}
-					;;
-		gtk_text_info_t)
-				object='text-info'
-				
-				local	filename=$($1.filename)		\
-					editable=$($1.editable)		\
-					fore=$($1.fore)			\
-					back=$($1.back)			\
-					fontname=$($1.fontname)		\
-					wrap=$($1.wrap)			\
-					justify=$($1.justify)		\
-					margins=$($1.margins)		\
-					tail=$($1.tail)			\
-					show_cursor=$($1.show_cursor)	\
-					show_uri=$($1.show_uri)		\
-					uri_color=$($1.uri_color)	\
-					lang=$($1.lang)			\
-					listen=$($1.listen)
-					editable=${editable#false}
-					wrap=${wrap#false}
-					tail=${tail#false}
-					show_cursor=${show_cursor#false}
-					show_uri=${show_uri#false}
-					listen=${listen#false}
-			;;
-		gtk_dnd_t)
-				object='dnd'
-				
-				local	tooltip=$($1.tooltip)	\
-					command=$($1.command)
-					tooltip=${tooltip#false}
-			;;
-		*)	error.trace def 'gtk_object' 'var' "$objtype" 'tipo do objeto inválido'; return $?;;
-	esac
-
-	local 	title=$($1.window.title)				\
-		window_icon=$($1.window.icon)				\
-		width=$($1.window.width) 				\
-		height=$($1.window.height)				\
-		posx=$($1.window.posx) 					\
-		posy=$($1.window.posy)					\
-		geometry=$($1.window.geometry)				\
-		timeout=$($1.window.timeout)				\
-		timeout_indicator=$($1.window.timeout_indicator)	\
-		text=$($1.window.text)					\
-		text_align=$($1.window.text_align)			\
-		image=$($1.window.image)				\
-		image_on_top=$($1.window.image_on_top)			\
-		icon_theme=$($1.window.icon_theme)			\
-		expander=$($1.window.expander)				\
-		button=$($1.window.button)				\
-		no_buttons=$($1.window.no_buttons)			\
-		no_markup=$($1.window.no_markup)			\
-		no_escape=$($1.window.no_escape)			\
-		borders=$($1.window.borders)				\
-		always_print_result=$($1.window.always_print_result)	\
-		response=$($1.window.response) 				\
-		selectable_labels=$($1.window.selectable_labels)	\
-		sticky=$($1.window.sticky)				\
-		fixed=$($1.window.fixed)				\
-		on_top=$($1.window.on_top)				\
-		center=$($1.window.center)				\
-		mouse=$($1.window.mouse)				\
-		undecorated=$($1.window.undecorated)			\
-		skip_taskbar=$($1.window.skip_taskbar)			\
-		maximized=$($1.window.maximized)			\
-		fullscreen=$($1.window.fullscreen)			\
-		no_focus=$($1.window.no_focus)				\
-		close_on_unfocus=$($1.window.close_on_unfocus)		\
-		splash=$($1.window.splash)				\
-		plug=$($1.window.plug)					\
-		tabnum=$($1.window.tabnum)				\
-		parent_win=$($1.window.parent_win)			\
-		kill_parent=$($1.window.kill_parent)			\
-		print_xid=$($1.window.print_xid	)			\
-		stdout=$($1.window.stdout)				\
-		stderr=$($1.window.stderr)
-
-	# Opcional
-	image_on_top=${image_on_top#false}
-	no_buttons=${no_buttons#false}
-	no_markup=${no_markup#false}
-	no_escape=${no_scape#false}
-	always_print_result=${always_print_result#false}
-	selectable_labels=${selectable_labels#false}
-	sticky=${sticky#false}
-	fixed=${fixed#false}
-	on_top=${on_top#false}
-	mouse=${mouse#false}
-	undecorated=${undecorated#false}
-	skip_taskbar=${skip_taskbar#false}
-	maximized=${maximized#false}
-	fullscreen=${fullscreen#false}
-	no_focus=${no_focus#false}
-	close_on_unfocus=${close_on_unfocus#false}
-	splash=${splash#false}
-	print_xid=${print_xid#false}
-
-	if [[ $button ]]; then
-		local 	buttons
-		for ((i=0; i < $($button.__sizeof__); i++)); do
-			buttons[$i]="--button '$($button[$i].label)"'!'"$($button[$i].icon)"'!'"$($button[$i].tooltip):$($button[$i].id)'"
-		done
-	fi
-
-	# config
-	obj_parse="	${object:+--$object}
+			gtk_picture_t)
+					object='picture'
+					
+					local	size=$($gtk_object.size)		\
+						inc=$($gtk_object.inc)			\
+						filename=$($gtk_object.filename)
+				;;
+			gtk_print_t)
+					object='print'
+					
+					local	type=$($gtk_object.type)			\
+						headers=$($gtk_object.headers)			\
+						add_preview=$($gtk_object.add_preview)		\
+						filename=$($gtk_object.filename)		\
+						fontname=$($gtk_object.fontname)
+						headers=${headers#false}
+						add_preview=${add_preview#false}
+				;;
+			gtk_progress_t)
+					object='progress'
+					
+					local	progress_text=$($gtk_object.progress_text)	\
+						percentage=$($gtk_object.percentage)		\
+						pulsate=$($gtk_object.pulsate)			\
+						auto_close=$($gtk_object.auto_close)		\
+						auto_kill=$($gtk_object.auto_kill)		\
+						rtl=$($gtk_object.rtl)				\
+						enable_log=$($gtk_object.enable_log)		\
+						log_expanded=$($gtk_object.log_expanded)	\
+						log_on_top=$($gtk_object.log_on_top)		\
+						log_height=$($gtk_object.log_height)
+						pulsate=${pulsate#false}
+						auto_close=${auto_close#false}
+						auto_kill=${auto_kill#false}
+						rtl=${rtl#false}
+						log_expanded=${log_expanded#false}
+						log_on_top=${log_on_top#false}
+				;;
+			gtk_scale_t)
+					object='scale'
+					
+					local	value=$($gtk_object.value)			\
+						min_value=$($gtk_object.min_value)		\
+						max_value=$($gtk_object.max_value)		\
+						step=$($gtk_object.step)			\
+						page=$($gtk_object.page)			\
+						print_partial=$($gtk_object.print_partial)	\
+						hide_value=$($gtk_object.hide_value)		\
+						invert=$($gtk_object.invert)			\
+						inc_buttons=$($gtk_object.inc_buttons)		\
+						mark=$($gtk_object.mark)
+						print_partial=${print_partial#false}
+						hide_value=${hide_value#false}
+						invert=${invert#false}
+						inc_buttons=${inc_buttons#false}
+						mark=${mark:+--mark \'${mark//\!/\' --mark \'}\'}
+						;;
+			gtk_text_info_t)
+					object='text-info'
+					
+					local	filename=$($gtk_object.filename)		\
+						editable=$($gtk_object.editable)		\
+						fore=$($gtk_object.fore)			\
+						back=$($gtk_object.back)			\
+						fontname=$($gtk_object.fontname)		\
+						wrap=$($gtk_object.wrap)			\
+						justify=$($gtk_object.justify)		\
+						margins=$($gtk_object.margins)		\
+						tail=$($gtk_object.tail)			\
+						show_cursor=$($gtk_object.show_cursor)	\
+						show_uri=$($gtk_object.show_uri)		\
+						uri_color=$($gtk_object.uri_color)	\
+						lang=$($gtk_object.lang)			\
+						listen=$($gtk_object.listen)
+						editable=${editable#false}
+						wrap=${wrap#false}
+						tail=${tail#false}
+						show_cursor=${show_cursor#false}
+						show_uri=${show_uri#false}
+						listen=${listen#false}
+				;;
+			gtk_dnd_t)
+					object='dnd'
+					
+					local	tooltip=$($gtk_object.tooltip)	\
+						command=$($gtk_object.command)
+						tooltip=${tooltip#false}
+				;;
+			*)	error.trace def 'gtk_object' 'var' "$gtk_object" "'${objtype:-null}' tipo do objeto inválido"; return $?;;
+		esac
+	
+		local 	title=$($gtk_object.window.title)				\
+			window_icon=$($gtk_object.window.icon)				\
+			width=$($gtk_object.window.width) 				\
+			height=$($gtk_object.window.height)				\
+			posx=$($gtk_object.window.posx) 					\
+			posy=$($gtk_object.window.posy)					\
+			geometry=$($gtk_object.window.geometry)				\
+			timeout=$($gtk_object.window.timeout)				\
+			timeout_indicator=$($gtk_object.window.timeout_indicator)	\
+			text=$($gtk_object.window.text)					\
+			text_align=$($gtk_object.window.text_align)			\
+			image=$($gtk_object.window.image)				\
+			image_on_top=$($gtk_object.window.image_on_top)			\
+			icon_theme=$($gtk_object.window.icon_theme)			\
+			expander=$($gtk_object.window.expander)				\
+			button=$($gtk_object.window.button)				\
+			no_buttons=$($gtk_object.window.no_buttons)			\
+			no_markup=$($gtk_object.window.no_markup)			\
+			no_escape=$($gtk_object.window.no_escape)			\
+			borders=$($gtk_object.window.borders)				\
+			always_print_result=$($gtk_object.window.always_print_result)	\
+			response=$($gtk_object.window.response) 				\
+			selectable_labels=$($gtk_object.window.selectable_labels)	\
+			sticky=$($gtk_object.window.sticky)				\
+			fixed=$($gtk_object.window.fixed)				\
+			on_top=$($gtk_object.window.on_top)				\
+			center=$($gtk_object.window.center)				\
+			mouse=$($gtk_object.window.mouse)				\
+			undecorated=$($gtk_object.window.undecorated)			\
+			skip_taskbar=$($gtk_object.window.skip_taskbar)			\
+			maximized=$($gtk_object.window.maximized)			\
+			fullscreen=$($gtk_object.window.fullscreen)			\
+			no_focus=$($gtk_object.window.no_focus)				\
+			close_on_unfocus=$($gtk_object.window.close_on_unfocus)		\
+			splash=$($gtk_object.window.splash)				\
+			plug=$($gtk_object.window.plug)					\
+			tabnum=$($gtk_object.window.tabnum)				\
+			parent_win=$($gtk_object.window.parent_win)			\
+			kill_parent=$($gtk_object.window.kill_parent)			\
+			print_xid=$($gtk_object.window.print_xid	)			\
+			stdout=$($gtk_object.window.stdout)				\
+			stderr=$($gtk_object.window.stderr)
+	
+		# Opcional
+		image_on_top=${image_on_top#false}
+		no_buttons=${no_buttons#false}
+		no_markup=${no_markup#false}
+		no_escape=${no_scape#false}
+		always_print_result=${always_print_result#false}
+		selectable_labels=${selectable_labels#false}
+		sticky=${sticky#false}
+		fixed=${fixed#false}
+		on_top=${on_top#false}
+		mouse=${mouse#false}
+		undecorated=${undecorated#false}
+		skip_taskbar=${skip_taskbar#false}
+		maximized=${maximized#false}
+		fullscreen=${fullscreen#false}
+		no_focus=${no_focus#false}
+		close_on_unfocus=${close_on_unfocus#false}
+		splash=${splash#false}
+		print_xid=${print_xid#false}
+	
+		if [[ $button ]]; then
+			local 	buttons
+			for ((i=0; i < $($button.__sizeof__); i++)); do
+				buttons[$i]="--button '$($button[$i].label)"'!'"$($button[$i].icon)"'!'"$($button[$i].tooltip):$($button[$i].id)'"
+			done
+		fi
+	
+		# config
+		__GTK_WIDGET_OBJ_INIT[$gtk_object]="${object:+--$object}
 			${title:+--title '$title'}
 			${window_icon:+--window-icon '$window_icon'}
 			${width:+--width '$width'}
@@ -905,11 +913,28 @@ function gtk.show()
 			${quoted_output:+--quoted-output}
 			${stdout:+1> '$output'}
 			${stderr:+2> '$stderr'}"
+		done
 
-		# Inicializa o objeto e carrega suas configurações.
-		eval yad $obj_parse
+	return $?
+}
 
+function gtk.show()
+{
+	getopt.parse 1 "gtk_object:var:+:$1" ${@:2}
+
+	local objtype=$(__typeof__ $1)
+
+	if [[ $objtype != gtk_@(calendar|color|dnd|entry|file|font|form|icons|list|multi_progress|picture|print|progress|scale|text_info)_t ]]; then
+		error.trace def 'gtk_object' 'var' "$1" "'${objtype:-null}' tipo do objeto inválido"
 		return $?
+	elif [[ ! ${__GTK_WIDGET_OBJ_INIT[$1]} ]]; then
+		error.trace def 'gtk_object' 'var' "$1" 'o objeto não foi inicializado'
+		return $?
+	fi
+
+	eval yad ${__GTK_WIDGET_OBJ_INIT[$1]}
+
+	return $?
 }
 
 source.__INIT__
