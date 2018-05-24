@@ -47,46 +47,168 @@ gtk_text_info_t
 )
 
 # widgets/objects
-readonly -A __GTK_WIDGET_FLAG=(
-[gtk_button]=BTN
-[gtk_passwordbox]=H
-[gtk_spin_button]=NUM
-[gtk_entry]=
-[gtk_readonlybox]=RO
-[gtk_checkbox]=CHK
-[gtk_combobox]=CB
-[gtk_combobox_edit]=CBE
-[gtk_entry_complete]=CE
-[gtk_file_select]=FL
-[gtk_files_select]=MFL
-[gtk_file_create]=SFL
-[gtk_dir_select]=DIR
-[gtk_dir_create]=CDIR
-[gtk_font_button]=FN
-[gtk_date_button]=DT
-[gtk_scale_button]=SCL
-[gtk_color_button]=CLR
-[gtk_toogle_button]=FBTN
-[gtk_label]=LBL
-[gtk_textbox]=TXT
+readonly -A __GTK_FLAG_WIDGET=(
+[button]=BTN
+[passwordbox]=H
+[spin_button]=NUM
+[entry]=
+[readonlybox]=RO
+[checkbox]=CHK
+[combobox]=CB
+[combobox_edit]=CBE
+[entry_complete]=CE
+[file_select]=FL
+[files_select]=MFL
+[file_create]=SFL
+[dir_select]=DIR
+[dir_create]=CDIR
+[font_button]=FN
+[date_button]=DT
+[scale_button]=SCL
+[color_button]=CLR
+[toogle_button]=FBTN
+[label]=LBL
+[textbox]=TXT
 )
 
-readonly -A __GTK_WIDGET_COLUMN_TYPE=(
-[gtk_widget_column_text]=TEXT
-[gtk_widget_column_number]=NUM
-[gtk_widget_column_size]=SZ
-[gtk_widget_column_float]=FLT
-[gtk_widget_column_checkbox]=CHK
-[gtk_widget_column_radiobox]=RD
-[gtk_widget_column_progressbar]=BAR
-[gtk_widget_column_hide]=HD
-[gtk_widget_column_tooltip]=TIP
+readonly -A __GTK_FLAG_WIDGET_COLUMN=(
+[text]=TEXT
+[number]=NUM
+[size]=SZ
+[float]=FLT
+[checkbox]=CHK
+[radiobox]=RD
+[progressbar]=BAR
+[hide]=HD
+[tooltip]=TIP
 )
 
-readonly -A __GTK_WIDGET_BAR_TYPE=(
-[gtk_widget_bar_normal]=NORM
-[gtk_widget_bar_reverse]=RTL
-[gtk_widget_bar_pulse]=PULSE
+readonly -A __GTK_FLAG_WIDGET_BAR=(
+[normal]=NORM
+[reverse]=RTL
+[pulse]=PULSE
+)
+
+readonly -A __GTK_FLAG_PICTURE_SIZE=(
+[original]=ORIG
+[fitting]=FIT
+)
+
+readonly -A __GTK_FLAG_FORM_POS=(
+[top]=TOP
+[bottom]=BOTTOM
+[left]=LEFT
+[right]=RIGHT
+)
+
+readonly -A __GTK_FLAG_TEXT_ALIGN=(
+[left]=LEFT
+[center]=CENTER
+[right]=RIGHT
+[fill]=FILL
+)
+
+readonly -A __GTK_FLAG_BUTTON_LAYOUT=(
+[spread]=SPREAD
+[edge]=EDGE
+[start]=START
+[end]=END
+[center]=CENTER
+)
+
+readonly -A __GTK_FLAG_SIGNAL=(
+[SIGHUP]=SIGHUP
+[SIGINT]=SIGINT
+[SIGQUIT]=SIGQUIT
+[SIGILL]=SIGILL
+[SIGTRAP]=SIGTRAP
+[SIGABRT]=SIGABRT
+[SIGBUS]=SIGBUS
+[SIGFPE]=SIGFPE
+[SIGKILL]=SIGKILL
+[SIGUSR1]=SIGUSR1
+[SIGSEGV]=SIGSEGV
+[SIGUSR2]=SIGUSR2
+[SIGPIPE]=SIGPIPE
+[SIGALRM]=SIGALRM
+[SIGTERM]=SIGTERM
+[SIGSTKFLT]=SIGSTKFLT
+[SIGCHLD]=SIGCHLD
+[SIGCONT]=SIGCONT
+[SIGSTOP]=SIGSTOP
+[SIGTSTP]=SIGTSTP
+[SIGTTIN]=SIGTTIN
+[SIGTTOU]=SIGTTOU
+[SIGURG]=SIGURG
+[SIGXCPU]=SIGXCPU
+[SIGXFSZ]=SIGXFSZ
+[SIGVTALRM]=SIGVTALRM
+[SIGPROF]=SIGPROF
+[SIGWINCH]=SIGWINCH
+[SIGIO]=SIGIO
+[SIGPWR]=SIGPWR
+[SIGSYS]=SIGSYS
+[SIGRTMIN]=SIGRTMIN
+[SIGRTMIN+1]=SIGRTMIN+1
+[SIGRTMIN+2]=SIGRTMIN+2
+[SIGRTMIN+3]=SIGRTMIN+3
+[SIGRTMIN+4]=SIGRTMIN+4
+[SIGRTMIN+5]=SIGRTMIN+5
+[SIGRTMIN+6]=SIGRTMIN+6
+[SIGRTMIN+7]=SIGRTMIN+7
+[SIGRTMIN+8]=SIGRTMIN+8
+[SIGRTMIN+9]=SIGRTMIN+9
+[SIGRTMIN+10]=SIGRTMIN+10
+[SIGRTMIN+11]=SIGRTMIN+11
+[SIGRTMIN+12]=SIGRTMIN+12
+[SIGRTMIN+13]=SIGRTMIN+13
+[SIGRTMIN+14]=SIGRTMIN+14
+[SIGRTMIN+15]=SIGRTMIN+15
+[SIGRTMAX-14]=SIGRTMAX-14
+[SIGRTMAX-13]=SIGRTMAX-13
+[SIGRTMAX-12]=SIGRTMAX-12
+[SIGRTMAX-11]=SIGRTMAX-11
+[SIGRTMAX-10]=SIGRTMAX-10
+[SIGRTMAX-9]=SIGRTMAX-9
+[SIGRTMAX-8]=SIGRTMAX-8
+[SIGRTMAX-7]=SIGRTMAX-7
+[SIGRTMAX-6]=SIGRTMAX-6
+[SIGRTMAX-5]=SIGRTMAX-5
+[SIGRTMAX-4]=SIGRTMAX-4
+[SIGRTMAX-3]=SIGRTMAX-3
+[SIGRTMAX-2]=SIGRTMAX-2
+[SIGRTMAX-1]=SIGRTMAX-1
+[SIGRTMAX]=SIGRTMAX
+)
+
+readonly -A __GTK_FLAG_COLOR_MODE=(
+[hex]=HEX
+[rgb]=RGB
+)
+
+readonly -A __GTK_FLAG_COMPLETE=(
+[any]=ANY
+[all]=ALL
+[regex]=REGEX
+)
+
+readonly -A __GTK_FLAG_GRID_LINES=(
+[hor]=HOR
+[vert]=VERT
+[both]=BOTH
+)
+
+readonly -A __GTK_FLAG_ELLIPSIZE=(
+[none]=NONE
+[start]=START
+[middle]=MIDDLE
+[end]=END
+)
+
+readonly -A __GTK_FLAG_PRINT_TYPE=(
+[text]=TEXT
+[image]=IMAGE
+[raw]=RAW
 )
 
 # Objetos
@@ -235,7 +357,7 @@ gtk_font_t.__add__	window		gtk_window_t 	\
 
 # formulário
 gtk_form_t.__add__	window		gtk_window_t	\
-			widget		gtk_widget_t[]	\
+			widgets		gtk_widget_t[]	\
 			align		flag		\
 			columns		uint		\
 			separator	str		\
@@ -268,16 +390,16 @@ gtk_list_t.__add__	window		gtk_window_t		\
 			columns		gtk_widget_column_t[]	\
 			checklist	bool			\
 			radiolist	bool			\
+			separator	str			\
+			multiple	bool			\
+			editable	bool			\
+			editable_cols	str			\
 			no_headers	bool			\
 			no_click	bool			\
 			no_rules_hint	bool			\
 			grid_lines	flag			\
+			no_selection	bool			\
 			print_all	bool			\
-			editable_cols	str			\
-			wrap_width	uint			\
-			wrap_cols	str			\
-			ellipsize	flag			\
-			ellipsize_cols	str			\
 			print_column	uint			\
 			hide_column	uint			\
 			expand_column	uint			\
@@ -286,16 +408,23 @@ gtk_list_t.__add__	window		gtk_window_t		\
 			sep_column	uint			\
 			sep_value	str			\
 			limit		uint			\
+			wrap_width	uint			\
+			wrap_cols	str			\
+			ellipsize	flag			\
+			ellipsize_cols	str			\
 			dclick_action	str			\
 			select_action	str			\
 			add_action	str			\
 			regex_search	str			\
-			no_selection	bool			\
+			listen		bool			\
+			quoted_output	bool			\
+			float_precision	uint			\
 			value		str
 
 # Barras de progresso
 gtk_multi_progress_t.__add__	window		gtk_window_t		\
 				bar		gtk_widget_bar_t[] 	\
+				vertical	bool			\
 				watch_bar	uint			\
 				align		flag			\
 				auto_close	bool			\
@@ -368,7 +497,7 @@ function gtk.init()
 {
 	getopt.parse -1 "gtk_object:var:+:$1" ... "$@"
 
-	local objtype object gtk_object
+	local objtype object gtk_object err_flag err_param err_val
 
 	for gtk_object in "$@"; do
 		local 	objtype=$(__typeof__ $gtk_object)
@@ -395,10 +524,13 @@ function gtk.init()
 					mode=$($gtk_object.mode) 			\
 					extra=$($gtk_object.extra) 			\
 					alpha=$($gtk_object.alpha)
-					gtk_palette=${gtk_palette#false}
-					expand_palette=${expand_palette#false}
-					extra=${extra#false}
-					alpha=${alpha#false}
+					
+				mode=${mode:+${__GTK_FLAG_COLOR_MODE[$mode]}}
+
+				gtk_palette=${gtk_palette#false}
+				expand_palette=${expand_palette#false}
+				extra=${extra#false}
+				alpha=${alpha#false}
 				;;
 			gtk_entry_t)
 				object='entry'
@@ -447,7 +579,7 @@ function gtk.init()
 			gtk_form_t)
 				object='form'
 	
-				local	obj=$($gtk_object.widget)			\
+				local	obj=$($gtk_object.widgets)			\
 					align=$($gtk_object.align)			\
 					columns=$($gtk_object.columns)			\
 					separator=$($gtk_object.separator)		\
@@ -460,15 +592,19 @@ function gtk.init()
 					output_by_row=$($gtk_object.output_by_row) 	\
 					num_output=$($gtk_object.num_output)		\
 					focus_field=$($gtk_object.focus_field)		\
-					cycle_read=$($gtk_object.cycle_read)		
-					scroll=${scroll#false}
-					output_by_row=${output_by_row#false}
-					cycle_read=${cycle_read#false}
-					num_output=${num_output#false}
-					quoted_output=${quoted_output#false}
+					cycle_read=$($gtk_object.cycle_read)
+					
+				complete=${complete:+${__GTK_FLAG_COMPLETE[$complete]}}
+				align=${align:+${__GTK_FLAG_FORM_POS[$align]}}
+
+				scroll=${scroll#false}
+				output_by_row=${output_by_row#false}
+				cycle_read=${cycle_read#false}
+				num_output=${num_output#false}
+				quoted_output=${quoted_output#false}
 				
 				if [[ $obj ]]; then
-					local 	widgets=${!__GTK_WIDGET_FLAG[@]}
+					local 	widgets=${!__GTK_FLAG_WIDGET[@]}
 					local 	widget callback fields widget_call widget_call_type exec objects i
 					for ((i=0; i < $($obj.__sizeof__); i++)); do
 						widget=$($obj[$i].type)
@@ -488,10 +624,10 @@ function gtk.init()
 						if [[ $widget != @(${widgets[@]// /|}) ]]; then
 							error.trace def 'widget' 'gtk_widget_t' "$widget" "$obj[$i]: objeto widget inválido"
 							return $?
-						elif [[ $widget == @(gtk_button|gtk_toogle_button) ]]; then
-							fields[$i]="--field '$($obj[$i].label)"'!'"$($obj[$i].icon)"'!'"$($obj[$i].tooltip):${__GTK_WIDGET_FLAG[$widget]}' \"${callback:+@echo ${callback}:\$(}bash -c '${exec:+$exec;}${widget_call:+yad ${__GTK_WIDGET_OBJ_INIT[$widget_call]//\'/\\\"}}'${callback:+)}\""
+						elif [[ $widget == @(button|toogle_button) ]]; then
+							fields[$i]="--field '$($obj[$i].label)"'!'"$($obj[$i].icon)"'!'"$($obj[$i].tooltip):${__GTK_FLAG_WIDGET[$widget]}' \"${callback:+@echo ${callback}:\$(}bash -c '${exec:+$exec;}${widget_call:+yad ${__GTK_WIDGET_OBJ_INIT[$widget_call]//\'/\\\"}}'${callback:+)}\""
 						else
-							fields[$i]="--field '$($obj[$i].label):${__GTK_WIDGET_FLAG[$widget]}' '$($obj[$i].value)'"
+							fields[$i]="--field '$($obj[$i].label):${__GTK_FLAG_WIDGET[$widget]}' '$($obj[$i].value)'"
 						fi
 					done
 				fi
@@ -523,16 +659,16 @@ function gtk.init()
 				local	column=$($gtk_object.columns)			\
 					checklist=$($gtk_object.checklist)		\
 					radiolist=$($gtk_object.radiolist)		\
+					separator=$($gtk_object.separator)		\
+					multiple=$($gtk_object.multiple)		\
+					editable=$($gtk_object.editable)		\
+					editable_cols=$($gtk_object.editable_cols)	\
 					no_headers=$($gtk_object.no_headers)		\
 					no_click=$($gtk_object.no_click)		\
 					no_rules_hint=($gtk_object.no_rules_hint)	\
 					grid_lines=$($gtk_object.grid_lines)		\
+					no_selection=$($gtk_object.no_selection)	\
 					print_all=$($gtk_object.print_all)		\
-					editable_cols=$($gtk_object.editable_cols)	\
-					wrap_width=$($gtk_object.wrap_width)		\
-					wrap_cols=$($gtk_object.wrap_cols)		\
-					ellipsize=$($gtk_object.ellipsize)		\
-					ellipsize_cols=$($gtk_object.ellipsize_cols)	\
 					print_column=$($gtk_object.print_column)	\
 					hide_column=$($gtk_object.hide_column)		\
 					expand_column=$($gtk_object.expand_column)	\
@@ -541,141 +677,169 @@ function gtk.init()
 					sep_column=$($gtk_object.sep_column)		\
 					sep_value=$($gtk_object.sep_value)		\
 					limit=$($gtk_object.limit)			\
+					wrap_width=$($gtk_object.wrap_width)		\
+					wrap_cols=$($gtk_object.wrap_cols)		\
+					ellipsize=$($gtk_object.ellipsize)		\
+					ellipsize_cols=$($gtk_object.ellipsize_cols)	\
 					dclick_action=$($gtk_object.dclick_action)	\
 					select_action=$($gtk_object.select_action)	\
 					add_action=$($gtk_object.add_action)		\
 					regex_search=$($gtk_object.regex_search)	\
-					no_selection=$($gtk_object.no_selection)	\
+					listen=$($gtk_object.listen)			\
+					quoted_output=$($gtk_object.quoted_output)	\
+					float_precision=$($gtk_object.float_precision)	
 					lstvalue=$($gtk_object.value)
 					lstvalue="'${lstvalue//\!/\' \'}'"
-					checklist=${checklist#false}
-					radiolist=${radiolist#false}
-					no_headers=${no_headers#false}
-					no_click=${no_click#false}
-					no_rules_hint=${no_rules_hint#false}
-					print_all=${print_all#false}
-					regex_search=${regex_search#false}
-					no_selection=${no_selection#false}
-	
-					if [[ $column ]]; then
-						local col_types=${!__GTK_WIDGET_COLUMN_TYPE[@]}
-						local lstcolumns col_type i
-						for ((i=0; i < $($column.__sizeof__); i++)); do
-							col_type=$($column[$i].type)
-							if [[ $col_type == @(${col_types[@]// /|}) ]]; then
-								lstcolumns[$i]="--column '$($column[$i].label):${__GTK_WIDGET_COLUMN_TYPE[$col_type]}'"
-							else
-								error.trace def 'column' 'gtk_widget_column_t' "$col_type" "$column[$i]: tipo da coluna inválida	"
-								return $?
-							fi
-						done
-					fi
+
+				grid_lines=${grid_lines:+${__GTK_FLAG_GRID_LINES[$grid_lines]}}
+				ellipsize=${ellipsize:+${__GTK_FLAG_ELLIPSIZE[$ellipsize]}}
+
+				checklist=${checklist#false}
+				radiolist=${radiolist#false}
+				multiple=${multiple#false}
+				editable=${editable#false}
+				no_headers=${no_headers#false}
+				no_click=${no_click#false}
+				no_rules_hint=${no_rules_hint#false}
+				no_selection=${no_selection#false}
+				print_all=${print_all#false}
+				regex_search=${regex_search#false}
+				listen=${listen#false}
+				quoted_output=${quoted_output#false}
+					
+				if [[ $column ]]; then
+					local col_types=${!__GTK_FLAG_WIDGET_COLUMN[@]}
+					local lstcolumns col_type i
+					for ((i=0; i < $($column.__sizeof__); i++)); do
+						col_type=$($column[$i].type)
+						if [[ $col_type == @(${col_types[@]// /|}) ]]; then
+							lstcolumns[$i]="--column '$($column[$i].label):${__GTK_FLAG_WIDGET_COLUMN[$col_type]}'"
+						else
+							error.trace def 'column' 'gtk_widget_column_t' "$col_type" "$column[$i]: tipo da coluna inválida"						return $?
+						fi
+					done
+				fi
 				;;
 			gtk_multi_progress_t)
-					object='multi-progress'
+				object='multi-progress'
 					
-					local	bar=$($gtk_object.bar)			\
-						watch_bar=$($gtk_object.watch_bar)	\
-						align=$($gtk_object.align)		\
-						auto_close=$($gtk_object.auto_close)	\
-						auto_kill=$($gtk_object.auto_kill)
-						auto_close=${auto_close#false}
-						auto_kill=${auto_kill#false}
+				local	bar=$($gtk_object.bar)			\
+					watch_bar=$($gtk_object.watch_bar)	\
+					align=$($gtk_object.align)		\
+					auto_close=$($gtk_object.auto_close)	\
+					vertical=$($gtk_object.vertical)	\
+					auto_kill=$($gtk_object.auto_kill)
+						
+				align=${align:+${__GTK_FLAG_FORM_POS[$align]}}
+					
+				auto_close=${auto_close#false}
+				auto_kill=${auto_kill#false}
+				vertical=${vertical#false}
 	
-					if [[ $bar ]]; then
-						local bar_types=${!__GTK_WIDGET_BAR_TYPE[@]}
-						local bars bar_type i
-						for ((i=0; i < $($bar.__sizeof__); i++)); do
+				if [[ $bar ]]; then
+					local bar_types=${!__GTK_FLAG_WIDGET_BAR[@]}
+					local bars bar_type i
+					for ((i=0; i < $($bar.__sizeof__); i++)); do
 							bar_type=$($bar[$i].type)
-							if [[ $bar_type == @(${bar_types[@]// /|}) ]]; then
-							bars[$i]="--bar '$($bar[$i].label):${__GTK_WIDGET_BAR_TYPE[$bar_type]}'"
-						else
-							error.trace def 'bar' 'gtk_widget_bar_t' "$bar_type" "$bar[$i]: tipo da barra de progresso inválida"
-							return $?
-						fi
-						done
+						if [[ $bar_type == @(${bar_types[@]// /|}) ]]; then
+						bars[$i]="--bar '$($bar[$i].label):${__GTK_FLAG_WIDGET_BAR[$bar_type]}'"
+					else
+						error.trace def 'bar' 'gtk_widget_bar_t' "$bar_type" "$bar[$i]: tipo da barra de progresso inválida"
+						return $?
 					fi
+					done
+				fi
 				;;
 			gtk_picture_t)
-					object='picture'
+				object='picture'
 					
-					local	size=$($gtk_object.size)		\
-						inc=$($gtk_object.inc)			\
-						filename=$($gtk_object.filename)
+				local	size=$($gtk_object.size)		\
+					inc=$($gtk_object.inc)			\
+					filename=$($gtk_object.filename)
+					
+				size=${size:+${__GTK_FLAG_PICTURE_SIZE[$size]}}
 				;;
 			gtk_print_t)
-					object='print'
+				object='print'
 					
-					local	type=$($gtk_object.type)			\
-						headers=$($gtk_object.headers)			\
-						add_preview=$($gtk_object.add_preview)		\
-						filename=$($gtk_object.filename)		\
-						fontname=$($gtk_object.fontname)
-						headers=${headers#false}
-						add_preview=${add_preview#false}
+				local	type=$($gtk_object.type)			\
+					headers=$($gtk_object.headers)			\
+					add_preview=$($gtk_object.add_preview)		\
+					filename=$($gtk_object.filename)		\
+					fontname=$($gtk_object.fontname)
+						
+				type=${type:+${__GTK_FLAG_PRINT_TYPE[$type]}}
+
+				headers=${headers#false}
+				add_preview=${add_preview#false}
 				;;
 			gtk_progress_t)
-					object='progress'
+				object='progress'
+				
+				local	progress_text=$($gtk_object.progress_text)	\
+					percentage=$($gtk_object.percentage)		\
+					pulsate=$($gtk_object.pulsate)			\
+					auto_close=$($gtk_object.auto_close)		\
+					auto_kill=$($gtk_object.auto_kill)		\
+					rtl=$($gtk_object.rtl)				\
+					enable_log=$($gtk_object.enable_log)		\
+					log_expanded=$($gtk_object.log_expanded)	\
+					log_on_top=$($gtk_object.log_on_top)		\
+					log_height=$($gtk_object.log_height)
 					
-					local	progress_text=$($gtk_object.progress_text)	\
-						percentage=$($gtk_object.percentage)		\
-						pulsate=$($gtk_object.pulsate)			\
-						auto_close=$($gtk_object.auto_close)		\
-						auto_kill=$($gtk_object.auto_kill)		\
-						rtl=$($gtk_object.rtl)				\
-						enable_log=$($gtk_object.enable_log)		\
-						log_expanded=$($gtk_object.log_expanded)	\
-						log_on_top=$($gtk_object.log_on_top)		\
-						log_height=$($gtk_object.log_height)
-						pulsate=${pulsate#false}
-						auto_close=${auto_close#false}
-						auto_kill=${auto_kill#false}
-						rtl=${rtl#false}
-						log_expanded=${log_expanded#false}
-						log_on_top=${log_on_top#false}
+				pulsate=${pulsate#false}
+				auto_close=${auto_close#false}
+				auto_kill=${auto_kill#false}
+				rtl=${rtl#false}
+				log_expanded=${log_expanded#false}
+				log_on_top=${log_on_top#false}
 				;;
 			gtk_scale_t)
-					object='scale'
+				object='scale'
 					
-					local	value=$($gtk_object.value)			\
-						min_value=$($gtk_object.min_value)		\
-						max_value=$($gtk_object.max_value)		\
-						step=$($gtk_object.step)			\
-						page=$($gtk_object.page)			\
-						print_partial=$($gtk_object.print_partial)	\
-						hide_value=$($gtk_object.hide_value)		\
-						invert=$($gtk_object.invert)			\
-						inc_buttons=$($gtk_object.inc_buttons)		\
-						mark=$($gtk_object.mark)
-						print_partial=${print_partial#false}
-						hide_value=${hide_value#false}
-						invert=${invert#false}
-						inc_buttons=${inc_buttons#false}
-						mark=${mark:+--mark \'${mark//\!/\' --mark \'}\'}
-						;;
+				local	value=$($gtk_object.value)			\
+					min_value=$($gtk_object.min_value)		\
+					max_value=$($gtk_object.max_value)		\
+					step=$($gtk_object.step)			\
+					page=$($gtk_object.page)			\
+					print_partial=$($gtk_object.print_partial)	\
+					hide_value=$($gtk_object.hide_value)		\
+					invert=$($gtk_object.invert)			\
+					inc_buttons=$($gtk_object.inc_buttons)		\
+
+				mark=$($gtk_object.mark)
+				print_partial=${print_partial#false}
+				hide_value=${hide_value#false}
+				invert=${invert#false}
+				inc_buttons=${inc_buttons#false}
+				mark=${mark:+--mark \'${mark//\!/\' --mark \'}\'}
+				;;
 			gtk_text_info_t)
-					object='text-info'
+				object='text-info'
 					
-					local	filename=$($gtk_object.filename)		\
-						editable=$($gtk_object.editable)		\
-						fore=$($gtk_object.fore)			\
-						back=$($gtk_object.back)			\
-						fontname=$($gtk_object.fontname)		\
-						wrap=$($gtk_object.wrap)			\
-						justify=$($gtk_object.justify)		\
-						margins=$($gtk_object.margins)		\
-						tail=$($gtk_object.tail)			\
-						show_cursor=$($gtk_object.show_cursor)	\
-						show_uri=$($gtk_object.show_uri)		\
-						uri_color=$($gtk_object.uri_color)	\
-						lang=$($gtk_object.lang)			\
-						listen=$($gtk_object.listen)
-						editable=${editable#false}
-						wrap=${wrap#false}
-						tail=${tail#false}
-						show_cursor=${show_cursor#false}
-						show_uri=${show_uri#false}
-						listen=${listen#false}
+				local	filename=$($gtk_object.filename)		\
+					editable=$($gtk_object.editable)		\
+					fore=$($gtk_object.fore)			\
+					back=$($gtk_object.back)			\
+					fontname=$($gtk_object.fontname)		\
+					wrap=$($gtk_object.wrap)			\
+					justify=$($gtk_object.justify)		\
+					margins=$($gtk_object.margins)		\
+					tail=$($gtk_object.tail)			\
+					show_cursor=$($gtk_object.show_cursor)	\
+					show_uri=$($gtk_object.show_uri)		\
+					uri_color=$($gtk_object.uri_color)	\
+					lang=$($gtk_object.lang)			\
+					listen=$($gtk_object.listen)
+				
+				justify=${justify:+${__GTK_FLAG_TEXT_ALIGN[$justify]}}
+
+				editable=${editable#false}
+				wrap=${wrap#false}
+				tail=${tail#false}
+				show_cursor=${show_cursor#false}
+				show_uri=${show_uri#false}
+				listen=${listen#false}
 				;;
 			gtk_dnd_t)
 					object='dnd'
@@ -691,7 +855,7 @@ function gtk.init()
 			window_icon=$($gtk_object.window.icon)				\
 			width=$($gtk_object.window.width) 				\
 			height=$($gtk_object.window.height)				\
-			posx=$($gtk_object.window.posx) 					\
+			posx=$($gtk_object.window.posx) 				\
 			posy=$($gtk_object.window.posy)					\
 			geometry=$($gtk_object.window.geometry)				\
 			timeout=$($gtk_object.window.timeout)				\
@@ -708,7 +872,7 @@ function gtk.init()
 			no_escape=$($gtk_object.window.no_escape)			\
 			borders=$($gtk_object.window.borders)				\
 			always_print_result=$($gtk_object.window.always_print_result)	\
-			response=$($gtk_object.window.response) 				\
+			response=$($gtk_object.window.response) 			\
 			selectable_labels=$($gtk_object.window.selectable_labels)	\
 			sticky=$($gtk_object.window.sticky)				\
 			fixed=$($gtk_object.window.fixed)				\
@@ -726,9 +890,15 @@ function gtk.init()
 			tabnum=$($gtk_object.window.tabnum)				\
 			parent_win=$($gtk_object.window.parent_win)			\
 			kill_parent=$($gtk_object.window.kill_parent)			\
-			print_xid=$($gtk_object.window.print_xid	)			\
+			print_xid=$($gtk_object.window.print_xid)			\
 			stdout=$($gtk_object.window.stdout)				\
+			buttons_layout=$($gtk_object.window.buttons_layout)		\
 			stderr=$($gtk_object.window.stderr)
+
+		timeout_indicator=${timeout_indicator:+${__GTK_FLAG_FORM_POS[$timeout_indicator]}}
+		text_align=${text_align:+${__GTK_FLAG_TEXT_ALIGN[$text_align]}}
+		buttons_layout=${buttons_layout:+${__GTK_FLAG_BUTTON_LAYOUT[$buttons_layout]}}
+		kill_parent=${kill_parent:+${__GTK_FLAG_SIGNAL[$kill_parent]}}
 	
 		# Opcional
 		image_on_top=${image_on_top#false}
@@ -749,7 +919,7 @@ function gtk.init()
 		close_on_unfocus=${close_on_unfocus#false}
 		splash=${splash#false}
 		print_xid=${print_xid#false}
-	
+
 		if [[ $button ]]; then
 			local 	buttons
 			for ((i=0; i < $($button.__sizeof__); i++)); do
@@ -766,6 +936,7 @@ function gtk.init()
 			${height:+--height '$height'}
 			${posx:+--posx '$posx'}
 			${posy:+--posy '$posy'}
+			${buttons_layout:+--buttons-layout '$buttons_layout'}
 			${geometry:+--geometry '$geometry'}
 			${maximized:+--maximized}
 			${timeout:+--timeout '$timeout'}
@@ -875,6 +1046,7 @@ function gtk.init()
 			${watch_bar:+--watch-bar '$watch_bar'}
 			${auto_close:+--auto-close}
 			${auto_kill:+--auto-kill}
+			${vertical:+--vertical}
 			${tab:+--tab '$tab'}
 			${tab_pos:+--tab-pos '$tab_pos'}
 			${tab_borders:+--tab-borders '$tab_borders'}
