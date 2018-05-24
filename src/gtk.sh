@@ -28,8 +28,26 @@ __DEP__[yad]='>= 0.38.0'
 
 declare -A __GTK_WIDGET_OBJ_INIT
 
+readonly -a __GTK_OBJECT=(
+gtk_calendar_t
+gtk_color_t
+gtk_dnd_t
+gtk_entry_t
+gtk_file_t
+gtk_font_t
+gtk_form_t
+gtk_icons_t
+gtk_list_t
+gtk_multi_progress_t
+gtk_picture_t
+gtk_print_t
+gtk_progress_t
+gtk_scale_t
+gtk_text_info_t
+)
+
 # widgets/objects
-readonly -A __GTK_WIDGET=(
+readonly -A __GTK_WIDGET_FLAG=(
 [gtk_button]=BTN
 [gtk_passwordbox]=H
 [gtk_spin_button]=NUM
@@ -71,7 +89,7 @@ readonly -A __GTK_WIDGET_BAR_TYPE=(
 [gtk_widget_bar_pulse]=PULSE
 )
 
-# estruturas
+# Objetos
 var gtk_widget_t		struct_t
 var gtk_widget_column_t		struct_t
 var gtk_widget_button_t		struct_t
@@ -341,27 +359,10 @@ gtk_text_info_t.__add__		window		gtk_window_t	\
 				lang		flag		\
 				listen		bool
 
-# func  gtk.show <[var]gtk_object> =>  [bool]
+# func gtk.init <[var]gtk_object> ... => [bool]
 #
 # Inicializa o objeto apontado por 'gtk_object'.
-#
-# Objetos:
-#
-# gtk_calendar_t 
-# gtk_color_t
-# gtk_dnd_t
-# gtk_entry_t
-# gtk_file_t
-# gtk_font_t
-# gtk_form_t
-# gtk_icons_t
-# gtk_list_t
-# gtk_multi_progress_t
-# gtk_picture_t
-# gtk_print_t
-# gtk_progress_t
-# gtk_scale_t
-# gtk_text_info_t
+# Obs: Pode ser especificado um ou mais objetos.
 #
 function gtk.init()
 {
@@ -467,8 +468,8 @@ function gtk.init()
 					quoted_output=${quoted_output#false}
 				
 				if [[ $obj ]]; then
-					local 	widgets=${!__GTK_WIDGET[@]}
-					local 	widget callback fields widget_call widget_call_type exec i
+					local 	widgets=${!__GTK_WIDGET_FLAG[@]}
+					local 	widget callback fields widget_call widget_call_type exec objects i
 					for ((i=0; i < $($obj.__sizeof__); i++)); do
 						widget=$($obj[$i].type)
 						callback=$($obj[$i].callback)
@@ -476,8 +477,9 @@ function gtk.init()
 						exec=$($obj[$i].exec)
 						
 						if [[ $widget_call ]]; then
+							objects=${__GTK_OBJECT[@]}
 							widget_call_type=$(__typeof__ $widget_call)
-							if [[ $widget_call_type != gtk_@(calendar|color|dnd|entry|file|font|form|icons|list|multi_progress|picture|print|progress|scale|text_info)_t ]]; then
+							if [[ $widget_call_type != @(${objects// /|}) ]]; then
 								error.trace def 'widget_call' 'var' "$widget_call" "'${widget_call_type:-null}' widget inválido"
 								return $?
 							fi						
@@ -487,9 +489,9 @@ function gtk.init()
 							error.trace def 'widget' 'gtk_widget_t' "$widget" "$obj[$i]: objeto widget inválido"
 							return $?
 						elif [[ $widget == @(gtk_button|gtk_toogle_button) ]]; then
-							fields[$i]="--field '$($obj[$i].label)"'!'"$($obj[$i].icon)"'!'"$($obj[$i].tooltip):${__GTK_WIDGET[$widget]}' \"${callback:+@echo ${callback}:\$(}bash -c '${exec:+$exec;}${widget_call:+yad ${__GTK_WIDGET_OBJ_INIT[$widget_call]//\'/\\\"}}'${callback:+)}\""
+							fields[$i]="--field '$($obj[$i].label)"'!'"$($obj[$i].icon)"'!'"$($obj[$i].tooltip):${__GTK_WIDGET_FLAG[$widget]}' \"${callback:+@echo ${callback}:\$(}bash -c '${exec:+$exec;}${widget_call:+yad ${__GTK_WIDGET_OBJ_INIT[$widget_call]//\'/\\\"}}'${callback:+)}\""
 						else
-							fields[$i]="--field '$($obj[$i].label):${__GTK_WIDGET[$widget]}' '$($obj[$i].value)'"
+							fields[$i]="--field '$($obj[$i].label):${__GTK_WIDGET_FLAG[$widget]}' '$($obj[$i].value)'"
 						fi
 					done
 				fi
@@ -756,7 +758,8 @@ function gtk.init()
 		fi
 	
 		# config
-		__GTK_WIDGET_OBJ_INIT[$gtk_object]="${object:+--$object}
+		__GTK_WIDGET_OBJ_INIT[$gtk_object]="
+			${object:+--$object}
 			${title:+--title '$title'}
 			${window_icon:+--window-icon '$window_icon'}
 			${width:+--width '$width'}
@@ -927,13 +930,18 @@ function gtk.init()
 	return $?
 }
 
+# func gtk.show <[var]gtk_object> => [bool]
+#
+# Exibe o objeto apontado por 'gtk_object'
+#
 function gtk.show()
 {
 	getopt.parse 1 "gtk_object:var:+:$1" ${@:2}
 
 	local objtype=$(__typeof__ $1)
+	local objects=${__GTK_OBJECT[@]}
 
-	if [[ $objtype != gtk_@(calendar|color|dnd|entry|file|font|form|icons|list|multi_progress|picture|print|progress|scale|text_info)_t ]]; then
+	if [[ $objtype != @(${objects// /|}) ]]; then
 		error.trace def 'gtk_object' 'var' "$1" "'${objtype:-null}' tipo do objeto inválido"
 		return $?
 	elif [[ ! ${__GTK_WIDGET_OBJ_INIT[$1]} ]]; then
