@@ -285,7 +285,9 @@ function array.join()
 	getopt.parse 2 "name:array:+:$1" "exp:str:-:$2" ${@:3}
 	
 	declare -n __arr=$1
-	printf "%s$2" "${__arr[@]}"; echo
+	local tmp
+	printf -v tmp "%s$2" "${__arr[@]}"; echo
+	echo "${tmp%$2}"
 	return 0
 }
 
