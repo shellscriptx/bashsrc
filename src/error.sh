@@ -335,5 +335,6 @@ function error.__output()
 	
 	return ${code:-$2}
 }
+
 source.__INIT__
 # /* __ERROR_SH */
