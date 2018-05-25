@@ -1988,7 +1988,7 @@ function builtin.__check_package_depends()
 		if ! command -v $bin &>/dev/null; then
 			error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" 'o pacote requerido está ausente'
 			return $?
-		elif ! [[ $($bin --version 2>/dev/null) =~ [0-9]+(\.[0-9]+)+ ]]; then
+		elif ! [[ $($bin --version 2>/dev/null) =~ [0-9]+\.[0-9]+ ]]; then
 			error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" 'não foi possível obter a versão do pacote'
 			continue
 		fi
@@ -2002,7 +2002,7 @@ function builtin.__check_package_depends()
 			op=${opt[0]}
 			ver=${opt[1]}
 		
-			if [[ $ver != @(+([0-9])+(.+([0-9]))) ]]; then
+			if [[ $ver != +([0-9]).+([0-9]) ]]; then
 				error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" 'notação de versionamento inválida'
 				return $?
 			fi
