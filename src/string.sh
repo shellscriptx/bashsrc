@@ -412,11 +412,9 @@ function string.join()
 {
 	getopt.parse 2 "iterable:str:-:$1" "elem:str:-:$2" "${@:3}"
 
-	local str
-	while read str; do
-		printf "%s$2" $str
-	done <<< "$1"
-
+	local str tmp
+	while read str; do tmp+=${str}${2}; done <<< "$1"
+	echo "${tmp%$2}"
 	return 0
 }
 
