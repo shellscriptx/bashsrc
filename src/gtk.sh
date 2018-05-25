@@ -24,7 +24,7 @@ readonly __GTK_SH=1
 source builtin.sh
 
 # Dependência.
-__DEP__[yad]='>= 0.38.0'
+__DEP__[yad]='>= 0.27'
 
 declare -A __GTK_WIDGET_OBJ_INIT
 
@@ -44,6 +44,7 @@ gtk_print_t
 gtk_progress_t
 gtk_scale_t
 gtk_text_info_t
+gtk_notebook_t
 )
 
 # widgets/objects
@@ -211,11 +212,21 @@ readonly -A __GTK_FLAG_PRINT_TYPE=(
 [raw]=RAW
 )
 
+readonly -A __GTK_FLAG_TAB_POS=(
+[top]=TOP
+[bottom]=BOTTOM
+[left]=LEFT
+[right]=RIGHT
+)
+
 # Objetos
 var gtk_widget_t		struct_t
 var gtk_widget_column_t		struct_t
 var gtk_widget_button_t		struct_t
 var gtk_widget_bar_t		struct_t
+var gtk_widget_tab_t		struct_t
+var gtk_widget_file_filter_t	struct_t
+var gtk_widget_scale_mark_t	struct_t
 var gtk_window_t		struct_t
 var gtk_calendar_t 		struct_t
 var gtk_color_t 		struct_t
@@ -232,6 +243,7 @@ var gtk_print_t			struct_t
 var gtk_progress_t		struct_t
 var gtk_scale_t			struct_t
 var gtk_text_info_t		struct_t
+var gtk_notebook_t      	struct_t
 
 # widget
 gtk_widget_t.__add__	type		flag 			\
@@ -253,8 +265,21 @@ gtk_widget_button_t.__add__	label		str	\
 gtk_widget_column_t.__add__	type	flag	\
 				label	str
 
+# Barra de progresso
 gtk_widget_bar_t.__add__	type	flag	\
 				label	str
+
+# Guia de formulário
+gtk_widget_tab_t.__add__	label	str	\
+				icon	flag	\
+				tooltip	str
+
+# Filtro de arquivos
+gtk_widget_file_filter_t.__add__	name	str	\
+					filter	str	
+# Marcação de escala
+gtk_widget_scale_mark_t.__add__		label	str	\
+					value	int
 
 # Configurações gerais.
 gtk_window_t.__add__	title			str 			\
@@ -299,7 +324,8 @@ gtk_window_t.__add__	title			str 			\
 			kill_parent		flag 			\
 			print_xid		bool			\
 			stdout			str			\
-			stderr			str
+			stderr			str			\
+			update			bool
 
 # calendário
 gtk_calendar_t.__add__	window		gtk_window_t	\
@@ -338,13 +364,14 @@ gtk_entry_t.__add__	window		gtk_window_t 	\
 			num_output	bool
 
 # caixa de seleção de arquivos
-gtk_file_t.__add__	window			gtk_window_t	\
-			filename		str		\
-			multiple		bool		\
-			directory		bool		\
-			save			bool		\
-			separator		str		\
-			quoted_output		bool		\
+gtk_file_t.__add__	window			gtk_window_t			\
+			filename		str				\
+			file_filter		gtk_widget_file_filter_t[]	\
+			multiple		bool				\
+			directory		bool				\
+			save			bool				\
+			separator		str				\
+			quoted_output		bool				\
 			confirm_overwrite	str
 
 # caixa de seleção de fontes
@@ -459,17 +486,17 @@ gtk_progress_t.__add__		window		gtk_window_t	\
 				
 
 # Escala
-gtk_scale_t.__add__		window		gtk_window_t	\
-				value		uint		\
-				min_value	uint		\
-				max_value	uint		\
-				step		uint		\
-				page		uint		\
-				print_partial	bool		\
-				hide_value	bool		\
-				invert		bool		\
-				inc_buttons	bool		\
-				mark		str		
+gtk_scale_t.__add__		window		gtk_window_t			\
+				value		int				\
+				min_value	int				\
+				max_value	int				\
+				step		int				\
+				page		int				\
+				print_partial	bool				\
+				hide_value	bool				\
+				invert		bool				\
+				inc_buttons	bool				\
+				marks		gtk_widget_scale_mark_t[]		
 
 # Texto informativo
 gtk_text_info_t.__add__		window		gtk_window_t	\
@@ -488,14 +515,39 @@ gtk_text_info_t.__add__		window		gtk_window_t	\
 				lang		flag		\
 				listen		bool
 
+# notebook
+gtk_notebook_t.__add__		window		gtk_window_t		\
+				key         	uint                	\
+                            	tabs         	gtk_widget_tab_t[]  	\
+                            	tab_pos    	flag                	\
+                            	tab_borders	uint
+                            
 # func gtk.init <[var]gtk_object> ... => [bool]
 #
-# Inicializa o objeto apontado por 'gtk_object'.
-# Obs: Pode ser especificado um ou mais objetos.
+# Inicializa o objeto apontado por 'gtk_object', cujo os tipos suportados são:
+#
+# gtk_calendar_t
+# gtk_color_t
+# gtk_dnd_t
+# gtk_entry_t
+# gtk_file_t
+# gtk_font_t
+# gtk_form_t
+# gtk_icons_t
+# gtk_list_t
+# gtk_multi_progress_t
+# gtk_picture_t
+# gtk_print_t
+# gtk_progress_t
+# gtk_scale_t
+# gtk_text_info_t
+# gtk_notebook_t
+#
+# Obs: pode ser especificado um ou mais objetos.
 #
 function gtk.init()
 {
-	getopt.parse -1 "gtk_object:var:+:$1" ... "$@"
+	getopt.parse -1 "gtk_object:var:+:$1" ... "${@:2}"
 
 	local objtype object gtk_object err_flag err_param err_val
 
@@ -554,16 +606,25 @@ function gtk.init()
 				object='file'
 	
 				local	filename=$($gtk_object.filename)			\
+					file_filter=$($gtk_object.file_filter)			\
 					multiple=$($gtk_object.multiple)			\
 					directory=$($gtk_object.directory)			\
 					save=$($gtk_object.save)				\
 					separator=$($gtk_object.separator)			\
 					confirm_overwrite=$($gtk_object.confirm_overwrite)	\
 					quoted_output=$($gtk_object.quoted_output)
+
 					multiple=${multiple#false}
 					directory=${directory#false}
 					save=${save#false}
 					quoted_output=${quoted_output#false}
+
+					if [[ $file_filter ]]; then
+						local	file_filters
+						for ((i=0; i < $($file_filter.__sizeof__); i++)); do
+							file_filters[$i]="--file-filter '$($file_filter[$i].name)|$($file_filter[$i].filter)'"
+						done
+					fi
 				;;
 			gtk_font_t)
 				object='font'
@@ -740,7 +801,7 @@ function gtk.init()
 					local bar_types=${!__GTK_FLAG_WIDGET_BAR[@]}
 					local bars bar_type i
 					for ((i=0; i < $($bar.__sizeof__); i++)); do
-							bar_type=$($bar[$i].type)
+						bar_type=$($bar[$i].type)
 						if [[ $bar_type == @(${bar_types[@]// /|}) ]]; then
 						bars[$i]="--bar '$($bar[$i].label):${__GTK_FLAG_WIDGET_BAR[$bar_type]}'"
 					else
@@ -798,6 +859,7 @@ function gtk.init()
 				object='scale'
 					
 				local	value=$($gtk_object.value)			\
+					marks=$($gtk_object.marks)			\
 					min_value=$($gtk_object.min_value)		\
 					max_value=$($gtk_object.max_value)		\
 					step=$($gtk_object.step)			\
@@ -805,14 +867,19 @@ function gtk.init()
 					print_partial=$($gtk_object.print_partial)	\
 					hide_value=$($gtk_object.hide_value)		\
 					invert=$($gtk_object.invert)			\
-					inc_buttons=$($gtk_object.inc_buttons)		\
+					inc_buttons=$($gtk_object.inc_buttons)		
 
-				mark=$($gtk_object.mark)
 				print_partial=${print_partial#false}
 				hide_value=${hide_value#false}
 				invert=${invert#false}
 				inc_buttons=${inc_buttons#false}
-				mark=${mark:+--mark \'${mark//\!/\' --mark \'}\'}
+
+				if [[ $marks ]]; then
+					local	scale_marks
+					for ((i=0; i < $($marks.__sizeof__); i++)); do
+						scale_marks[$i]="--mark '$($marks[$i].label):$($marks[$i].value)'"
+					done
+				fi
 				;;
 			gtk_text_info_t)
 				object='text-info'
@@ -842,11 +909,28 @@ function gtk.init()
 				listen=${listen#false}
 				;;
 			gtk_dnd_t)
-					object='dnd'
+				object='dnd'
 					
-					local	tooltip=$($gtk_object.tooltip)	\
-						command=$($gtk_object.command)
-						tooltip=${tooltip#false}
+				local	tooltip=$($gtk_object.tooltip)	\
+					command=$($gtk_object.command)
+					tooltip=${tooltip#false}
+				;;
+			gtk_notebook_t)
+				object='notebook'
+
+				local	key=$($gtk_object.key)			\
+					tab=$($gtk_object.tabs)			\
+					tab_pos=$($gtk_object.tab_pos)		\
+					tab_borders=$($gtk_object.tab_borders)
+				
+					tab_pos=${tab_pos:+${__GTK_FLAG_TAB_POS[$tab_pos]}}
+
+				if [[ $tab ]]; then
+					local tabs
+					for ((i=0; i < $($tab.__sizeof__); i++)); do
+						tabs[$i]="--tab '$($tab[$i].label)"'!'"$($tab[$i].icon)"'!'"$($tab[$i].tooltip)'"
+					done
+				fi
 				;;
 			*)	error.trace def 'gtk_object' 'var' "$gtk_object" "'${objtype:-null}' tipo do objeto inválido"; return $?;;
 		esac
@@ -893,7 +977,8 @@ function gtk.init()
 			print_xid=$($gtk_object.window.print_xid)			\
 			stdout=$($gtk_object.window.stdout)				\
 			buttons_layout=$($gtk_object.window.buttons_layout)		\
-			stderr=$($gtk_object.window.stderr)
+			stderr=$($gtk_object.window.stderr)				\
+			update=$($gtk_object.window.update)
 
 		timeout_indicator=${timeout_indicator:+${__GTK_FLAG_FORM_POS[$timeout_indicator]}}
 		text_align=${text_align:+${__GTK_FLAG_TEXT_ALIGN[$text_align]}}
@@ -1047,12 +1132,13 @@ function gtk.init()
 			${auto_close:+--auto-close}
 			${auto_kill:+--auto-kill}
 			${vertical:+--vertical}
-			${tab:+--tab '$tab'}
 			${tab_pos:+--tab-pos '$tab_pos'}
 			${tab_borders:+--tab-borders '$tab_borders'}
+			${key:+--key '$key'}
 			${size:+--size '$size'}
 			${inc:+--inc '$inc'}
 			${filename:+--filename '$filename'}
+			${file_filters[@]}
 			${type:+--type '$type'}
 			${headers:+--headers}
 			${add_preview:+--add-preview}
@@ -1074,7 +1160,7 @@ function gtk.init()
 			${hide_value:+--hide-value}
 			${invert:+--invert}
 			${inc_buttons:+--inc-buttons}
-			${mark}
+			${scale_marks[@]}
 			${editable:+--editable}
 			${fore:+--fore '$fore'}
 			${back:+--back '$back'}
@@ -1095,34 +1181,59 @@ function gtk.init()
 			${separator:+--separator '$separator'}
 			${confirm_overwrite:+--confirm-overwrite '$confirm_overwrite'}
 			${quoted_output:+--quoted-output}
-			${stdout:+1> '$output'}
-			${stderr:+2> '$stderr'}"
+			${tabs[@]}
+			${stdout:+1> '$stdout'}
+			${stderr:+2> '$stderr'}
+			${plug:+&}"
+
 	done
 
 	return $?
 }
 
-# func gtk.show <[var]gtk_object> => [bool]
+# func gtk.show <[var]gtk_object> ... => [bool]
 #
-# Exibe o objeto apontado por 'gtk_object'
+# Exibe o objeto apontado por 'gtk_object', cujo os tipos suportados são:
+#
+# gtk_calendar_t
+# gtk_color_t
+# gtk_dnd_t
+# gtk_entry_t
+# gtk_file_t
+# gtk_font_t
+# gtk_form_t
+# gtk_icons_t
+# gtk_list_t
+# gtk_multi_progress_t
+# gtk_picture_t
+# gtk_print_t
+# gtk_progress_t
+# gtk_scale_t
+# gtk_text_info_t
+# gtk_notebook_t
+#
+# Obs: pode ser especificado um ou mais objetos.
 #
 function gtk.show()
 {
-	getopt.parse 1 "gtk_object:var:+:$1" ${@:2}
+	getopt.parse -1 "gtk_object:var:+:$1" ... "${@:2}"
 
-	local objtype=$(__typeof__ $1)
-	local objects=${__GTK_OBJECT[@]}
+	local objs=${__GTK_OBJECT[@]}
+	local type obj
 
-	if [[ $objtype != @(${objects// /|}) ]]; then
-		error.trace def 'gtk_object' 'var' "$1" "'${objtype:-null}' tipo do objeto inválido"
-		return $?
-	elif [[ ! ${__GTK_WIDGET_OBJ_INIT[$1]} ]]; then
-		error.trace def 'gtk_object' 'var' "$1" 'o objeto não foi inicializado'
-		return $?
-	fi
-	
-	gtk.init ${!__GTK_WIDGET_OBJ_INIT[@]}	# Atualizar
-	eval yad ${__GTK_WIDGET_OBJ_INIT[$1]}	# Executar
+	for obj in $@; do
+		type=$(__typeof__ $obj)
+		if [[ $type != @(${objs// /|}) ]]; then
+			error.trace def 'gtk_object' 'var' "$obj" "'${type:-null}' tipo do objeto inválido"
+			return $?
+		elif [[ ! ${__GTK_WIDGET_OBJ_INIT[$obj]} ]]; then
+			error.trace def 'gtk_object' 'var' "$obj" 'o objeto não foi inicializado'
+			return $?
+		fi
+
+		[[ $obj.window.update == true ]] && gtk.init ${!__GTK_WIDGET_OBJ_INIT[@]}	# Atualizar
+		eval yad ${__GTK_WIDGET_OBJ_INIT[$obj]}						# Executar
+	done
 
 	return $?
 }
