@@ -297,7 +297,7 @@ gtk_window_t.__add__	title			str 			\
 			image_on_top		bool 			\
 			icon_theme		str 			\
 			expander		str 			\
-			button			gtk_widget_button_t[] 	\
+			buttons			gtk_widget_button_t[] 	\
 			no_buttons		bool 			\
 			buttons_layout		flag			\
 			no_markup		bool 			\
@@ -950,7 +950,7 @@ function gtk.init()
 			image_on_top=$($gtk_object.window.image_on_top)			\
 			icon_theme=$($gtk_object.window.icon_theme)			\
 			expander=$($gtk_object.window.expander)				\
-			button=$($gtk_object.window.button)				\
+			button=$($gtk_object.window.buttons)				\
 			no_buttons=$($gtk_object.window.no_buttons)			\
 			no_markup=$($gtk_object.window.no_markup)			\
 			no_escape=$($gtk_object.window.no_escape)			\
