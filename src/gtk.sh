@@ -253,7 +253,6 @@ gtk_widget_t.__add__	type		flag 			\
 			id		uint 			\
 			value		str			\
 			exec		str			\
-			callback	uint			\
 			widget_call	var
 
 # botão
@@ -666,10 +665,9 @@ function gtk.init()
 				
 				if [[ $obj ]]; then
 					local 	widgets=${!__GTK_FLAG_WIDGET[@]}
-					local 	widget callback fields widget_call widget_call_type exec objects i
+					local 	widget fields widget_call widget_call_type exec objects i objcall
 					for ((i=0; i < $($obj.__sizeof__); i++)); do
 						widget=$($obj[$i].type)
-						callback=$($obj[$i].callback)
 						widget_call=$($obj[$i].widget_call)
 						exec=$($obj[$i].exec)
 						
@@ -686,8 +684,10 @@ function gtk.init()
 							error.trace def 'widget' 'gtk_widget_t' "$widget" "$obj[$i]: objeto widget inválido"
 							return $?
 						elif [[ $widget == @(button|toogle_button) ]]; then
-							fields[$i]="--field '$($obj[$i].label)"'!'"$($obj[$i].icon)"'!'"$($obj[$i].tooltip):${__GTK_FLAG_WIDGET[$widget]}' \"${callback:+@echo ${callback}:\$(}bash -c '${exec:+$exec;}${widget_call:+yad ${__GTK_WIDGET_OBJ_INIT[$widget_call]//\'/\\\"}}'${callback:+)}\""
-						else
+                            objcall=${widget_call:+yad ${__GTK_WIDGET_OBJ_INIT[$widget_call]//\'/\"}}
+
+                            fields[$i]="--field '$($obj[$i].label)"'!'"$($obj[$i].icon)"'!'"$($obj[$i].tooltip):${__GTK_FLAG_WIDGET[$widget]}' '${objcall:-$($obj[$i].exec)}'"
+                        else
 							fields[$i]="--field '$($obj[$i].label):${__GTK_FLAG_WIDGET[$widget]}' '$($obj[$i].value)'"
 						fi
 					done
@@ -1232,7 +1232,7 @@ function gtk.show()
 		fi
 
 		[[ $obj.window.update == true ]] && gtk.init ${!__GTK_WIDGET_OBJ_INIT[@]}	# Atualizar
-		eval yad ${__GTK_WIDGET_OBJ_INIT[$obj]}						# Executar
+		eval yad ${__GTK_WIDGET_OBJ_INIT[$obj]}						                # Executar
 	done
 
 	return $?
