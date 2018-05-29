@@ -966,7 +966,7 @@ function string.fnmap()
 
 # func string.slice <[str]exp> <[slice]slice> ... => [str]
 #
-# Retorna uma substring de 'exp' a partir do intervalo 'ini:len' especificado.
+# Retorna uma substring de 'exp' a partir do intervalo '[ini:len]' especificado.
 # Onde 'ini' indica a posição inicial e 'len' o comprimento. 
 # Se 'len' for omitido, lê o comprimento total de 'exp'.
 # Se 'ini' for omitido, lê a partir da posição '0'.
@@ -979,35 +979,40 @@ function string.fnmap()
 #
 # # Capturando a expressão 'Shell Script'
 #
-# $ string.slice "$texto" 13:12
+# $ string.slice "$texto" [13:12]
 # Shell Script
 #
 # # O mesmo efeito combinando dois slices
 #
-# $ string.slice "$texto" 13: :-6
+# $ string.slice "$texto" [13:][:-6]
 # Shell Script
 #
 # # Lendo os primeiros 25 caracteres
 #
-# $ string.slice "$texto" :25
+# $ string.slice "$texto" [:25]
 # Programar em Shell Script
 #
 function string.slice()
 {
-	getopt.parse -1 "exp:str:-:$1" "slice:slice:+:$2" ... "${@:3}"
-
-	local line slice
-	while read line; do
-		for slice in "${@:2}"; do
-			IFS=':' slice=($slice)
-			slice[0]=${slice[0]:-0}
-			slice[1]=${slice[1]:-$((${#line}-${slice[0]}))}
-			line=${line:${slice[0]}:${slice[1]}}
+	getopt.parse 2 "exp:str:-:$1" "slice:slice:+:$2" "${@:3}"
+	
+	local slice str ini len
+	
+	while read str; do
+		slice=$2
+		while [[ $slice =~ \[([^]]+)\] ]]; do
+		IFS=':' read ini len <<< ${BASH_REMATCH[1]}
+			[[ ${len#-} -gt ${#str} ]] && str='' && break
+			[[ ${BASH_REMATCH[1]} != *@(:)* ]] && len=1
+			ini=${ini:-0}
+			len=${len:-$((${#str}-$ini))}
+			str=${str:$ini:$len}
+			slice=${slice/\[${BASH_REMATCH[1]}\]/}
 		done
-		echo "$line"
+		echo "$str"
 	done <<< "$1"
-
-	return 0
+	
+	return $?
 }
 
 # func string.filter <[str]exp> <[flag]name> ... => [str]
