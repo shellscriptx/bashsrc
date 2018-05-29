@@ -335,7 +335,7 @@ function array.reindex()
 	return 0
 }
 
-# func array.slice <[array]name> <[slice]slice> ... => [object]
+# func array.slice <[array]name> <[slice]slice> => [str]
 #
 # Retorna um subconjunto de objetos em 'name' a partir do slice '[ini:len]'; Onde
 # o primeiro slice refere-se a posição e o total de objetos a serem lidos, enquanto
@@ -357,35 +357,41 @@ function array.reindex()
 # $ array.append sys "Windows"
 #
 # # Capturando os dois primeiros caracteres do objeto na posição 1.
-# $ array.slice sys '1' ':2'
+# $ array.slice sys [1][:2]
 # Li
+# 
 #
 function array.slice()
 {
-    getopt.parse -1 "exp:array:+:$1" "slice:slice:+:$2" ... "${@:3}"
-
-	declare -n __arr=$1
-	local __slice __elem
+	getopt.parse 2 "exp:array:+:$1" "slice:slice:+:$2" "${@:3}"
 	
-	IFS=':' __slice=($2)
+	local -n __ptr=$1
+	local __slice __arr __ini __len
 
-	__slice[0]=${__slice[0]#-}
-	__slice[1]=${__slice[1]#-}
+	__slice=$2
+	IFS=' ' __arr=("${__ptr[@]}")
 
-	__slice[0]=${__slice[0]:-0}
-	__slice[1]=${__slice[1]:-1}
-	__elem=${__arr[@]:${__slice[0]}:${__slice[1]}}
+	while [[ $__slice =~ \[([^]]+)\] ]]; do
+		IFS=':' read __ini __len <<< ${BASH_REMATCH[1]}
+		
+		__ini=${__ini:-0}
+		[[ ${BASH_REMATCH[1]} != *@(:)* ]] && __len=1
 
-	for __slice in "${@:3}"; do
-		IFS=':' __slice=($__slice)
-		__slice[0]=${__slice[0]:-0}
-		__slice[1]=${__slice[1]:-$((${#__elem}-${__slice[0]}))}
-		__elem=${__elem:${__slice[0]}:${__slice[1]}}
+		if [[ ${#__arr[@]} -gt 1 ]]; then
+        	[[ $__len -lt 0 ]] && __arr=() && break
+			__len=${__len:-$((${#__arr[@]}-$__ini))}
+			IFS=' ' __arr=("${__arr[@]:$__ini:$__len}")
+		else
+			[[ ${__len#-} -gt ${#__arr} ]] && __arr='' && break
+			__len=${__len:-$((${#__arr}-$__ini))}
+			__arr=${__arr:$__ini:$__len}
+		fi
+		__slice=${__slice/\[${BASH_REMATCH[1]}\]/}
 	done
+	
+	printf '%s\n' "${__arr[@]}"
 
-	echo "$__elem"
-
-	return 0
+    return $?
 }
 
 # func array.listindex <[array]name> => [uint]
