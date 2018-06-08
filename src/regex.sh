@@ -250,34 +250,6 @@ function regex.groups()
 #
 # A função é chamada somente se o grupo de captura estiver presente ou '&' for especificado.
 #
-# Exemplo:
-#
-# # Dobrando o valor do último número contido na expressão.
-#
-# #!/bin/bash
-#
-# source regex.sh
-#
-# nums='num: 4, num: 10, num: 50'
-#
-# dobrar(){
-#    arg=$1
-#
-#    # Efetua a operação se 'arg' for um número, caso contrário retorna o padrão.
-#    __isnum__ arg && echo $(($1 * 2)) || echo $1
-# }
-#
-# echo -n "Antes: "
-# echo $nums
-#
-# echo -n "Depois: "
-# regex.fngroups "^.*\\s([0-9]+)$" "$nums" "& -> \\1" 1 true dobrar
-#
-# Saida:
-#
-# Antes: num: 4, num: 10, num: 50
-# Depois: num: 4, num: 10, num: 50 -> 100
-#
 function regex.fngroups()
 {
 	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:int:+:$4" "case:bool:+:$5" "funcname:func:+:$6" "args:str:-:$7" ... "${@:8}"
@@ -364,44 +336,6 @@ function regex.fnngroups()
 #
 # Salva os grupos de captura ou ocorrências casadas em array 'name'.
 #
-# Exemplo:
-#
-# #!/bin/bash
-# # script: regroup.sh
-#
-# source regex.sh
-# source array.sh
-#
-# array grupo
-#
-# # Compila o padrão e inicia a variável 're' do tipo 'regex'.
-# padrao='(<[^>]+>)'
-#
-# texto="Seja livre use <Linux>. Escolha sua distro <Debian>, <Slackware>, <Redhat> e desfrute da liberdade."
-#
-# # Aplica a regex em 'texto' e salva as expressões casadas em 'grupo'.
-# regex.savegroups "$padrao" "$texto" true grupo
-#
-# # Lista os elementos de 'grupo'.
-# for grp in "${grupo[@]}"
-# do
-#    echo "grupo $((i++)): $grp"
-# done
-#
-# # Exibe parte da expressão casada.
-# echo -e "\nExpressão: ${grupo[@]}"
-# 
-# # FIM
-#
-# $ ./regroup.sh
-#
-# grupo 0: <Linux>
-# grupo 1: <Debian>
-# grupo 2: <Slackware>
-# grupo 3: <Redhat>
-#
-# Expressão: Seja livre use <Linux> <Debian> <Slackware> <Redhat>
-#
 function regex.savegroups()
 {
 	getopt.parse 4 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" "dest:array:+:$4" "${@:5}"
@@ -431,39 +365,6 @@ function regex.savegroups()
 # aplica a substituição em todas as ocorrências. A expressão em 'pattern' pode ser uma ERE 
 # (expressão regular estendida), podendo utilizar retrovisores '&, \\1, \\2, \\3 ...' em 'new' se
 # grupos de captura estiverem presentes entre parenteses '(...)'.
-#
-# Exemplo:
-#
-# #!/bin/bash
-# # script: re.sh
-#
-# source regex.sh
-#
-# texto='O Linux tem 26 anos de idade, criado em 1991 por Linus Torvalds.'
-#
-# echo -e "$texto\n"
-#
-# # Removendo tudo antes de 'Linux Torvalds'.
-# echo -n '1 - '
-# regex.replace "^.*por " "$texto" '' 1 true
-#
-# # Retirando somente os números.
-# echo -n '2 - '
-# regex.replace "[0-9]+" "$texto" '' -1 true
-#
-# # Colocando os números entre '[...]' utilizando grupo/retrovisor.
-# # '\\1' represeta o padrão casado no primeiro grupo entre (...).
-# echo -n '3 - '
-# regex.replace "([0-9]+)" "$texto" '[\\1]' -1 true
-#
-# # FIM
-#
-# $ ./re.sh
-# O Linux tem 26 anos de idade, criado em 1991 por Linus Torvalds.
-#
-# 1 - Linus Torvalds.
-# 2 - O Linux tem  anos de idade, criado em  por Linus Torvalds.
-# 3 - O Linux tem [26] anos de idade, criado em [1991] por Linus Torvalds.
 #
 function regex.replace()
 {
@@ -504,39 +405,6 @@ function regex.replace()
 # Substitui 'pattern' por 'new' em 'match' ocorrência. A expressão em 'pattern' pode ser uma ERE 
 # (expressão regular estendida), podendo utilizar retrovisores '\\1, \\2, \\3 ...' em 'new' se
 # grupos de captura estiverem presentes entre parenteses '(...)'.
-#
-# Exemplo:
-#
-# #!/bin/bash
-# # script: re.sh
-#
-# source regex.sh
-#
-# texto='A Informática é uma ciência exotérica'
-#
-# echo -e "$texto\\n"
-#
-# # Apagando a segunda palavra que termina com a letra 'a'.
-# echo -n '1 - '
-# regex.nreplace "\\w+a\\s" '' "$texto" 2 true
-#
-# # Colocando entre parênteses a terceira palavra com mais de 3 letras.
-# echo -n '2 - '
-# regex.nreplace "(\\w{3,})" '(\\1)' "$texto" 3 true
-#
-# # Criando dois grupos de captura e invertendo a ordem dos retrovisores
-# '\\1' e '\\2' para geração de uma nova frase.
-# echo -n '3 - '
-# regex.nreplace "(\\w{3,}).*\\s(\\w{3,})$" '\\2 \\1' "$texto" 1 true
-#
-# # FIM
-#
-# $ ./re.sh
-# A Informática é uma ciência exotérica
-#
-# 1 - A Informática é ciência exotérica
-# 2 - A Informática é uma (ciência) exotérica
-# 3 - A exotérica Informática
 #
 function regex.nreplace()
 {
@@ -581,60 +449,6 @@ function regex.nreplace()
 # Se 'count' for igual à '-1' aplica em todas as ocorrências.
 # A expressão em 'pattern' pode ser uma ERE (expressão regular estendida).
 #
-# Exemplo:
-#
-# #!/bin/bash
-# script: re.sh
-#
-# source regex.sh
-#
-# texto="Contagem regressiva: 5, 4, 3, 2, 1"
-#
-# echo -e "$texto\\n"
-#
-# # Rotular números pares e ímpares.
-# rotular(){
-#    [[ $(($1%2)) -eq 0 ]] && res="par=($1)" || res="impar=($1)"
-#    echo "$res"
-# }
-#
-# # Incrementando '10' ao valor atual.
-# somando(){
-#    echo "$(($1+10))"
-# }
-#
-# # Somente os números ímpares.
-# impar(){
-#    [[ $(($1%2)) -eq 0 ]] || echo "$1" 
-# }
-#
-# # Adicionando uma casa decimal.
-# decimal(){
-#    echo "$1.0" 
-# }
-#
-# echo -n '1 - '
-# regex.fnreplace "[0-9]+" "$texto" -1 true rotular
-#
-# echo -n '2 - '
-# regex.fnreplace "[0-9]+" "$texto" -1 true somando
-#
-# echo -n '3 - '
-# regex.fnreplace "[0-9]+" "$texto" -1 true impar
-#
-# echo -n '4 - '
-# regex.fnreplace "[0-9]+" "$texto" 2 true decimal
-#
-# # FIM
-#
-# $ ./re.sh
-# Contagem regressiva: 5, 4, 3, 2, 1
-#
-# 1 - Contagem regressiva: impar=(5), par=(4), impar=(3), par=(2), impar=(1)
-# 2 - Contagem regressiva: 15, 14, 13, 12, 11
-# 3 - Contagem regressiva: 5, , 3, , 1
-# 4 - Contagem regressiva: 5.0, 4.0, 3, 2, 1
-#
 function regex.fnreplace()
 {
 	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "count:int:+:$3" "case:bool:+:$4" "funcname:func:+:$5" "args:str:-:$6" ... "${@:7}"
@@ -668,68 +482,6 @@ function regex.fnreplace()
 # identificador de uma função válida que é chamada e recebe automaticamente como argumento
 # posicional '$1' o padrão casado e com N'args' (opcional). 
 # A expressão em 'pattern' pode ser uma ERE (expressão regular estendida).
-#
-# Exemplo:
-#
-# #!/bin/bash
-# # script: re.sh
-#
-# source regex.sh
-# source string.sh
-#
-# texto='Slackware é uma distro Linux lançada em 16/7/1993'
-#
-# mes_nome(){
-#    # Verifica o número do mês e atribui o nome.
-#    case ${1////} in
-#        1) mes='janeiro';;
-#        2) mes='fevereiro';;
-#        3) mes='março';;
-#        4) mes='abril';;
-#        5) mes='maio';;
-#        6) mes='junho';;
-#        7) mes='julho';;
-#        8) mes='agosto';;
-#        9) mes='setembro';;
-#        10) mes='outubro';;
-#        11) mes='novembro';;
-#        12) mes='dezembro';;
-#    esac
-#
-#    # Retorna a expressão com o nome.
-#    echo " $mes de "
-# }
-#
-# maiusculo(){
-#    string.toupper "$1"
-# }
-#
-# mascara(){
-#    echo "[#]"
-# }
-#
-# echo -e "$texto\\n"
-#
-# # Atribui nome ao número do mês.
-# echo -n '1 - '
-# regex.fnnreplace '/([1-9]|1[0-2])/' "$texto" 1 true mes_nome
-#
-# # Converte para maiúsculo a quinta palavra.
-# echo -n '2 - '
-# regex.fnnreplace '\\w+\\s' "$texto" 5 true maiusculo
-#
-# # Mascara o vigésimo quarto caractere.
-# echo -n '3 - '
-# regex.fnnreplace '.' "$texto" 24 true mascara
-#
-# # FIM
-#
-# $ ./re.sh
-# Slackware é uma distro Linux lançada em 16/7/1993
-#
-# 1 - Slackware é uma distro Linux lançada em 16 julho de 1993
-# 2 - Slackware é uma distro LINUX lançada em 16/7/1993
-# 3 - Slackware é uma distro [#]inux lançada em 16/7/1993
 #
 function regex.fnnreplace()
 {
