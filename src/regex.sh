@@ -45,11 +45,7 @@ regex.fnnreplace
 readonly __ERR_REGEX_FLAG_INVALID='a flag especificada é inválida'
 readonly __ERR_REGEX_GROUP_REF='referência do grupo inválida'
 
-# const
-readonly REG_ICASE=2
-readonly REG_CASE=0
-
-# func regex.findall <[str]pattern> <[str]exp> <[uint]flag> => [str]|[str] ...
+# func regex.findall <[str]pattern> <[str]exp> <[bool]case> => [str]|[str] ...
 #
 # Retorna uma lista de todas as correspondências não sobrepostas na cadeia.
 #
@@ -60,18 +56,12 @@ readonly REG_CASE=0
 #
 function regex.findall()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
 	
 	local def cur exp match
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $3 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-
+	[[ $3 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
 
 	while read exp; do
@@ -87,25 +77,19 @@ function regex.findall()
 	return 0
 }
 
-# func regex.fullmatch <[str]pattern> <[str]exp> <[uint]flag> => [uint|uint|str]
+# func regex.fullmatch <[str]pattern> <[str]exp> <[bool]case> => [uint]|[uint]|[str]
 #
 # Força 'pattern' a coincidir com toda sequência em 'exp', retornado o intervalo e a
 # string da ocorrência. 
 #
 function regex.fullmatch()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
 
 	local def cur exp
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $3 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-
+	[[ $3 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
 
 	while read exp; do
@@ -117,25 +101,19 @@ function regex.fullmatch()
 	return 0
 }
 
-# func regex.match <[str]pattern> <[str]exp> [uint]flag => [str]
+# func regex.match <[str]pattern> <[str]exp> <[bool]case> => [uint]|[uint]|[str]
 #
 # Aplica o padrão no inicio da string retornando a expressão se coincidir ou
 # nulo se não for encontrado.
 #
 function regex.match()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
 	
 	local def cur exp
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $3 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-	
+	[[ $3 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
 
 	while read exp; do
@@ -147,31 +125,25 @@ function regex.match()
 	return 0
 }
 
-# func regex.search <[str]pattern> <[str]exp> <[uint]flag> => [uint|uint|str]
+# func regex.search <[str]pattern> <[str]exp> <[bool]case> => [uint]|[uint]|[str]
 #
 # Busca uma correspondência do padrão 'pattern' em 'exp', retornando o índice de
 # intervalo do objeto da correspondência ou nulo se não houver.
 #
 # A correspondência é retornada no seguinte padrão:
 #
-# start|end|match
+# Retorno: start|end|match
 #
 function regex.search()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
 
 	local exp tmp old s e def cur
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $3 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-
+	[[ $3 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
-
+	
 	while read exp; do
 		old=$exp
 		while [[ $exp =~ $1 ]]; do
@@ -188,7 +160,7 @@ function regex.search()
 	return 0
 }
 
-# func regex.split <[str]pattern> <[str]exp> <[uint]flag> => [str]
+# func regex.split <[str]pattern> <[str]exp> <[bool]case> => [str]
 #
 # Divide a string 'exp' pela ocorrências do padrão, retornando uma lista contendo as substrings resultantes.
 #
@@ -196,18 +168,12 @@ function regex.search()
 #
 function regex.split()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
 		
 	local def cur exp old
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $3 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-
+	[[ $3 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
 
 	while read exp; do
@@ -224,24 +190,18 @@ function regex.split()
 	return 0
 }
 
-# func regex.ismatch <[str]pattern> <[str]exp> <[uint]flag> => [bool]
+# func regex.ismatch <[str]pattern> <[str]exp> <[bool]case> => [bool]
 #
 # Retorna 'true' se o padrão coincidir em 'exp', caso contrário retorna 'false'.
 #
 function regex.ismatch()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
 
 	local exp def cur r
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $3 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-
+	[[ $3 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
 
 	while read exp; do
@@ -253,24 +213,18 @@ function regex.ismatch()
 	return ${r:-1}
 }
 
-# func regex.groups <[str]pattern> <[str]exp> <[uint]flag> => [str]
+# func regex.groups <[str]pattern> <[str]exp> <[bool]case> => [str]
 #
 # Retorna uma lista de grupos de captura se presentes no padrão.
 #
 function regex.groups()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" ${@:4}
+	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
 
 	local grp exp def cur
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $3 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-
+	[[ $3 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
 	
 	while read exp; do
@@ -286,7 +240,7 @@ function regex.groups()
 	return 0
 }
 
-# func regex.fngroups <[str]pattern> <[str]exp> <[str]new> <[int]count> <[uint]flag> <[func]funcname> <[str]args> ... => [str] 
+# func regex.fngroups <[str]pattern> <[str]exp> <[str]new> <[int]count> <[bool]case> <[func]funcname> <[str]args> ... => [str] 
 #
 # Substitui os retrovisores dos grupos de captura em 'new' pelo retorno de 'funcname' em 'count' ocorrências. Se 'count' for
 # igual a '-1' realiza a substituição em todas as ocorrências.
@@ -317,7 +271,7 @@ function regex.groups()
 # echo $nums
 #
 # echo -n "Depois: "
-# regex.fngroups "^.*\\s([0-9]+)$" "$nums" "& -> \\1" 1 $REG_ICASE dobrar
+# regex.fngroups "^.*\\s([0-9]+)$" "$nums" "& -> \\1" 1 true dobrar
 #
 # Saida:
 #
@@ -326,18 +280,12 @@ function regex.groups()
 #
 function regex.fngroups()
 {
-	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:int:+:$4" "flag:uint:+:$5" "funcname:func:+:$6" "args:str:-:$7" ... "${@:8}"
+	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:int:+:$4" "case:bool:+:$5" "funcname:func:+:$6" "args:str:-:$7" ... "${@:8}"
 
 	local exp new c i
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $5 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-	
+	[[ $5 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
 	
 	while read exp; do
@@ -367,7 +315,7 @@ function regex.fngroups()
 	
 }
 
-# func regex.fnngroups <[str]pattern> <[str]exp> <[str]new> <[uint]match> <[uint]flag> <[func]funcname> <[str]args> ... => [str] 
+# func regex.fnngroups <[str]pattern> <[str]exp> <[str]new> <[uint]match> <[bool]case> <[func]funcname> <[str]args> ... => [str] 
 #
 # Substitui os retrovisores dos grupos de captura em 'new' pelo retorno de 'funcname' em 'match' ocorrência.
 # Chama 'funcname' passando como argumento posicional '$1' o grupo de captura se presente com 'N'args (opcional) 
@@ -377,18 +325,12 @@ function regex.fngroups()
 #
 function regex.fnngroups()
 {
-	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:uint:+:$4" "flag:uint:+:$5" "funcname:func:+:$6" "args:str:-:$7" ... "${@:8}"
+	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:uint:+:$4" "case:bool:+:$5" "funcname:func:+:$6" "args:str:-:$7" ... "${@:8}"
 
 	local exp new c i
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $5 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-	
+	[[ $5 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
 	
 	while read exp; do
@@ -418,7 +360,7 @@ function regex.fnngroups()
 	return 0
 	
 }
-# func regex.savegroups <[str]pattern> <[str]exp> <[uint]flag> <[array]name>
+# func regex.savegroups <[str]pattern> <[str]exp> <[bool]case> <[array]name>
 #
 # Salva os grupos de captura ou ocorrências casadas em array 'name'.
 #
@@ -438,7 +380,7 @@ function regex.fnngroups()
 # texto="Seja livre use <Linux>. Escolha sua distro <Debian>, <Slackware>, <Redhat> e desfrute da liberdade."
 #
 # # Aplica a regex em 'texto' e salva as expressões casadas em 'grupo'.
-# regex.savegroups "$padrao" "$texto" $REG_ICASE grupo
+# regex.savegroups "$padrao" "$texto" true grupo
 #
 # # Lista os elementos de 'grupo'.
 # for grp in "${grupo[@]}"
@@ -462,21 +404,15 @@ function regex.fnngroups()
 #
 function regex.savegroups()
 {
-	getopt.parse 4 "pattern:str:+:$1" "exp:str:-:$2" "flag:uint:+:$3" "dest:array:+:$4" "${@:5}"
+	getopt.parse 4 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" "dest:array:+:$4" "${@:5}"
 	
 	declare -n __byref=$4
 	local __def __cur __exp
 
 	shopt -q nocasematch && __cur='s' || __cur='u'
+	[[ $3 == true ]] && def='u' || def='s'
+	shopt -q${def} nocasematch
 	
-	case $3 in
-		0) __def='u';;
-		2) __def='s';;
-		*) error.trace def "flag" "uint" "$3" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-
-	shopt -q${__def} nocasematch
-
 	while read __exp; do
 		while [[ $__exp =~ $1 ]]; do
 			__byref+=("${BASH_REMATCH[@]:1}")
@@ -489,7 +425,7 @@ function regex.savegroups()
 	return 0
 }
 
-# func regex.replace <[str]pattern> <[str]exp> <[str]new> <[int]count> <[uint]flag> => [str]
+# func regex.replace <[str]pattern> <[str]exp> <[str]new> <[int]count> <[bool]case> => [str]
 #
 # Substitui 'count' vezes o padrão em 'pattern' por 'new'. Se 'count' for igual à '-1',
 # aplica a substituição em todas as ocorrências. A expressão em 'pattern' pode ser uma ERE 
@@ -509,16 +445,16 @@ function regex.savegroups()
 #
 # # Removendo tudo antes de 'Linux Torvalds'.
 # echo -n '1 - '
-# regex.replace "^.*por " '' "$texto" 1 $REG_ICASE
+# regex.replace "^.*por " "$texto" '' 1 true
 #
 # # Retirando somente os números.
 # echo -n '2 - '
-# regex.replace "[0-9]+" '' "$texto" -1 $REG_ICASE
+# regex.replace "[0-9]+" "$texto" '' -1 true
 #
 # # Colocando os números entre '[...]' utilizando grupo/retrovisor.
 # # '\\1' represeta o padrão casado no primeiro grupo entre (...).
 # echo -n '3 - '
-# regex.replace "([0-9]+)" '[\\1]' "$texto" -1 $REG_ICASE
+# regex.replace "([0-9]+)" "$texto" '[\\1]' -1 true
 #
 # # FIM
 #
@@ -531,18 +467,12 @@ function regex.savegroups()
 #
 function regex.replace()
 {
-	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:int:+:$4" "flag:uint:+:$5" "${@:6}"
+	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:int:+:$4" "case:bool:+:$5" "${@:6}"
 
-	local exp new i n c
+	local exp new i n c def
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $5 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-	
+	[[ $5 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
 	
 	while read exp; do
@@ -569,7 +499,7 @@ function regex.replace()
 	return 0
 }
 	
-# func regex.nreplace <[str]pattern> <[str]exp> <[str]new> <[uint]match> <[uint]flag> => [str]
+# func regex.nreplace <[str]pattern> <[str]exp> <[str]new> <[uint]match> <[bool]case> => [str]
 #
 # Substitui 'pattern' por 'new' em 'match' ocorrência. A expressão em 'pattern' pode ser uma ERE 
 # (expressão regular estendida), podendo utilizar retrovisores '\\1, \\2, \\3 ...' em 'new' se
@@ -588,16 +518,16 @@ function regex.replace()
 #
 # # Apagando a segunda palavra que termina com a letra 'a'.
 # echo -n '1 - '
-# regex.nreplace "\\w+a\\s" '' "$texto" 2 $REG_ICASE
+# regex.nreplace "\\w+a\\s" '' "$texto" 2 true
 #
 # # Colocando entre parênteses a terceira palavra com mais de 3 letras.
 # echo -n '2 - '
-# regex.nreplace "(\\w{3,})" '(\\1)' "$texto" 3 $REG_ICASE
+# regex.nreplace "(\\w{3,})" '(\\1)' "$texto" 3 true
 #
 # # Criando dois grupos de captura e invertendo a ordem dos retrovisores
 # '\\1' e '\\2' para geração de uma nova frase.
 # echo -n '3 - '
-# regex.nreplace "(\\w{3,}).*\\s(\\w{3,})$" '\\2 \\1' "$texto" 1 $REG_ICASE
+# regex.nreplace "(\\w{3,}).*\\s(\\w{3,})$" '\\2 \\1' "$texto" 1 true
 #
 # # FIM
 #
@@ -610,18 +540,12 @@ function regex.replace()
 #
 function regex.nreplace()
 {
-	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:uint:+:$4" "flag:uint:+:$5" "${@:6}"
+	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:uint:+:$4" "case:bool:+:$5" "${@:6}"
 
 	local exp new i n c
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $5 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$5" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-	
+	[[ $5 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
 
 	while read exp; do
@@ -649,7 +573,7 @@ function regex.nreplace()
 	return 0
 }
 
-# func regex.fnreplace <[str]pattern> <[str]exp> <[int]count> <[uint]flag> <[func]funcname> <[str]args> ... => [str]
+# func regex.fnreplace <[str]pattern> <[str]exp> <[int]count> <[bool]case> <[func]funcname> <[str]args> ... => [str]
 #
 # Substitui 'count' vezes o padrão em 'pattern' pelo retorno de 'funcname', cujo identificador é uma 
 # função válida que é chamada e recebe automaticamente como argumento posicional '$1' o padrão casado e
@@ -690,16 +614,16 @@ function regex.nreplace()
 # }
 #
 # echo -n '1 - '
-# regex.fnreplace "[0-9]+" "$texto" -1 $REG_ICASE rotular
+# regex.fnreplace "[0-9]+" "$texto" -1 true rotular
 #
 # echo -n '2 - '
-# regex.fnreplace "[0-9]+" "$texto" -1 $REG_ICASE somando
+# regex.fnreplace "[0-9]+" "$texto" -1 true somando
 #
 # echo -n '3 - '
-# regex.fnreplace "[0-9]+" "$texto" -1 $REG_ICASE impar
+# regex.fnreplace "[0-9]+" "$texto" -1 true impar
 #
 # echo -n '4 - '
-# regex.fnreplace "[0-9]+" "$texto" 2 $REG_ICASE decimal
+# regex.fnreplace "[0-9]+" "$texto" 2 true decimal
 #
 # # FIM
 #
@@ -713,18 +637,12 @@ function regex.nreplace()
 #
 function regex.fnreplace()
 {
-	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "count:int:+:$3" "flag:uint:+:$4" "funcname:func:+:$5" "args:str:-:$6" ... "${@:7}"
+	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "count:int:+:$3" "case:bool:+:$4" "funcname:func:+:$5" "args:str:-:$6" ... "${@:7}"
 
 	local exp new c i
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $4 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$4" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-	
+	[[ $4 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
 
 	while read exp; do
@@ -744,7 +662,7 @@ function regex.fnreplace()
 	return 0
 }
 
-# func regex.fnnreplace <[str]pattern> <[str]exp> <[uint]match> <[uint]flag> <[func]funcname> <[str]args> ... => [str]
+# func regex.fnnreplace <[str]pattern> <[str]exp> <[uint]match> <[bool]case> <[func]funcname> <[str]args> ... => [str]
 #
 # Substitui o padrão em 'pattern' pelo retorno de 'funcname' em 'match' ocorrência. 'funcname' é o
 # identificador de uma função válida que é chamada e recebe automaticamente como argumento
@@ -794,15 +712,15 @@ function regex.fnreplace()
 #
 # # Atribui nome ao número do mês.
 # echo -n '1 - '
-# regex.fnnreplace '/([1-9]|1[0-2])/' "$texto" 1 $REG_ICASE mes_nome
+# regex.fnnreplace '/([1-9]|1[0-2])/' "$texto" 1 true mes_nome
 #
 # # Converte para maiúsculo a quinta palavra.
 # echo -n '2 - '
-# regex.fnnreplace '\\w+\\s' "$texto" 5 $REG_ICASE maiusculo
+# regex.fnnreplace '\\w+\\s' "$texto" 5 true maiusculo
 #
 # # Mascara o vigésimo quarto caractere.
 # echo -n '3 - '
-# regex.fnnreplace '.' "$texto" 24 $REG_ICASE mascara
+# regex.fnnreplace '.' "$texto" 24 true mascara
 #
 # # FIM
 #
@@ -815,18 +733,12 @@ function regex.fnreplace()
 #
 function regex.fnnreplace()
 {
-	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "count:uint:+:$3" "flag:uint:+:$4" "funcname:func:+:$5" "args:str:-:$6" ... "${@:7}"
+	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "count:uint:+:$3" "case:bool:+:$4" "funcname:func:+:$5" "args:str:-:$6" ... "${@:7}"
 
 	local exp new i c
 
 	shopt -q nocasematch && cur='s' || cur='u'
-	
-	case $4 in
-		0) def='u';;
-		2) def='s';;
-		*) error.trace def "flag" "uint" "$4" "$__ERR_REGEX_FLAG_INVALID"; return $?;;
-	esac	
-	
+	[[ $4 == true ]] && def='u' || def='s'
 	shopt -q${def} nocasematch
 
 	while read exp; do
