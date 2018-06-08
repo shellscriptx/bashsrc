@@ -19,7 +19,7 @@
 #
 
 readonly BASENAME=${0##*/}
-readonly BASHSRC_VERSION=1.0.2
+readonly BASHSRC_VERSION=1.0.3
 
 if [[ ${#@} -eq 0 ]]; then
 	echo "Uso: $BASENAME [OPÇÕES]"
@@ -38,7 +38,7 @@ declare -A re=(
 [varname]='(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*'
 [comm]='^\s*#\s*\*'
 [func]='^\s*#\s*func\s+'
-[ntype]='(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]'
+[ntype]='(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_.]*_[tT]'
 [type]="^[^#]*__TYPE__\[(${re[ntype]})\]"
 [objtype]='^[^#]*__TYPE__\[([^]]+)\]='
 [sttype]='^[^#]*var\s+(\w+_[tT])\s+struct_t'
