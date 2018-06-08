@@ -315,8 +315,8 @@ function error.__output()
 		true)	
 			__ERR__=${code:-$2}
 			__ERR_MSG__=${err:-$3}
-			__ERR_FUNC__=${func:-${FUNCNAME[2]}}
-			__ERR_LINE__=${line:-${BASH_LINENO[1]}}
+			__ERR_FUNC__=${func:-${FUNCNAME[-2]}}
+			__ERR_LINE__=${line:-${BASH_LINENO[-2]}}
 			;;
 		false)
 			exec 1>&2
@@ -328,7 +328,7 @@ function error.__output()
 				*)			error.trace def; return $?;;
 			esac
 				
-			echo -e "${c_red}${0##*/}: erro: linha ${line:-${BASH_LINENO[1]}}: ${func:-${FUNCNAME[2]}}: ${code:-$2}: $err ${c_def}"
+			echo -e "${c_red}${0##*/}: erro: linha ${line:-${BASH_LINENO[-2]}}: ${func:-${FUNCNAME[-2]}}: ${code:-$2}: $err ${c_def}"
 			exit ${code:-$2}
 			;;
 	esac
