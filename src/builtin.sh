@@ -54,9 +54,21 @@ declare __ERR__ \
 		__ERR_LINE__ \
 		__ERR_ARGS__
 
-shopt -s	extglob \
-			globasciiranges \
-			extquote \
+# Opções do shell
+shopt -s	extglob 				\
+			globasciiranges 		\
+			extquote 				\
+			sourcepath 				\
+			checkwinsize 			\
+			cmdhist					\
+			complete_fullquote		\
+			extglob					\
+			extquote				\
+			force_fignore			\
+			histappend				\
+			interactive_comments	\
+			progcomp				\
+			promptvars				\
 			sourcepath
 
 shopt -u 	nocasematch
@@ -150,7 +162,7 @@ readonly -A __FLAG_TYPE=(
 [flag]='^[a-zA-Z0-9_]+$'
 [funcname]='^[a-zA-Z0-9_.-]+$'
 [var]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*(\[([0-9]|[1-9][0-9]+)\])?$'
-[srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])[a-zA-Z0-9_]*_[tT]$'
+[srctype]='^(_+[a-zA-Z0-9]|[a-zA-Z])(\.?[a-zA-Z0-9_]+)*_[tT]$'
 [st_member]='^(_+[a-zA-Z0-9]|[a-zA-Z])([a-zA-Z0-9_.]*[a-zA-Z0-9])?(\[([1-9][0-9]*)?\])?$'
 [uint]='^(0|[1-9][0-9]*)$'
 [int]='^(0|[+-]?[1-9][0-9]*)$'
@@ -178,6 +190,7 @@ readonly -A __FLAG_TYPE=(
 [email]='^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$'
 [ipv4]='^(([0-9]|[1-9][0-9]|1[0-9]{,2}|2[0-4][0-9]|25[0-5])[.]){3}([0-9]|[1-9][0-9]|1[0-9]{,2}|2[0-4][0-9]|25[0-5])$'
 [ipv6]='^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$'
+[ip]="${__FLAG_TYPE[ipv4]}|${__FLAG_TYPE[ipv6]}"
 [mac]='^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$'
 [slice]='^(\[((0|-?[1-9][0-9]*):?|:?(0|-?[1-9][0-9]*)|(0|-?[1-9][0-9]*):(0|-?[1-9][0-9]*))\])+$'
 [uslice]='^(\[((0|[1-9][0-9]*):?|:?(0|[1-9][0-9]*)|(0|[1-9][0-9]*):(0|[1-9][0-9]*))\])+$'
@@ -1989,7 +2002,6 @@ function builtin.__check_package_depends()
 			error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" 'o pacote requerido está ausente'
 			return $?
 		elif ! [[ $($bin --version 2>/dev/null) =~ [0-9]+\.[0-9]+ ]]; then
-			error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" 'não foi possível obter a versão do pacote'
 			continue
 		fi
 
@@ -2002,20 +2014,16 @@ function builtin.__check_package_depends()
 			op=${opt[0]}
 			ver=${opt[1]}
 		
-			if [[ $ver != +([0-9]).+([0-9]) ]]; then
+			if [[ $op != @(>|<|>=|<=|<>|=) ]]; then
+				error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" "'$op' operador condicional inválido"
+				return $?
+			elif [[ $ver != +([0-9]).+([0-9]) ]]; then
 				error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" 'notação de versionamento inválida'
 				return $?
 			fi
 
-			case $op in
-				'>') [[ ${BASH_REMATCH//./,} -gt ${ver//./,} ]];;
-				'<') [[ ${BASH_REMATCH//./,} -lt ${ver//./,} ]];;
-				'>=') [[ ${BASH_REMATCH//./,} -ge ${ver//./,} ]];;
-				'<=') [[ ${BASH_REMATCH//./,} -le ${ver//./,} ]];;
-				'<>') [[ ${BASH_REMATCH//./,} -ne ${ver//./,} ]];;
-				*) error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" "'$op' operador condicional inválido"; return $?;;
-			esac
-			
+			(( ${BASH_REMATCH%.*} $op ${ver%.*} )) && (( ${BASH_REMATCH#*.} $op ${ver#*.} ))
+
 			if [[ $? -eq 1 ]]; then
 				error.trace deps "${BASH_SOURCE[-2]}" "$bin" "${__DEP__[$bin]}" "a versão instalada é incompatível"
 				return $?
