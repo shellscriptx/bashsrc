@@ -55,7 +55,7 @@ function array.append()
 {
 	getopt.parse 2 "name:array:+:$1" "object:str:-:$2" ${@:3}
 
-	declare -n __arr=$1
+	local -n __arr=$1 
 	__arr+=("$2")
 	return 0
 }
@@ -369,7 +369,8 @@ function array.slice()
 	local __slice __arr __ini __len
 
 	__slice=$2
-	IFS=' ' __arr=("${__ptr[@]}")
+
+	__arr=("${__ptr[@]}")
 
 	while [[ $__slice =~ \[([^]]+)\] ]]; do
 		IFS=':' read __ini __len <<< ${BASH_REMATCH[1]}
@@ -380,7 +381,7 @@ function array.slice()
 		if [[ ${#__arr[@]} -gt 1 ]]; then
         	[[ $__len -lt 0 ]] && __arr=() && break
 			__len=${__len:-$((${#__arr[@]}-$__ini))}
-			IFS=' ' __arr=("${__arr[@]:$__ini:$__len}")
+			__arr=("${__arr[@]:$__ini:$__len}")
 		else
 			[[ ${__len#-} -gt ${#__arr} ]] && __arr='' && break
 			__len=${__len:-$((${#__arr}-$__ini))}
@@ -388,7 +389,7 @@ function array.slice()
 		fi
 		__slice=${__slice/\[${BASH_REMATCH[1]}\]/}
 	done
-	
+
 	printf '%s\n' "${__arr[@]}"
 
     return $?
