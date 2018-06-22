@@ -1277,28 +1277,29 @@ function __del__()
 {
 	getopt.parse -1 "varname:var:+:$1" ... "${@:2}"
 
-	local var fn vet cv c
+	local __var __fn __vet __cv __c
 
-	for var in $@; do
-		[[ ${__INIT_OBJ[$var]} ]] || continue
-		[[ ${__INIT_OBJ_ATTR[$var]} == array ]] && vet=1 || vet=''
-		cv=${__INIT_OBJ_SIZE[$var]}
-		for ((c=0; c < cv; c++)); do
-			vet=${vet:+$var[$c]}
-			for fn in ${__INIT_OBJ_METHOD[${vet:-$var}]}; do
-				unset __STRUCT_VAL_MEMBERS[$fn] \
-					  __STRUCT_MEMBER_TYPE[$fn]
+	for __var in $@; do
+		[[ ${__INIT_OBJ[$__var]} ]] || continue
+		[[ ${__INIT_OBJ_ATTR[$__var]} == array ]] && __vet=1 || __vet=''
+		__cv=${__INIT_OBJ_SIZE[$__var]}
+		for ((__c=0; __c < __cv; __c++)); do
+			__vet=${__vet:+$__var[$__c]}
+			for __fn in ${__INIT_OBJ_METHOD[${__vet:-$__var}]}; do
+				unset 	__STRUCT_VAL_MEMBERS[$__fn] \
+					__STRUCT_MEMBER_TYPE[$__fn]
 			done
-			unset -f ${__INIT_OBJ_METHOD[${vet:-$var}]}
-			unset	__INIT_OBJ_METHOD[${vet:-$var}] \
-					__STRUCT_INIT[$var]
+			unset -f ${__INIT_OBJ_METHOD[${__vet:-$__var}]}
+			unset	__INIT_OBJ_METHOD[${__vet:-$__var}] \
+				__STRUCT_INIT[$__var]
 		done
-		unset -f ${__INIT_OBJ_METHOD[$var]} 
-		unset	__INIT_OBJ_TYPE[$var] \
-				__INIT_SRC_TYPES[$var] \
-				__INIT_OBJ[$var] \
-				__INIT_OBJ_SIZE[$var] \
-				__INIT_OBJ_ATTR[$var]
+		unset -f ${__INIT_OBJ_METHOD[$__var]} 
+		unset	__INIT_OBJ_TYPE[$__var] 	\
+			__INIT_SRC_TYPES[$__var] 	\
+			__INIT_OBJ[$__var] 		\
+			__INIT_OBJ_SIZE[$__var]		\
+			__INIT_OBJ_ATTR[$__var]		\
+			$__var
 
 	done || {
 		error.trace def
