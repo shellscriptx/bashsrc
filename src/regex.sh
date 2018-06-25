@@ -45,7 +45,7 @@ regex.fnnreplace
 readonly __ERR_REGEX_FLAG_INVALID='a flag especificada é inválida'
 readonly __ERR_REGEX_GROUP_REF='referência do grupo inválida'
 
-# func regex.findall <[str]pattern> <[str]exp> <[bool]case> => [str]|[str] ...
+# func regex.findall <[str]pattern> <[str]exp> <[bool]case> => [str]|[str]|[str]
 #
 # Retorna uma lista de todas as correspondências não sobrepostas na cadeia.
 #
@@ -163,8 +163,6 @@ function regex.search()
 # func regex.split <[str]pattern> <[str]exp> <[bool]case> => [str]
 #
 # Divide a string 'exp' pela ocorrências do padrão, retornando uma lista contendo as substrings resultantes.
-#
-# Exemplo: substring1|substring2|substring3|...
 #
 function regex.split()
 {
