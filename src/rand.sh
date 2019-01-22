@@ -17,133 +17,81 @@
 #    You should have received a copy of the GNU General Public License
 #    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
-[[ $__RAND_SH ]] && return 0
+[ -v __RAND_SH__ ] && return 0
 
-readonly __RAND_SH=1
+readonly __RAND_SH__=1
 
 source builtin.sh
 
-__TYPE__[arand_t]='
-rand.achoice
-'
-
-__TYPE__[mrand_t]='
-rand.mchoice
-'
-
-__TYPE__[srand_t]='
-rand.cchoice
-rand.wchoice
-'
-
-# func rand.range <[int]min> <[int]max> => [int]
+# .FUNCTION rand.random -> [uint]|[bool]
 #
-# Retorna um número inteiro pseudo-aleatório dentro do intervalo
-# 'min' e 'max' especificado.
+# Gera um inteiro pseudo-aleatório entre 0 e 32767.
+#
+function rand.random()
+{
+	getopt.parse 0 "$@"
+	echo $RANDOM
+	return $?
+}
+
+# .FUNCTION rand.range <min[int]> <max[int]> -> [int]|[bool]
+#
+# Retorna um número inteiro pseudo-aleatório
+# dentro do intervalo especificado.
 #
 function rand.range()
 {
-	getopt.parse 2 "min:int:+:$1" "max:int:+:$2" ${@:3}
-	echo $((RANDOM%($2-$1)+$1))
-	return 0
-}
-
-# func rand.nrange <[uint]count> => [uint]
-#
-# Gera 'N' números pseudo-aleatórios.
-#
-function rand.nrange()
-{
-	getopt.parse 1 "count:uint:+:$1" ${@:2}
-	for ((i=0;i < $1; i++)); do echo "$RANDOM"; done
-	return 0
-}
-
-# func rand.int => [int]
-#
-# Retorna uma número inteiro positivo pseudo-aleatório entre 0 - 32767.
-#
-function rand.int()
-{
-	getopt.parse 0 ${@:1}
-	echo "$RANDOM"
-	return 0
-}
-
-# func rand.long => [uint]
-#
-# Retorna um número positivo longo pseudo-aleatório.
-#
-function rand.long()
-{
-	getopt.parse 0 ${@:1}
-
-	local seed=$(printf '%(%s)T')
-	seed=$[RANDOM*seed]
-	echo $((seed>>${#seed}^2))
-
-	return 0
-}
-# func rand.achoice <[array]name> => [str]
-#
-# Retorna aleatóriamente um elemento em 'name'.
-#
-function rand.achoice()
-{
-	getopt.parse 1 "name:array:+:$1" ${@:2}
-
-	declare -n __ref=$1
-	echo "${__ref[$((RANDOM%${#__ref[@]}))]}"
-	return 0
-}
-
-# func rand.cchoice <[str]exp> => [str]
-#
-# Retorna aleatóriamente um caractere da sequência contida em 'exp'.
-# Se 'exp' for uma lista iterável, retorna um caractere de cada elemento.
-#
-function rand.cchoice()
-{
-	getopt.parse 1 "exp:str:+:$1" ${@:2}
+	getopt.parse 2 "min:int:$1" "max:int:$2" "${@:3}"
 	
-	local exp
-	while read exp; do 
-		echo "${exp:$((RANDOM % ${#exp})):1}"
-	done <<< "$1"
-
-	return 0
+	shuf -i $1-$2 -n1	
+	return $?
 }
 
-# func rand.mchoice <[map]name> => [str|str]
+# .FUNCTION rand.choice <list[array]> -> [str]|[bool]
 #
-# Retorna um item aleatório em 'map' represetado por 'chave' e 'objeto'.
+# Escolhe um elemento aleatório de uma sequência.
 #
-function rand.mchoice()
+function rand.choice()
 {
-	getopt.parse 1 "name:map:+:$1" ${@:2}
+	getopt.parse 1 "list:array:$1" "${@:2}"
 	
-	declare -n __map_ref=$1
-	local __keys=("${!__map_ref[@]}")
-	local __key=${__keys[$((RANDOM % ${#__keys[@]}))]}
-	echo "$__key|${__map_ref[$__key]}"
-	return 0
+	local -n __ref__=$1
+	local __list__
+	
+	[[ ${__ref__[@]} ]]											&&	
+	__list__=("${__ref__[@]}")									&&
+	echo "${__list__[$(shuf -i 0-$((${#__list__[@]}-1)) -n1)]}"
+
+	return $?
 }
 
-# func rand.wchoice <[str]exp> => [str]
+# .FUNCTION rand.shuffle <list[array]> -> [bool]
 #
-# Retorna aleatóriamente uma palavra contida em 'exp'.
+# Embaralha os elementos da lista.
 #
-function rand.wchoice()
+function rand.shuffle()
 {
-	getopt.parse 1 "exp:str:-:$1" ${@:2}
+	getopt.parse 1 "list:array:$1" "${@:2}"
 
-	local exp words
-	while read exp; do
-		exp=($exp)
-		echo "${exp[$(($RANDOM % ${#exp[@]}))]}"
-	done <<< "$1"	
-	return 0
+	local -n __ref__=$1
+	mapfile $1 < <(printf '%s\n' "${__ref__[@]}" | shuf)	
+	return $?
 }
 
-source.__INIT__
-# /* __RAND_SH */
+# .TYPE rand_t
+#
+# Implementa o objeto 'S' com os métodos:
+#
+# S.choice
+# S.shuffle
+#
+typedef rand_t	rand.choice \
+				rand.shuffle
+
+# Funções (somente-leitura)
+readonly -f rand.random	\
+			rand.range	\
+			rand.choice	\
+			rand.shuffle
+
+# /* __RAND_SH__ */

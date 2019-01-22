@@ -17,205 +17,278 @@
 #    You should have received a copy of the GNU General Public License
 #    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
-[[ $__MAP_SH ]] && return 0
+[ -v __MAP_SH__ ] && return 0
 
-readonly __MAP_SH=1
+readonly __MAP_SH__=1
 
 source builtin.sh
 
-__TYPE__[map_t]='
-map.clone
-map.copy
-map.fromkeys
-map.get
-map.keys
-map.items
-map.list
-map.remove
-map.add
-map.contains
-map.pop
-'
-
-# func map.clone <[map]src> <[map]dest>
+# .FUNCTION map.clone <src[map]> <dest[map]> -> [bool]
 #
-# Clona todos os elementos de 'src' para 'dest', sobrescrevendo todos
-# os dados em 'dest'.
+# Copia as chaves de origem para o map de destino apagando
+# todos os dados já existentes.
 #
 function map.clone()
 {
-	getopt.parse 2 "src:map:+:$1" "dest:map:+:$2" ${@:3}
-	
-	declare -n __map1=$1 __map2=$2
-	local __key
+	getopt.parse 2 "src:map:$1" "dest:map:$2" "${@:3}"
 
-	__map2=()
-	
-	for __key in "${!__map1[@]}"; do
-		__map2[$__key]=${__map1[$__key]}
-	done	
-	
-	return 0
+	local -n __ref1__=$1 __ref2__=$2
+	local __key__
+
+	# Limpa o map.
+	__ref2__=()
+
+	for __key__ in "${!__ref1__[@]}"; do
+		__ref2__[$__key__]=${__ref1__[$__key__]}
+	done
+
+	return $?
 }
 
-# func map.copy <[map]src> <[map]dest>
+# .FUNCTION map.copy <src[map]> <dest[map]> -> [bool]
 #
-# Copia todos os elementos de 'src' para 'dest'. Sobrescreve
-# somente as chaves duplicadas.
+# Copia as chaves de origem para o map de destino sobrescrevendo
+# as chaves já existentes.
 #
 function map.copy()
 {
-	getopt.parse 2 "src:map:+:$1" "dest:map:+:$2" ${@:3}
-	
-	declare -n __map1=$1 __map2=$2
-	local __key
+	getopt.parse 2 "src:map:$1" "dest:map:$2" "${@:3}"
 
-	for __key in "${!__map1[@]}"; do
-		__map2[$__key]=${__map1[$__key]}
-	done	
-	
-	return 0
+	local -n __ref1__=$1 __ref2__=$2
+	local __key__
+
+	for __key__ in "${!__ref1__[@]}"; do
+		__ref2__[$__key__]=${__ref1__[$__key__]}
+	done
+
+	return $?
 }
 
-# func map.fromkeys <[map]name> <[str]key> ...
+# .FUNCTION map.fromkeys <obj[map]> <value[str]> <key[str]> ... -> [bool]
 #
-# Cria 'N' keys a partir da lista 'key ...'
+# Inicializa as chaves do container com o valor especificado.
+# > Pode ser especificada mais de uma chave.
+#
+# == EXEMPLO ==
+#
+# source map.sh
+#
+# # Declarando o map
+# declare -A m1=()
+#
+# map.fromkeys m1 '10' nome sobrenome idade
+#
+# # Listando chaves.
+# for key in "${!m1[@]}"; do
+#     echo "m1[$key]=${m1[$key]}
+# done
+#
+# == SAÍDA ==
+#
+# m1[nome]=10
+# m1[idade]=10
+# m1[sobrenome]=10
 #
 function map.fromkeys()
 {
-	getopt.parse 1 "name:map:+:$1"
+	getopt.parse -1 "obj:map:$1" "value:str:$2" "key:str:$3" ... "${@:3}"
 
-	declare -n __map=$1
-	local __key
+	local -n __ref__=$1
+	local __key__
 
-	for __key in "${@:2}"; do
-		__map[$__key]=""
+	for __key__  in "${@:3}"; do
+		__ref__[$__key__]=$2
 	done
-
-	return 0
+	return $?
 }
 
-# func map.get <[map]name> <[str]key> => [object]
+# .FUNCTION map.get <obj[map]> <key[str]> -> [str]|[bool]
 #
-# Retorna o objeto armazenado em 'key'.
+# Retorna o valor da chave.
 #
 function map.get()
 {
-	getopt.parse 2 "name:map:+:$1" "key:str:+:$2" ${@:3}
+	getopt.parse 2 "obj:map:$1" "key:str:$2" "${@:3}"
 
-	declare -n __map=$1
-	echo "${__map[$2]}"
-	return 0
+	local -n __ref__=$1
+	echo "${__ref__[$2]}"
+	return $?
 }
 
-# func map.keys <[map]name> => [key]
+# .FUNCTION map.keys <obj[map]> -> [str]|[bool]
 #
-# Retorna uma lista iterável contendo as chaves de 'name'.
+# Retorna todas as chaves do container.
 #
 function map.keys()
 {
-	getopt.parse 1 "name:map:+:$1" ${@:2}
-	
-	declare -n __map=$1
-	printf "%s\n" "${!__map[@]}"
-	return 0
+	getopt.parse 1 "obj:map:$1" "${@:2}"
+
+	local -n __ref__=$1
+	printf '%s\n' "${!__ref__[@]}"
+	return $?
 }
 
-# func map.items <[map]name> => [object]
+# .FUNCTION map.sortkeys <obj[map]> -> [str]|[bool]
 #
-# Retorna uma lista iterável contendo os objetos de 'name'.
+# Retorna todas as chaves em ordem alfabética.
+#
+function map.sortkeys()
+{
+	getopt.parse 1 "obj:map:$1" "${@:2}"
+
+	local -n __ref__=$1
+	printf '%s\n' "${!__ref__[@]}" | sort -d
+	return $?
+}
+
+# .FUNCTION map.items <obj[map]> -> [str]|[bool]
+#
+# Retorna o valores do container.
 #
 function map.items()
 {
-	getopt.parse 1 "name:map:+:$1" ${@:2}
-	
-	declare -n __map=$1
-	printf "%s\n" "${__map[@]}"
-	return 0
+	getopt.parse 1 "obj:map:$1" "${@:2}"
+
+	local -n __ref__=$1
+	printf '%s\n' "${__ref__[@]}"
+	return $?
 }
 
-# func map.list <[map]name> => [key|object]
+# .FUNCTION map.list <obj[map]> -> [str|str]|[bool]
 #
-# Retorna uma lista iterável contendo os objetos em 'name' 
-# representados por chave e objeto.
+# Retorna uma lista iterável que é representação dos elementos
+# no container no seguinte formato:
+#
+# key|value
 #
 function map.list()
 {
-	getopt.parse 1 "name:map:+:$1" ${@:2}
+	getopt.parse 1 "obj:map:$1" "${@:2}"
 
-	declare -n __map=$1
-	local __key
+	local -n __ref__=$1
+	local __key__
 
-	for __key in "${!__map[@]}"; do
-		printf "%s|%s\n" "$__key" "${__map[$__key]}"
+	for __key__ in "${!__ref__[@]}"; do
+		printf '%s|%s\n' "$__key__" "${__ref__[$__key__]}"
 	done
-
-	return 0
+	return $?
 }
 
-# func map.remove <[map]name> <[str]key>
+# .FUNCTION map.remove <obj[map]> <key[str]> -> [bool]
 #
-# Remove o objeto armazenado em 'key'.
+# Remove a chave do container.
 #
 function map.remove()
 {
-	getopt.parse 2 "name:map:+:$1" "key:str:+:$2" ${@:3}
-	
-	declare -n __map=$1
-	unset __map[$2]
-	return 0	
+	getopt.parse 2 "obj:map:$1" "key:str:$2" "${@:3}"
+
+	unset $1[$2]
+	return $?
 }
 
-# func map.add <[map]name> <[str]key> <[str]object>
+# .FUNCTION map.add <obj[map]> <key[str]> <value[str]> -> [bool]
 #
-# Adiciona 'object' em 'name' na chave 'key' especificada.
-# Sobreescreve o item se 'key' já existir.
+# Adiciona uma nova chave ao container.
+#
+# == EXEMPLO ==
+#
+# source map.sh
+#
+# # Declarando o tipo map
+# declare -A usuario=()
+#
+# # Atribuindo chave/valor
+# map.add usuario 'nome' 'Juliano'
+# map.add usuario 'sobrenome' 'Santos'
+# map.add usuario 'idade' '35'
+#
+# echo "${usuario[nome]}"
+# echo "${usuario[sobrenome]}"
+# echo "${usuario[idade]}"
+#
+# == SAÍDA ==
+#
+# Juliano
+# Santos
+# 35
 #
 function map.add()
 {
-	getopt.parse 3 "name:map:+:$1" "key:str:+:$2" "object:str:-:$3" ${@:4}
-	
-	declare -n __map=$1
-	__map[$2]=$3
-	return 0
+	getopt.parse 3 "obj:map:$1" "key:str:$2" "value:str:$3" "${@:4}"
+
+	local -n __ref__=$1
+	__ref__[$2]=$3
+	return $?
 }
 
-# func map.contains <[map]name> <[str]key> => [bool]
+# .FUNCTION map.contains <obj[map]> <key[str]> -> [bool]
 #
-# Retorna 'true' se 'name' contém 'key'. Caso contrário 'false'.
+# Retorna 'true' se contém a chave especificada, caso contrário 'false'.
 #
 function map.contains()
 {
-	getopt.parse 2 "name:map:+:$1" "key:str:+:$2" ${@:3}
+	getopt.parse 2 "obj:map:$1" "key:str:$2" "${@:3}"
 	
-	declare -n __map=$1
-	local __key
-
-	for __key in "${!__map[@]}"; do
-		[[ $2 == $__key ]] && return 0
-	done
-
-	return 1
+	[[ -v $1[$2] ]]
+	return $?
 }
 
-# func map.pop <[map]name> => [key|object]
+# .FUNCTION map.pop <obj[map]> <key[str]> -> [str]|[bool]
 #
-# Retorna e remove o último elemento em 'name'.
-# O objeto retornado é representado por chave e valor.
+# Retorna e remove do container a chave especificada.
 #
 function map.pop()
 {
-	getopt.parse 1 "name:map:+:$1" ${@:2}
-	
-	declare -n __map=$1
-	local __key
+	getopt.parse 2 "obj:map:$1" "key:str:$2" "${@:3}"
 
-	for __key in "${!__map[@]}"; do :; done
-	printf "%s|%s\n" "$__key" "${__map[$__key]}"
-	unset __map[$__key]
-	
-	return 0
+	local -n __ref__=$1	
+	echo "${__ref__[$2]}"
+	unset $1[$2]
+	return $?
 }
 
-source.__INIT__
-# /* __MAP_SH */
+# .TYPE map_t
+#
+# Implementa o objeto 'S' com os métodos:
+#
+# S.clone
+# S.copy
+# S.fromkeys
+# S.get
+# S.keys
+# S.items
+# S.list
+# S.remove
+# S.add
+# S.contains
+# S.pop
+#
+typedef map_t		\
+		map.clone		\
+		map.copy		\
+		map.fromkeys	\
+		map.get			\
+		map.keys		\
+		map.sortkeys	\
+		map.items		\
+		map.list		\
+		map.remove		\
+		map.add			\
+		map.contains	\
+		map.pop
+
+# Funções (somente leitura)
+readonly -f	map.clone		\
+			map.copy		\
+			map.fromkeys	\
+			map.get			\
+			map.keys		\
+			map.sortkeys	\
+			map.items		\
+			map.list		\
+			map.remove		\
+			map.add			\
+			map.contains	\
+			map.pop
+
+# /* __MAP_SH__ */

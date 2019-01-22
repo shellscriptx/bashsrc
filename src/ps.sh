@@ -17,295 +17,359 @@
 #    You should have received a copy of the GNU General Public License
 #    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
-[[ $__PS_SH ]] && return 0
+[ -v __PS_SH__ ] && return 0
 
-readonly __PS_SH=1
+readonly __PS_SH__=1
 
 source builtin.sh
-source struct.sh
 
-var psio_t struct_t
-var psstat_t struct_t
-var ps_t struct_t
-
-ps_t.__add__ \
-	pid		uint \
-	comm	str \
-	name	str \
-	exe		str \
-	cwd		str \
-	cmd		str 
-
-psio_t.__add__ \
-	rchar		uint \
-	wchar		uint \
-	syscr		uint \
-	syscw		uint \
-	rbytes		uint \
-	wbytes		uint \
-	cwbytes		uint
-
-psstat_t.__add__ \
-	pid						uint \
-	comm					str \
-	state					char \
-	ppid					int \
-	pgrp					int \
-	session					int \
-	tty						int \
-	tpgid					int \
-	flags					uint \
-	minflt					uint \
-	cminflt					uint \
-	majflt					uint \
-	cmajflt 				uint \
-	utime					int \
-	stime					int \
-	cutime					int \
-	cstime					int \
-	priority				int \
-	nice					int \
-	threads					uint \
-	itrealvalue				uint \
-	starttime				uint \
-	vsize					uint \
-	rss						uint \
-	rlim					uint \
-	startcode				uint \
-	endcode					uint \
-	startstack				uint \
-	kstkesp					uint \
-	kstkeip					uint \
-	signal					int \
-	blocked					int \
-	sigignore				int \
-	sigcatch				int \
-	wchan					uint \
-	nswap					uint \
-	cnswap					uint \
-	exit_signal				int \
-	processor				int \
-	rt_priority 			uint \
-	policy					uint \
-	delayacct_blkio_ticks 	uint \
-	guest_time				uint \
-	cguest_time 			int \
-	start_data				uint \
-	end_data				uint \
-	start_brk				uint \
-	arg_start				uint \
-	arg_end					uint \
-	env_start				uint \
-	env_end					uint \
-	exit_code				int
-
-
-__TYPE__[pid_t]='
-ps.proc
-ps.io
-ps.mmap
-ps.stats
-'
-
-# func ps.getallpids => [uint]
+# .FUNCTION ps.pids -> [uint]|[bool]
 #
-# Retorna uma lista iterável contendo o pid de todos os
-# processos em execução.
+# Retorna uma lista iterável com o pid dos processos em execução.
 #
-function ps.getallpids()
+function ps.pids()
 {
 	getopt.parse 0 "$@"
+	
+	local pid
 
-	while read proc; do
-		echo "${proc##*/}"
-	done < <(printf '%s\n' /proc/[0-9]*)
+	for pid in /proc/*; do
+		pid=${pid##*/}
+		[[ $pid == +([0-9]) ]] && 
+		echo $pid
+	done | sort -n
 
 	return $?
 }
 
-# func ps.pidof <[str]procname> => [uint]
+# .FUNCTION ps.pidof <procname[str]> -> [uint]|[bool]
 #
-# Retorna o pid do processo apontado por 'procname'.
+# Retorna o ID do processo do programa em execução.
 #
 function ps.pidof()
 {
-	getopt.parse 1 "procname:str:+:$1" "${@:2}"
+	getopt.parse 1 "procname:str:$1" "${@:2}"
 	
-	local ok proc
+	local pid exe
 
-	ok=1
-
-	while read proc; do
-		if [[ -e $proc/cmdline && $(< $proc/cmdline) == *@($1)* ]]; then
-			echo "${proc##*/}"
-			ok=0
-		fi
-	done < <(printf '%s\n' /proc/[0-9]*)
-
-	return $ok
-}
-
-# func ps.proc <[uint]pid> <[ps_t]buf> => [bool]
-#
-# Obtem os atributos do 'pid' e salva na estrutura apontada por 'buf'.
-#
-function ps.proc()
-{
-	getopt.parse 2 "pid:uint:+:$1" "buf:ps_t:+:$2" "${@:3}"
-	
-	ps.__check_pid $1 || return $?
-
-	local exe pid
-	
-	pid=/proc/$1
-	exe=$(readlink $pid/exe) || { error.trace def; return 1; }
-
-	$2.pid = "$1"
-	$2.comm = "$(< $pid/comm)"
-	$2.name = "${exe##*/}"
-	$2.exe = "$exe"
-	$2.cwd = "$(readlink $pid/cwd)"
-	$2.cmd = "$(< $pid/cmdline)"
-	
-	return $?
-}
-
-# func ps.io <[uint]pid> <[psio_t]buf> => [bool]
-#
-# Salva as estatísticas de leitura e escrita do processo 
-# na estrutura apontada por 'buf'.
-#
-function ps.io()
-{
-	getopt.parse 2 "pid:uint:+:$1" "buf:psio_t:+:$2" "${@:3}"
-	
-	ps.__check_pid $1 || return $?
-	
-	local flag bytes
-
-	while read flag bytes; do
-		case ${flag%:} in
-			rchar)					$2.rchar = "$bytes";;
-			wchar)					$2.wchar = "$bytes";;
-			syscr)					$2.syscr = "$bytes";;
-			syscw)					$2.syscw = "$bytes";;
-			read_bytes)				$2.rbytes = "$bytes";;
-			write_bytes)			$2.wbytes = "$bytes";;
-			cancelled_write_bytes)	$2.cwbytes = "$bytes";;
-		esac
-	done < /proc/$1/io || error.trace def
-
-	return $?	
-}
-
-# func ps.mmap <[uint]pid> <[array]buf> => [bool]
-#
-# Mapeia os atributos de acesso do 'pid' na memória e salva no array apontado por 'buf'.
-#
-# Os elementos são armazenados em um array indexado, sendo um endereçamento por vetor no seguinte formato:
-#
-# address|perms|offset|dev|inode|pathname
-#
-function ps.mmap()
-{
-	getopt.parse 2 "pid:uint:+:$1" "mapbuf:array:+:$2" "${@:3}"
-	
-	ps.__check_pid $1 || return $?
-
-	local __addr  __perms __offset __dev __inode __path __i
-
-	while read __addr __perms __offset __dev __inode __path; do
-		printf -v $2[$((__i++))] '%s|%s|%s|%s|%s|%s\n' 	"$__addr" \
-														"$__perms" \
-														"$__offset" \
-														"$__dev" \
-														"$__inode" \
-														"$__path"
-	done < /proc/$1/maps || error.trace def
+	for pid in $(ps.pids); do
+		exe=$(readlink /proc/$pid/exe)
+		[ "$1" == "${exe##*/}" ] 	&& 
+		echo $pid 					&& 
+		break
+	done
 
 	return $?
 }
 
-# func ps.stats <[uint]pid> <[psstat_t]buf> => [bool]
+# .FUNCTION ps.stats <pid[uint]> <stats[map]> -> [bool]
 #
-# Lê as estatíticas e propriedades do processo referênciado por 'pid' e salva na
-# estrutura apontada por 'buf'.
+# Obtém estatísticas do ID do processo.
+#
+# == EXEMPLO ==
+#
+# #!/bin/bash
+#
+# source ps.sh
+#
+# # Inicializa o mapa.
+# declare -A stat=()
+#
+# var pid pspid_t     # Implementa os métodos do tipo 'pspid_t'
+#
+# # Obtém o ID do processo.
+# pid=$(ps.pidof 'Telegram')
+#
+# # Salva em 'stat' as estatísticas do processo.
+# pid.stats stat
+#
+# # Informações.
+# echo "Processo:" ${stat[comm]}
+# echo "PID:" ${stat[pid]}
+# echo "Threads:" ${stat[num_threads]}
+# echo "Prioridade:" ${stat[priority]}
+#
+# == SAÍDA ==
+#
+# Processo: Telegram
+# PID: 2545
+# Threads: 12
+# Prioridade: 20
 #
 function ps.stats()
 {
-	getopt.parse 2 "pid:uint:+:$1" "buf:psstat_t:+:$2" "${@:3}"
+	getopt.parse 2 "pid:uint:$1" "stats:map:$2" "${@:3}"
 
-	ps.__check_pid $1 || return $?
-
-	local pid inf stat exe comm
+	local __exe__ __stat__
+	local -n __ref__=$2
 	
-	pid=/proc/$1
-	inf=$(< $pid/stat) || { error.trace def; return 1; }
-	exe=$(readlink $pid/exe)
-
-	[[ $inf =~ ${__FLAG_IN[proc_stat]} ]]
-	read -a stat <<< "$BASH_REMATCH"
-
-	[[ $inf =~ ${__FLAG_IN[parenth]} ]]
-	comm=${BASH_REMATCH[1]}
+	ps.__cpid__ $1 	&&
+	__ref__=() 		|| return 1
 	
-	$2.pid = "$1"
-	$2.comm = "$comm"
-	$2.state = "${stat[0]}"
-	$2.ppid = "${stat[1]}"
-	$2.pgrp = "${stat[2]}"
-	$2.session = "${stat[3]}"
-	$2.tty = "${stat[4]}"
-	$2.tpgid = "${stat[5]}"
-	$2.flags = "${stat[6]}"
-	$2.minflt = "${stat[7]}"
-	$2.cminflt = "${stat[8]}"
-	$2.majflt = "${stat[9]}"
-	$2.cmajflt = "${stat[10]}"
-	$2.utime = "${stat[11]}"
-	$2.stime = "${stat[12]}"
-	$2.cutime = "${stat[13]}"
-	$2.cstime = "${stat[14]}"
-	$2.priority = "${stat[15]}"
-	$2.nice = "${stat[16]}"
-	$2.threads = "${stat[17]}"
-	$2.itrealvalue = "${stat[18]}"
-	$2.starttime = "${stat[19]}"
-	$2.vsize = "${stat[20]}"
-	$2.rss = "${stat[21]}"
-	$2.rlim = "${stat[22]}"
-	$2.startcode = "${stat[23]}"
-	$2.endcode = "${stat[24]}"
-	$2.startstack = "${stat[25]}"
-	$2.kstkesp = "${stat[26]}"
-	$2.kstkeip = "${stat[27]}"
-	$2.signal = "${stat[28]}"
-	$2.blocked = "${stat[29]}"
-	$2.sigignore = "${stat[30]}"
-	$2.sigcatch = "${stat[31]}"
-	$2.wchan = "${stat[32]}"
-	$2.nswap = "${stat[33]}"
-	$2.cnswap = "${stat[34]}"
-	$2.exit_signal = "${stat[35]}"
-	$2.processor = "${stat[36]}"
-	$2.rt_priority = "${stat[37]}"
-	$2.policy = "${stat[38]}"
-	$2.delayacct_blkio_ticks = "${stat[39]}"
-	$2.guest_time = "${stat[40]}"
-	$2.cguest_time = "${stat[41]}"
-	$2.start_data = "${stat[42]}"
-	$2.end_data = "${stat[43]}"
-	$2.start_brk = "${stat[44]}"
-	$2.arg_start = "${stat[45]}"
-	$2.arg_end = "${stat[46]}"
-	$2.env_start = "${stat[47]}"
-	$2.env_end = "${stat[48]}"
-	$2.exit_code = "${stat[49]}"
+	__exe__=$(readlink  /proc/$1/exe)
+	IFS=' ' read -a __stat__ < /proc/$1/stat
+
+	__ref__[pid]=$1
+	__ref__[comm]=${__exe__##*/}
+	__ref__[state]=${__stat__[-50]}
+	__ref__[ppid]=${__stat__[-49]}
+	__ref__[pgrp]=${__stat__[-48]}
+	__ref__[session]=${__stat__[-47]}
+	__ref__[tty_nr]=${__stat__[-46]}
+	__ref__[tpgid]=${__stat__[-45]}
+	__ref__[flags]=${__stat__[-44]}
+	__ref__[minflt]=${__stat__[-43]}
+	__ref__[cminflt]=${__stat__[-42]}
+	__ref__[majflt]=${__stat__[-41]}
+	__ref__[cmajflt]=${__stat__[-40]}
+	__ref__[utime]=${__stat__[-39]}
+	__ref__[stime]=${__stat__[-38]}
+	__ref__[cutime]=${__stat__[-37]}
+	__ref__[cstime]=${__stat__[-36]}
+	__ref__[priority]=${__stat__[-35]}
+	__ref__[nice]=${__stat__[-34]}
+	__ref__[num_threads]=${__stat__[-33]}
+	__ref__[itrealvalue]=${__stat__[-32]}
+	__ref__[starttime]=${__stat__[-31]}
+	__ref__[vsize]=${__stat__[-30]}
+	__ref__[rss]=${__stat__[-29]}
+	__ref__[rsslim]=${__stat__[-28]}
+	__ref__[startcode]=${__stat__[-27]}
+	__ref__[endcode]=${__stat__[-26]}
+	__ref__[startstack]=${__stat__[-25]}
+	__ref__[kstkesp]=${__stat__[-24]}
+	__ref__[kstkeip]=${__stat__[-23]}
+	__ref__[signal]=${__stat__[-22]}
+	__ref__[blocked]=${__stat__[-21]}
+	__ref__[sigignore]=${__stat__[-20]}
+	__ref__[sigcatch]=${__stat__[-19]}
+	__ref__[wchan]=${__stat__[-18]}
+	__ref__[nswap]=${__stat__[-17]}
+	__ref__[cnswap]=${__stat__[-16]}
+	__ref__[exit_signal]=${__stat__[-15]}
+	__ref__[processor]=${__stat__[-14]}
+	__ref__[rt_priority]=${__stat__[-13]}
+	__ref__[policy]=${__stat__[-12]}
+	__ref__[delayacct_blkio_ticks]=${__stat__[-11]}
+	__ref__[guest_time]=${__stat__[-10]}
+	__ref__[cguest_time]=${__stat__[-9]}
+	__ref__[start_data]=${__stat__[-8]}
+	__ref__[end_data]=${__stat__[-7]}
+	__ref__[start_brk]=${__stat__[-6]}
+	__ref__[arg_start]=${__stat__[-5]}
+	__ref__[arg_end]=${__stat__[-4]}
+	__ref__[env_start]=${__stat__[-3]}
+	__ref__[env_end]=${__stat__[-2]}
+	__ref__[exit_code]=${__stat__[-1]}
+
+	return $?
+}
+
+# .FUNCTION ps.mem <pid[uint]> <meminfo[map]> -> [bool]
+#
+# Obtém informações sobre o uso da memória pelo ID do processo.
+#
+function ps.mem()
+{
+	getopt.parse 2 "pid:uint:$1" "meminfo:map:$2" "${@:3}"
+	
+	local __size__
+	local -n __ref__=$2
+
+	ps.__cpid__ $1	&&
+	__ref__=()		|| return 1
+	
+	IFS=' ' read -a __size__ < /proc/$1/statm
+	
+	__ref__[size]=${__size__[0]}
+	__ref__[resident]=${__size__[1]}
+	__ref__[share]=${__size__[2]}
+	__ref__[text]=${__size__[3]}
+	__ref__[lib]=${__size__[4]}
+	__ref__[data]=${__size__[5]}
+	__ref__[dt]=${__size__[6]}
 
 	return $?	
 }
 
-function ps.__check_pid(){ [[ -d /proc/$1 ]] || error.trace def 'pid' 'uint' "$1" "O pid do processo não existe"; return $?; }
+# .FUNCTION ps.io <pid[uint]> <io[map]> -> [bool]
+#
+# Obtém estatísticas I/O do ID do processo.
+#
+function ps.io()
+{
+	getopt.parse 2 "pid:uint:$1" "io:map:$2" "${@:3}"
+	
+	local __flag__ __size__
+	local -n __ref__=$2
+	
+	ps.__cpid__ $1	&&
+	__ref__=()		|| return 1
+	
+	while IFS=':' read __flag__ __size__; do
+		__ref__[${__flag__,,}]=$__size__
+	done < /proc/$1/io
 
-source.__INIT__
-# /* __PS_SH */
+	return $?
+}
+
+# .FUNCTION ps.info <pid[uint]> <info[map]> -> [bool]
+#
+# Lê as informações associadas ao ID do processo.
+#
+# Inicializa o mapa 'S' com as chaves:
+#
+# S[tty]
+# S[time]
+# S[user]
+# S[start]
+# S[vsz]
+# S[mem]
+# S[pid]
+# S[rss]
+# S[state]
+# S[cmd]
+# S[cpu]
+#
+function ps.info()
+{
+	getopt.parse 2 "pid:uint:$1" "info:map:$2" "${@:3}"
+	
+	local __info__
+	local -n __ref__=$2
+	
+	ps.__cpid__ $1	&&
+	__ref__=()		|| return 1
+	
+	mapfile __info__ < <(ps -q $1 -o user,pid,%cpu,%mem,vsz,rss,tty,state,start,time,cmd)
+	IFS=' ' read -a __info__ <<< ${__info__[-1]}
+
+	__ref__[user]=${__info__[0]}
+	__ref__[pid]=${__info__[1]}
+	__ref__[cpu]=${__info__[2]}
+	__ref__[mem]=${__info__[3]}
+	__ref__[vsz]=${__info__[4]}
+	__ref__[rss]=${__info__[5]}
+	__ref__[tty]=${__info__[6]}
+	__ref__[state]=${__info__[7]}
+	__ref__[start]=${__info__[8]}
+	__ref__[time]=${__info__[9]}
+	__ref__[cmd]=${__info__[*]:10}
+	
+	return $?
+}
+
+function ps.__cpid__()
+{
+	[ -e /proc/$1 ] || error.error "'$1' pid do processo não encontrado"
+	return $?
+}
+
+# .MAP stats
+#
+# Chaves:
+#
+# flags
+# start_brk
+# wchan
+# guest_time
+# processor
+# sigcatch
+# cutime
+# priority
+# cnswap
+# exit_signal
+# nice
+# tty_nr
+# kstkeip
+# cstime
+# cminflt
+# nswap
+# ppid
+# comm
+# sigignore
+# pgrp
+# majflt
+# blocked
+# arg_start
+# signal
+# endcode
+# itrealvalue
+# kstkesp
+# pid
+# stime
+# startcode
+# env_start
+# session
+# vsize
+# cmajflt
+# arg_end
+# utime
+# startstack
+# rss
+# policy
+# rsslim
+# delayacct_blkio_ticks
+# starttime
+# rt_priority
+# minflt
+# start_data
+# cguest_time
+# exit_code
+# tpgid
+# env_end
+# state
+# end_data
+# num_threads
+#
+
+# .MAP meminfo
+#
+# Chaves:
+#
+# size
+# resident
+# share
+# text
+# lib
+# data
+# dt
+#
+
+# .MAP io
+#
+# Chaves:
+#
+# cancelled_write_bytes
+# wchar
+# read_bytes
+# write_bytes
+# syscw
+# syscr
+# rchar
+#
+
+# .TYPE pspid_t
+#
+# Implementa o objeto 'S' com os métodos:
+#
+# S.stats
+# S.mem
+# S.io
+# S.info
+#
+typedef pspid_t	ps.stats	\
+				ps.mem		\
+				ps.io		\
+				ps.info
+
+# Funções (somente-leitura)
+readonly -f ps.pids		\
+			ps.pidof	\
+			ps.stats	\
+			ps.mem		\
+			ps.io		\
+			ps.info		\
+			ps.__cpid__
+					
+# /* __PS_SH__ */

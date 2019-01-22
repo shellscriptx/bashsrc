@@ -17,497 +17,475 @@
 #    You should have received a copy of the GNU General Public License
 #    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
-[[ $__REGEX_SH ]] && return 0
+[ -v __REGEX_SH__ ] && return 0
 
-readonly __REGEX_SH=1
+readonly __REGEX_SH__=1
 
 source builtin.sh
-source string.sh
 
-__TYPE__[regex_t]='
-regex.findall
-regex.fullmatch 
-regex.match 
-regex.search 
-regex.split 
-regex.ismatch 
-regex.groups
-regex.fngroups
-regex.fnngroups
-regex.savegroups 
-regex.replace
-regex.nreplace 
-regex.fnreplace 
-regex.fnnreplace
-'
+readonly -A __REGEX__=(
+[groupname]="\(\?<(${__BUILTIN__[objname]})>.+\)"
+)
 
-# errors
-readonly __ERR_REGEX_FLAG_INVALID='a flag especificada é inválida'
-readonly __ERR_REGEX_GROUP_REF='referência do grupo inválida'
+# .FUNCTION regex.compile <pattern[str]> -> [bool]
+#
+# Retorna 'true' se o padrão compilado satisfaz a sintaxe 
+# POSIX da expressão regular estendida.
+#
+function regex.compile()
+{
+	getopt.parse 1 "pattern:str:$1" "${@:2}"
+	
+	[[ _ =~ $1 ]]
+	[[ $? -eq 2 ]] && error.fatal "'$1' erro de sintaxe na expressão regular"
 
-# func regex.findall <[str]pattern> <[str]exp> <[bool]case> => [str]|[str]|[str]
+	return 0
+}
+
+# .FUNCTION regex.findall <pattern[str]> <expr[str]> -> [str]|[bool]
 #
 # Retorna uma lista de todas as correspondências não sobrepostas na cadeia.
 #
-# Se um ou mais grupos de captura estiverem presentes no padrão, é retornado
-# uma lista de grupos no seguinte padrão:
-#
-# Exemplo: fullmatch|group1|group2|...
-#
 function regex.findall()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
+	getopt.parse 2 "pattern:str:$1" "expr:str:$2" "${@:3}"
 	
-	local def cur exp match
-
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $3 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
-
-	while read exp; do
-		while [[ $exp =~ $1 ]]; do
-			exp=${exp/${BASH_REMATCH}/}
-			printf -v match '%s|' "${BASH_REMATCH[@]}"
-			echo "${match%|}"
-		done
-	done <<< "$2"
+	local expr=$2
 	
-	shopt -q${cur} nocasematch
+	while [[ $1 && $expr =~ $1 ]]; do
+		echo "$BASH_REMATCH"
+		expr=${expr/$BASH_REMATCH/}
+	done
 
-	return 0
+	return $?	
 }
 
-# func regex.fullmatch <[str]pattern> <[str]exp> <[bool]case> => [uint]|[uint]|[str]
+# .FUNCTION regex.fullmatch <pattern[str]> <expr[str]> <match[map]> -> [bool]
 #
-# Força 'pattern' a coincidir com toda sequência em 'exp', retornado o intervalo e a
-# string da ocorrência. 
+# Força o padrão a casar com a expressão inteira.
 #
 function regex.fullmatch()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
+	getopt.parse 3 "pattern:str:$1" "expr:str:$2" "match:map:$3" "${@:4}"
 
-	local def cur exp
+	local -n __ref__=$3
 
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $3 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
-
-	while read exp; do
-		[[ $exp =~ ^$1$ ]] && echo "0|${#BASH_REMATCH}|$BASH_REMATCH"
-	done <<< "$2"
-
-	shopt -q${cur} nocasematch
+	__ref__=() || return 1
 	
-	return 0
+	if [[ $2 =~ ^$1$ ]]; then
+		__ref__[start]=0
+		__ref__[end]=${#BASH_REMATCH}
+		__ref__[match]=$BASH_REMATCH
+	fi
+		
+	return $?	
 }
 
-# func regex.match <[str]pattern> <[str]exp> <[bool]case> => [uint]|[uint]|[str]
+# .FUNCTION regex.match <pattern[str]> <expr[str]> <match[map]> -> [bool]
 #
-# Aplica o padrão no inicio da string retornando a expressão se coincidir ou
-# nulo se não for encontrado.
+# Força o padrão a casar com a expressão inicial. 
 #
 function regex.match()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
-	
-	local def cur exp
+	getopt.parse 3 "pattern:str:$1" "expr:str:$2" "match:map:$3" "${@:4}"
 
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $3 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
+	local -n __ref__=$3	
 
-	while read exp; do
-		[[ $exp =~ ^$1 ]] && echo "0|${#BASH_REMATCH}|$BASH_REMATCH"
-	done <<< "$2"
+	__ref__=() || return 1
 
-	shopt -q${cur} nocasematch
+	if [[ $2 =~ ^$1 ]]; then
+		__ref__[start]=0
+		__ref__[end]=${#BASH_REMATCH}
+		__ref__[match]=$BASH_REMATCH
+	fi
 
-	return 0
+	return $?	
 }
 
-# func regex.search <[str]pattern> <[str]exp> <[bool]case> => [uint]|[uint]|[str]
+# .FUNCTION regex.search <pattern[str]> <expr[str]> <match[map]> -> [bool]
 #
-# Busca uma correspondência do padrão 'pattern' em 'exp', retornando o índice de
-# intervalo do objeto da correspondência ou nulo se não houver.
-#
-# A correspondência é retornada no seguinte padrão:
-#
-# Retorno: start|end|match
+# Busca uma correspondência do padrão na expressão.
 #
 function regex.search()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
+	getopt.parse 3 "pattern:str:$1" "expr:str:$2" "match:map:$3" "${@:4}"
 
-	local exp tmp old s e def cur
-
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $3 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
+	local __start__ __end__ __match__
+	local __expr__=$2
+	local -n __ref__=$3
 	
-	while read exp; do
-		old=$exp
-		while [[ $exp =~ $1 ]]; do
-			tmp=${old#*${BASH_REMATCH}}
-			e=$((${#old}-${#tmp}))
-			s=$((e-${#BASH_REMATCH}))
-			exp=${exp/${BASH_REMATCH}/}
-			echo "$s|$e|${BASH_REMATCH}"
-		done
-	done <<< "$2"
-
-	shopt -q${cur} nocasematch
+	__ref__=() || return 1
 	
-	return 0
+	if [[ $__expr__ =~ $1 ]]; then
+		__expr__=${__expr__%$BASH_REMATCH*}
+		__ref__[start]=${#__expr__}
+		__ref__[end]=$((${__ref__[start]}+${#BASH_REMATCH}))
+		__ref__[match]=$BASH_REMATCH
+	fi
+
+	return $?
 }
 
-# func regex.split <[str]pattern> <[str]exp> <[bool]case> => [str]
+# .FUNCTION regex.split <pattern[str]> <expr[str]> -> [str]|[bool]
 #
-# Divide a string 'exp' pela ocorrências do padrão, retornando uma lista contendo as substrings resultantes.
+# Divide a string de origem pelas ocorrências do padrão, retornando uma lista 
+# contendo as substrings resultantes.
 #
 function regex.split()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
-		
-	local def cur exp old
-
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $3 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
-
-	while read exp; do
-		old=$exp
-		while [[ $exp =~ $1 ]]; do
-			exp=${exp/${BASH_REMATCH}/}
-			old=${old/${BASH_REMATCH}/\\n}
-		done
-		echo -e "$old"
-	done <<< "$2"
-
-	shopt -q${cur} nocasematch
+	getopt.parse 2 "pattern:str:$1" "expr:str:$2" "${@:3}"
 	
-	return 0
+	local expr=$2
+	
+	while [[ $1 && $expr =~ $1 ]]; do
+		expr=${expr/$BASH_REMATCH/$'\n'}
+	done
+
+	echo "$expr"
+
+	return $?	
 }
 
-# func regex.ismatch <[str]pattern> <[str]exp> <[bool]case> => [bool]
+# .FUNCTION regex.groups <pattern[str]> <expr[str]> -> [str]|[bool]
 #
-# Retorna 'true' se o padrão coincidir em 'exp', caso contrário retorna 'false'.
-#
-function regex.ismatch()
-{
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
-
-	local exp def cur r
-
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $3 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
-
-	while read exp; do
-		[[ $exp =~ $1 ]] && { r=0; break; }
-	done <<< "$2"
-
-	shopt -q${cur} nocasematch
-
-	return ${r:-1}
-}
-
-# func regex.groups <[str]pattern> <[str]exp> <[bool]case> => [str]
-#
-# Retorna uma lista de grupos de captura se presentes no padrão.
+# Retorna uma lista de todos os grupos de captura presentes na ocorrência.
 #
 function regex.groups()
 {
-	getopt.parse 3 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" ${@:4}
-
-	local grp exp def cur
-
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $3 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
+	getopt.parse 2 "pattern:str:$1" "expr:str:$2" "${@:3}"
 	
-	while read exp; do
-		while [[ $exp =~ $1 ]]; do
-			printf -v grp '%s|' "${BASH_REMATCH[@]:1}"
-			exp=${exp/${BASH_REMATCH}/}
-			echo "${grp%|}"
-		done
-	done <<< "$2"
+	local expr=$2
+	
+	while [[ $expr =~ $1 && ${BASH_REMATCH[1]} ]]; do
+		printf '%s\n' "${BASH_REMATCH[@]:1}"
+		expr=${expr/$BASH_REMATCH/}
+	done
 
-	shopt -q${cur} nocasematch
-
-	return 0
+	return $?	
 }
 
-# func regex.fngroups <[str]pattern> <[str]exp> <[str]new> <[int]count> <[bool]case> <[func]funcname> <[str]args> ... => [str] 
+# .FUNCTION regex.replace <pattern[str]> <expr[str]> <count[int]> <new[str]> -> [str]|[bool]
 #
-# Substitui os retrovisores dos grupos de captura em 'new' pelo retorno de 'funcname' em 'count' ocorrências. Se 'count' for
-# igual a '-1' realiza a substituição em todas as ocorrências.
-# Chama 'funcname' passando como argumento posicional '$1' o grupo de captura se presente com 'N'args (opcional) a cada 
-# ocorrência de 'pattern' em 'exp', subsituindo os retrovisores  &, \\1, \\2, \\3 ... pelo retorno da função.
-# Toda a ocorrência incluindo os grupos de captura são representados pelo caractere '&' e que também é passado como argumento.
-#
-# A função é chamada somente se o grupo de captura estiver presente ou '&' for especificado.
-#
-function regex.fngroups()
-{
-	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:int:+:$4" "case:bool:+:$5" "funcname:func:+:$6" "args:str:-:$7" ... "${@:8}"
-
-	local exp new c i
-
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $5 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
-	
-	while read exp; do
-		c=0
-		for ((i=0; i < ${#exp}; i++)); do
-			[[ ${exp:$i} =~ $1 ]] || break
-			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
-				new=${3//&/$($6 "${BASH_REMATCH}" "${@:7}")}
-				if [[ ${#BASH_REMATCH[@]} -eq 2 ]]; then
-					new=${new//\\1/$($6 "${BASH_REMATCH[1]}" "${@:7}")}
-				elif [[ ${#BASH_REMATCH[@]} -gt 2 ]]; then
-					for n in ${!BASH_REMATCH[@]}; do
-						new=${new//\\$((n+1))/$($6 "${BASH_REMATCH[$((n+1))]}" "${@:7}")}
-					done
-				fi
-				exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
-				i=$(($i+${#new}-1))
-				[[ $((++c)) -eq $4 || ${1:0:1} == ^ ]] && break
-			fi
-		done
-		echo "$exp"
-	done <<< "$2"
-
-	shopt -q${cur} nocasematch
-
-	return 0
-	
-}
-
-# func regex.fnngroups <[str]pattern> <[str]exp> <[str]new> <[uint]match> <[bool]case> <[func]funcname> <[str]args> ... => [str] 
-#
-# Substitui os retrovisores dos grupos de captura em 'new' pelo retorno de 'funcname' em 'match' ocorrência.
-# Chama 'funcname' passando como argumento posicional '$1' o grupo de captura se presente com 'N'args (opcional) 
-# Toda a ocorrência incluindo os grupos de captura são representados pelo caractere '&' e que também é passado como argumento.
-#
-# A função é chamada somente se o grupo de captura estiver presente ou '&' for especificado.
-#
-function regex.fnngroups()
-{
-	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:uint:+:$4" "case:bool:+:$5" "funcname:func:+:$6" "args:str:-:$7" ... "${@:8}"
-
-	local exp new c i
-
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $5 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
-	
-	while read exp; do
-		c=0
-		for ((i=0; i < ${#exp}; i++)); do
-			[[ ${exp:$i} =~ $1 ]] || break
-			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
-				if [[ $((++c)) -eq $4 ]]; then
-					new=${3//&/$($6 "${BASH_REMATCH}" "${@:7}")}
-					if [[ ${#BASH_REMATCH[@]} -eq 2 ]]; then
-						new=${new//\\1/$($6 "${BASH_REMATCH[1]}" "${@:7}")}
-					elif [[ ${#BASH_REMATCH[@]} -gt 2 ]]; then
-						for n in ${!BASH_REMATCH[@]}; do
-							new=${new//\\$((n+1))/$($6 "${BASH_REMATCH[$((n+1))]}" "${@:7}")}
-						done
-					fi
-					exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
-					i=$(($i+${#new}-1))
-				fi
-			fi
-		done
-		echo "$exp"
-	done <<< "$2"
-
-	shopt -q${cur} nocasematch
-
-	return 0
-	
-}
-# func regex.savegroups <[str]pattern> <[str]exp> <[bool]case> <[array]name>
-#
-# Salva os grupos de captura ou ocorrências casadas em array 'name'.
-#
-function regex.savegroups()
-{
-	getopt.parse 4 "pattern:str:+:$1" "exp:str:-:$2" "case:bool:+:$3" "dest:array:+:$4" "${@:5}"
-	
-	declare -n __byref=$4
-	local __def __cur __exp
-
-	shopt -q nocasematch && __cur='s' || __cur='u'
-	[[ $3 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
-	
-	while read __exp; do
-		while [[ $__exp =~ $1 ]]; do
-			__byref+=("${BASH_REMATCH[@]:1}")
-			__exp=${__exp/${BASH_REMATCH}/}
-		done
-	done <<< "$2"
-
-	shopt -q${__cur} nocasematch
-
-	return 0
-}
-
-# func regex.replace <[str]pattern> <[str]exp> <[str]new> <[int]count> <[bool]case> => [str]
-#
-# Substitui 'count' vezes o padrão em 'pattern' por 'new'. Se 'count' for igual à '-1',
-# aplica a substituição em todas as ocorrências. A expressão em 'pattern' pode ser uma ERE 
-# (expressão regular estendida), podendo utilizar retrovisores '&, \\1, \\2, \\3 ...' em 'new' se
-# grupos de captura estiverem presentes entre parenteses '(...)'.
+# Substitui 'N' ocorrências do padrão casado pela string especificada. 
+# Se 'count < 0' aplica a substituição em todas as ocorrências.
 #
 function regex.replace()
 {
-	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:int:+:$4" "case:bool:+:$5" "${@:6}"
+	getopt.parse 4 "pattern:str:$1" "expr:str:$2" "count:int:$3" "new:str:$4" "${@:5}"
 
-	local exp new i n c def
-
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $5 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
+	local i c
+	local expr=$2
 	
-	while read exp; do
-		c=0
-		for ((i=0; i < ${#exp}; i++)); do
-			[[ ${exp:$i} =~ $1 ]] || break
-			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
-				new=${3//&/${BASH_REMATCH}}
-				if [[ ${#BASH_REMATCH[@]} -eq 2 ]]; then
-					new=${new//\\1/${BASH_REMATCH[1]}}
-				elif [[ ${#BASH_REMATCH[@]} -gt 2 ]]; then
-					for n in ${!BASH_REMATCH[@]}; do
-						new=${new//\\$((n+1))/${BASH_REMATCH[$((n+1))]}}
-					done
-				fi
-				exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
-				i=$(($i+${#new}-1))
-				[[ $((++c)) -eq $4 || ${1:0:1} == ^ ]] && break
-			fi
-		done
-		echo "$exp"
-	done <<< "$2"
-
-	return 0
-}
+	for ((i=0; i < ${#expr}; i++)); do
+		[[ ${expr:$i} =~ $1 ]] || break
+		if [[ ${expr:$i:${#BASH_REMATCH}} == $BASH_REMATCH ]]; then
+			expr=${expr:0:$i}${4}${expr:$(($i+${#BASH_REMATCH}))}
+			i=$(($i+${#4}-1))
+			[[ $((++c)) -eq $3 ]] && break
+		fi
+	done
 	
-# func regex.nreplace <[str]pattern> <[str]exp> <[str]new> <[uint]match> <[bool]case> => [str]
-#
-# Substitui 'pattern' por 'new' em 'match' ocorrência. A expressão em 'pattern' pode ser uma ERE 
-# (expressão regular estendida), podendo utilizar retrovisores '\\1, \\2, \\3 ...' em 'new' se
-# grupos de captura estiverem presentes entre parenteses '(...)'.
-#
-function regex.nreplace()
-{
-	getopt.parse 5 "pattern:str:+:$1" "exp:str:-:$2" "new:str:-:$3" "count:uint:+:$4" "case:bool:+:$5" "${@:6}"
-
-	local exp new i n c
-
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $5 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
-
-	while read exp; do
-		c=0
-		for ((i=0; i < ${#exp}; i++)); do
-			[[ ${exp:$i} =~ $1 ]] || break
-			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
-				if [[ $((++c)) -eq $4 ]]; then
-					new=${3//&/${BASH_REMATCH}}
-					if [[ ${#BASH_REMATCH[@]} -eq 2 ]]; then
-						new=${new//\\1/${BASH_REMATCH[1]}}
-					elif [[ ${#BASH_REMATCH[@]} -gt 2 ]]; then
-						for n in ${!BASH_REMATCH[@]}; do
-							new=${new//\\$((n+1))/${BASH_REMATCH[$((n+1))]}}
-						done
-					fi
-					exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
-					i=$(($i+${#new}-1))
-				fi
-			fi
-		done
-		echo "$exp"
-	done <<< "$2"
-
-	return 0
+	echo "$expr"
+	
+	return $?
 }
 
-# func regex.fnreplace <[str]pattern> <[str]exp> <[int]count> <[bool]case> <[func]funcname> <[str]args> ... => [str]
+# .FUNCTION regex.fnreplace <pattern[str]> <expr[str]> <count[int]> <func[function]> <args[str]> ... -> [str]|[bool]
 #
-# Substitui 'count' vezes o padrão em 'pattern' pelo retorno de 'funcname', cujo identificador é uma 
-# função válida que é chamada e recebe automaticamente como argumento posicional '$1' o padrão casado e
-# com N'args' (opcional). 
-# Se 'count' for igual à '-1' aplica em todas as ocorrências.
-# A expressão em 'pattern' pode ser uma ERE (expressão regular estendida).
+# Substitui 'N' ocorrências do padrão pelo retorno da função com 'N'args (opcional), passando como
+# como argumento posicional '$1' o padrão casado. Se 'count < 0' aplica a substtiuição em todas as 
+# ocorrências.
+#
+# == EXEMPLO ==
+#
+# source regex.sh
+#
+# dobrar()
+# {
+#     # Retorna o dobro do valor casado.
+#     echo "$(($1*2))"
+# }
+# 
+# expr='valor_a = 10, valor_b = 20, valor_c = 30'
+#
+# # Valor atual.
+# echo "$expr"
+# echo ---
+#
+# # Substitui somente os números contidos na expressão.
+# regex.fnreplace '[0-9]+' "$expr" 1 dobrar    # 1ª ocorrência
+# regex.fnreplace '[0-9]+' "$expr" 2 dobrar    # 1ª e 2ª ocorrência
+# regex.fnreplace '[0-9]+' "$expr" -1 dobrar   # Todas
+#
+# == SAÍDA ==
+#
+# valor_a = 10, valor_b = 20, valor_c = 30
+# ---
+# valor_a = 20, valor_b = 20, valor_c = 30
+# valor_a = 20, valor_b = 40, valor_c = 30
+# valor_a = 20, valor_b = 40, valor_c = 60
 #
 function regex.fnreplace()
 {
-	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "count:int:+:$3" "case:bool:+:$4" "funcname:func:+:$5" "args:str:-:$6" ... "${@:7}"
+	getopt.parse -1 "pattern:str:$1" "expr:str:$2" "count:int:$3" "func:function:$4" "args:str:$5" ... "${@:6}"
 
-	local exp new c i
+	local new i c
+	local expr=$2
+	
+	for ((i=0; i < ${#expr}; i++)); do
+		[[ ${expr:$i} =~ $1 ]] || break
+		if [[ ${expr:$i:${#BASH_REMATCH}} == $BASH_REMATCH ]]; then
+			new=$($4 "$BASH_REMATCH" "${@:5}")
+			expr=${expr:0:$i}${new}${expr:$(($i+${#BASH_REMATCH}))}
+			i=$(($i+${#new}-1))
+			[[ $((++c)) -eq $3 ]] && break
+		fi
+	done
 
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $4 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
+	echo "$expr"
 
-	while read exp; do
-		c=0
-		for ((i=0; i < ${#exp}; i++)); do
-			[[ ${exp:$i} =~ $1 ]] || break
-			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
-				new=$($5 "$BASH_REMATCH" "${@:6}")
-				exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
-				i=$(($i+${#new}-1))
-				[[ $((++c)) -eq $3 || ${1:0:1} == ^ ]] && break
-			fi
-		done
-		echo "$exp"
-	done <<< "$2"
-
-	return 0
+	return $?
 }
 
-# func regex.fnnreplace <[str]pattern> <[str]exp> <[uint]match> <[bool]case> <[func]funcname> <[str]args> ... => [str]
+# .FUNCTION regex.fnreplacers <pattern[str]> <expr[str]> <count[int]> <func[function]> -> [str]|[bool]
 #
-# Substitui o padrão em 'pattern' pelo retorno de 'funcname' em 'match' ocorrência. 'funcname' é o
-# identificador de uma função válida que é chamada e recebe automaticamente como argumento
-# posicional '$1' o padrão casado e com N'args' (opcional). 
-# A expressão em 'pattern' pode ser uma ERE (expressão regular estendida).
+# Retorna uma string substituindo 'N' ocorrências do padrão pelo retorno da função, passando os grupos 
+# casados como argumentos posicionais. Se 'count < 0' aplica a substituição em todas as ocorrências.
 #
-function regex.fnnreplace()
+# Exemplo:  ([a-z]+)([A-Z]+)([0-9])  ... (...)
+#              |       |       |           |
+#            grupo1  grupo2  grupo3  ... grupoN
+#              |       |       |           |
+#   func   $1      $2      $3          $N
+#
+# > Chama a função se pelo menos um grupo de captura estiver presente.
+#
+# == EXEMPLO ==
+#
+# source regex.sh
+#
+# grupos()
+# {
+#     # Retorna a ordem invertida dos grupos de captura.
+#     #
+#     # $1 = '16'
+#     # $2 = ' de julho de '
+#     # $3 = '1993'
+#     echo "${3}${2}${1}"
+# }
+#
+# texto='Slackware é uma distribuição Linux lançada em 16 de julho de 1993 por Patrick Volkerding'
+#
+# echo "$texto"
+# regex.fnreplacers "([0-9]+)(.+\s+)([0-9]+)" "$texto" -1 grupos
+#
+# == SAÍDA ==
+#
+# Slackware é uma distribuição Linux lançada em 16 de julho de 1993 por Patrick Volkerding
+# Slackware é uma distribuição Linux lançada em 1993 de julho de 16 por Patrick Volkerding
+#
+function regex.fnreplacers()
 {
-	getopt.parse -1 "pattern:str:+:$1" "exp:str:-:$2" "count:uint:+:$3" "case:bool:+:$4" "funcname:func:+:$5" "args:str:-:$6" ... "${@:7}"
+	getopt.parse 4 "pattern:str:$1" "expr:str:$2" "count:int:$3" "func:function:$4" "${@:5}"
 
-	local exp new i c
+	local new i c
+	local expr=$2
+	
+	for ((i=0; i < ${#expr}; i++)); do
+		[[ ${expr:$i} =~ $1 ]] || break
+		if [[ ${expr:$i:${#BASH_REMATCH}} == $BASH_REMATCH && ${BASH_REMATCH[1]} ]]; then
+			new=$($4 "${BASH_REMATCH[@]:1}")
+			expr=${expr:0:$i}${new}${expr:$(($i+${#BASH_REMATCH}))}
+			i=$(($i+${#new}-1))
+			[[ $((++c)) -eq $3 ]] && break
+		fi
+	done
 
-	shopt -q nocasematch && cur='s' || cur='u'
-	[[ $4 == true ]] && def='u' || def='s'
-	shopt -q${def} nocasematch
+	echo "$expr"
 
-	while read exp; do
-		c=0
-		for ((i=0; i < ${#exp}; i++)); do
-			[[ ${exp:$i} =~ $1 ]] || break
-			if [[ ${exp:$i:${#BASH_REMATCH}} == ${BASH_REMATCH} ]]; then
-				if [[ $((++c)) -eq $3 ]]; then
-					new=$($5 "$BASH_REMATCH" "${@:6}")
-					exp=${exp:0:$i}${new}${exp:$(($i+${#BASH_REMATCH}))}
-					i=$(($i+${#new}-1))
-				fi
-			fi
-		done
-		echo "$exp"
-	done <<< "$2"
-
-	return 0
+	return $?
 }
 
-source.__INIT__
-# /* __REGEX_SH */
+# .FUNCTION regex.expand <pattern[str]> <expr[str]> <template[str]> -> [str]|[bool]
+#
+# Expande o grupo nomeado para o seu padrão casado no modelo especificado.
+# O padrão para definição de nomenclatura de grupo deve respeitar a seguinte sintaxe:
+#
+# (?<group_name>regex) ...
+#
+# group_name - Identificador do grupo cujo caracteres suportados são: '[a-zA-Z0-9_]' e
+#              precisa iniciar com pelo menos uma letra ou underline '_'. 
+# regex      - Expressão regular estendida.
+#
+# > Pode ser especificado mais de um grupo.
+#
+# O modelo é uma cadeia de caracteres que compõe a formatação dos grupos
+# nomeados cuja expansão é aplicada ao seu identificador representado pela
+# sintaxe:
+#
+# <group_name>
+#
+# == EXEMPLO ==
+#
+# source regex.sh
+#
+# # Modelo.
+# modelo=$(cat << _eof
+# Nome: <nome>
+# Sobrenome: <sobrenome>
+# Idade: <idade>
+# Cidade: <cidade>
+# Estado: <estado>
+# _eof
+# )
+#
+# Dados a serem extraidos.
+# dados='Fernanda,Santos,30,Volta Redonda,RJ'
+#
+# # Expressão regular que define os grupos nomeados para cada campo.
+# re='^(?<nome>\w+),(?<sobrenome>\w+),(?<idade>[0-9]+),(?<cidade>[a-zA-Z0-9 ]+),(?<estado>[a-zA-Z]{2})$'
+#
+# # Retorna o modelo expandindo os padrões casados.
+# regex.expand "$re" "$dados" "$modelo"
+#
+# == SAÍDA ==
+#
+# Nome: Fernanda
+# Sobrenome: Santos
+# Idade: 30
+# Cidade: Volta Redonda
+# Estado: RJ
+#
+function regex.expand()
+{
+	getopt.parse 3 "pattern:str:$1" "expr:str:$2" "template:str:$3" "${@:4}"
+
+	local name names i
+	local pattern=$1
+	local template=$3
+
+	# Extrai os nomes associados as expressões do grupo.
+	while [[ $pattern =~ ${__REGEX__[groupname]} ]]; do
+		# Anexa o nome e atualiza a expressão para o padrão POSIX ERE
+		# removendo os identificadores.
+		names+=(${BASH_REMATCH[1]})
+		pattern=${pattern/\?<${BASH_REMATCH[1]}>/}
+	done
+
+	if [[ $2 =~ $pattern ]]; then
+		for name in ${names[@]}; do
+			# Substitui os nomes por suas respectivas ocorrêncicas.
+			template=${template//<$name>/${BASH_REMATCH[$((++i))]}}
+		done
+	fi
+
+	echo "$template"
+
+	return $?
+}
+
+# .FUNCTION regex.exportnames <pattern[str]> <expr[str]> -> [bool]
+#
+# Exporta os grupos nomeados e atribui os padrões casados.
+# O padrão para definição de nomenclatura de grupo deve respeitar a seguinte sintaxe:
+#
+# (?<group_name>regex) ...
+#
+# group_name - Identificador do grupo cujo caracteres suportados são: '[a-zA-Z0-9_]' e
+#              precisa iniciar com pelo menos uma letra ou underline '_'.
+# regex      - Expressão regular estendida.
+#
+# > Pode ser especificado mais de um grupo.
+#
+# == EXEMPLO ==
+#
+# source regex.sh
+#
+# dados='Patrick Volkerding'
+#
+# regex.exportnames '(?<nome>\w+) (?<sobrenome>\w+)' "$dados"
+#
+# echo "Nome:" $nome
+# echo "Sobrenome:" $sobrenome
+#
+# == SAÍDA ==
+#
+# Nome: Patrick
+# Sobrenome: Volkerding
+#
+function regex.exportnames()
+{
+	getopt.parse 2 "pattern:str:$1" "expr:str:$2" "${@:3}"
+
+	local __name__ __names__ __i__
+	local __pattern__=$1
+	
+	while [[ $__pattern__ =~ ${__REGEX__[groupname]} ]]; do
+		__names__+=(${BASH_REMATCH[1]})
+		__pattern__=${__pattern__/\?<${BASH_REMATCH[1]}>/}
+	done
+
+	if [[ $2 =~ $__pattern__ ]]; then
+		for __name__ in ${__names__[@]}; do
+			# Atribui o valor ao identificador.
+			printf -v $__name__ "${BASH_REMATCH[$((++__i__))]}"
+		done
+	fi
+
+	return $?
+}
+
+# .MAP match
+#
+# Chaves:
+#
+# start
+# end
+# match
+#
+
+# .TYPE regex_t
+#
+# Implementa o objeto 'S' com os métodos:
+#
+# S.compile
+# S.findall
+# S.fullmatch
+# S.match
+# S.search
+# S.split
+# S.groups
+# S.replace
+# S.fnreplace
+# S.fnreplacers
+# S.expand
+# S.exportnames
+#
+typedef regex_t				\
+		regex.compile 		\
+		regex.findall		\
+		regex.fullmatch		\
+		regex.match			\
+		regex.search		\
+		regex.split			\
+		regex.groups		\
+		regex.replace		\
+		regex.fnreplace		\
+		regex.fnreplacers	\
+		regex.expand		\
+		regex.exportnames
+
+readonly -f regex.compile 		\
+			regex.findall		\
+			regex.fullmatch		\
+			regex.match			\
+			regex.search		\
+			regex.split			\
+			regex.groups		\
+			regex.replace		\
+			regex.fnreplace		\
+			regex.fnreplacers	\
+			regex.expand		\
+			regex.exportnames
+
+# /* __REGEX_SH__ */

@@ -17,124 +17,106 @@
 #    You should have received a copy of the GNU General Public License
 #    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
-[[ $__CPUINFO_SH ]] && return 0
+[ -v __CPU_SH__ ] && return 0
 
-readonly __CPU_SH=1
+readonly __CPU_SH__=1
 
 source builtin.sh
 
-var cpu_t struct_t
-
-cpu_t.__add__ \
-	processor		uint \
-	vendor_id		str \
-	family			str \
-	model			uint \
-	model_name		str  \
-	stepping		uint \
-	microcode		hex \
-	mhz				float \
-	cache_size		size \
-	physical_id		uint \
-	core_id			uint \
-	cores			uint \
-	apicid			uint \
-	init_apicid		uint \
-	flags			str \
-	bogomips		float \
-	clflush_size	uint \
-	address_size	str
-
-# func cpu.getinfo <[cpu_t[]]struct> => [bool]
+# .FUNCTION cpu.getinfo <cpuinfo[map]> -> [bool]
 #
-# Obtem as informações do processador e salva no array da estrutura 'cpu_t'.
-# Retorna 'true' para sucesso, caso contrário 'false.'
+# Obtem informações do processador,
 #
-# Exemplo:
-#
-# #!/bin/bash
+# == EXEMPLO ==
 #
 # source cpu.sh
 #
-# # Implementa um array de 4 elementos.
-# var info[4] cpu_t
+# # Inicializa o map
+# declare -A info=()
 #
-# Obtem as informações.
+# # Obtendo informações.
 # cpu.getinfo info
 #
-# Exibindo as informações.
-# info[0].processor
-# info[0].model_name
-# info[0].mhz
-# echo --
-# info[1].processor
-# info[1].model_name
-# info[1].mhz
-# echo --
-# info[2].processor
-# info[2].model_name
-# info[2].mhz
-# echo --
-# info[3].processor
-# info[3].model_name
-# info[3].mhz
+# # Listando informações.
+# echo ${info[processor[0]]}
+# echo ${info[model_name[0]]}
+# echo ${info[cpu_mhz[0]]}
+# echo ---
+# echo ${info[processor[1]]}
+# echo ${info[model_name[1]]}
+# echo ${info[cpu_mhz[1]]}
 #
-# Saída:
+# == SAÍDA ==
 #
 # 0
 # Intel(R) Core(TM) i5-3330 CPU @ 3.00GHz
-# 2092.968
-# --
+# 1961.110
+# ---
 # 1
 # Intel(R) Core(TM) i5-3330 CPU @ 3.00GHz
-# 2599.687
-# --
-# 2
-# Intel(R) Core(TM) i5-3330 CPU @ 3.00GHz
-# 2796.328
-# --
-# 3
-# Intel(R) Core(TM) i5-3330 CPU @ 3.00GHz
-# 2969.062
+# 1875.432
 #
 function cpu.getinfo()
 {
-	getopt.parse 1 "struct:cpu_t[]:+:$1" ${@:2}
+	getopt.parse 1 "cpuinfo:map:$1" "${@:2}"
 
-	local flag info i
+	local __flag__ __value__ __info__
+	local __i__=-1
+	local -n __ref__=$1
 
-	i=-1
+	# Inicializar.
+	__ref__=() || return 1
 
-	while IFS=':' read flag info; do
-		printf -v flag '%s' ${flag// /}
-		info=${info##+( )}
-		case ${flag,,} in
-			processor)		$1[$((++i))].processor = "$info";;
-			vendor_id)		$1[$i].vendor_id = "$info";;
-			cpufamily)		$1[$i].family = "$info";;
-			model)			$1[$i].model = "$info";;
-			modelname)		$1[$i].model_name = "$info";;
-			stepping)		$1[$i].stepping = "$info";;
-			microcode)		$1[$i].microcode = "$info";;
-			cpumhz)			$1[$i].mhz = "$info";;
-			cachesize)		$1[$i].cache_size = "$info";;
-			physicalid)		$1[$i].physical_id = "$info";;
-			coreid)			$1[$i].core_id = "$info";;
-			cpucores)		$1[$i].cores = "$info";;
-			apicid)			$1[$i].apicid = "$info";;
-			inititalapicid)	$1[$i].init_apicid = "$info";;
-			flags)			$1[$i].flags = "$info";;
-			bogomips)		$1[$i].bogomips = "$info";;
-			clflushsize)	$1[$i].clflush_size = "$info";;
-			addresssizes)	$1[$i].address_size = "$info";;
-		esac 2>/dev/null || {
-			error.trace def 'struct' "cpu_t" '' "'$1[$i]' o índice está fora dos limites do array"
-			return $?
-		}
-	done < /proc/cpuinfo || error.trace def
+	while IFS=':' read __flag__ __value__; do
+		__flag__=${__flag__//@($'\t')}
+		__flag__=${__flag__// /_}
+		__flag__=${__flag__,,}
+		__value__=${__value__##+( )}
+		case $__flag__ in
+			processor) ((++__i__));;
+			'') continue;;
+		esac
+		# Atribui o valor da chave.
+		__ref__[$__flag__[$__i__]]=$__value__
+	done < /proc/cpuinfo || error.error "'/proc/cpuinfo' não foi possível ler o arquivo"
 
 	return $?
 }
 
-source.__INIT__
-# /* __CPU_SH */
+# .MAP cpuinfo
+#
+# Chaves:
+#
+# address_sizes[N]
+# apicid[N]
+# bogomips[N]
+# bugs[N]
+# cache_alignment[N]
+# cache_size[N]
+# clflush_size[N]
+# core_id[N]
+# cpu_cores[N]
+# cpu_family[N]
+# cpuid_level[N]
+# cpu_mhz[N]
+# flags[N]
+# fpu[N]
+# fpu_exception[N
+# initial_apicid[N]
+# microcode[N]
+# model[N]
+# model_name[N]
+# physical_id[N]
+# power_management[N]
+# processor[N]
+# siblings[N]
+# stepping[N]
+# vendor_id[N]
+# wp[N]
+#
+# > 'N' é o índice do elemento.
+#
+
+readonly -f cpu.getinfo
+
+# /* _CPU_SH__ */

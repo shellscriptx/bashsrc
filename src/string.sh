@@ -17,1111 +17,1027 @@
 #    You should have received a copy of the GNU General Public License
 #    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
-[[ $__STRING_SH ]] && return 0
+[ -v __STRING_SH__ ] && return 0
 
-readonly __STRING_SH=1
+readonly __STRING_SH__=1
 
 source builtin.sh
 
-# tipos
-__TYPE__[string_t]='
-string.capitalize 
-string.center 
-string.count 
-string.hassuffix 
-string.hasprefix 
-string.expandspace
-string.find 
-string.rfind 
-string.isalnum 
-string.isalpha 
-string.isdecimal 
-string.isdigit 
-string.isspace 
-string.isprintable 
-string.islower 
-string.isupper 
-string.istitle 
-string.join 
-string.ljust 
-string.rjust 
-string.tolower 
-string.toupper 
-string.trim 
-string.ltrim 
-string.rtrim 
-string.remove 
-string.rmprefix 
-string.rmsuffix 
-string.replace 
-string.fnreplace 
-string.nreplace 
-string.fnnreplace 
-string.split 
-string.swapcase 
-string.totitle 
-string.reverse 
-string.repeat 
-string.zfill 
-string.compare 
-string.nocasecompare 
-string.contains 
-string.fnmap 
-string.slice 
-string.filter
-string.len
-string.field
-string.mreplace
-'
-
-# erros
-readonly __ERR_STR_SLICE='intervalo do slice inválido'
-readonly __ERR_STR_FLAG_CHAR_INVALID='flag de cadeia de caracteres inválida'
-
-# const
-readonly STR_LOWERCASE='abcdefghijklmnopqrstuvwxyz'
-readonly STR_UPPERCASE='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-readonly STR_LETTERS="${STR_LOWERCASE}${STR_UPPERCASE}"
-readonly STR_DIGITS='0123456789'
-readonly STR_HEX_DIGITS='0123456789abcdefABCDEF'
-readonly STR_OCT_DIGITS='01234567'
-readonly STR_PUNCTUATION='!"#$%&\()*+,-./:;<=>?@[\\]^_`{|}~'"'"
-readonly STR_WHITESPACE=' \t\n\r\x0b\x0c'
-readonly STR_PRINTABLE="${STR_DIGITS}${STR_LETTERS}${STR_PUNCTUATION}${STR_WHITESPACE}"
-
+# .FUNCTION string.len <expr[str]> -> [uint]|[bool]
 #
-# func string.len <[str]exp> => [uint]
-#
-# Retorna o comprimento de 'exp'.
+# Retorna o comprimento de 'expr'.
 #
 function string.len()
 {
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
+	getopt.parse 1 "expr:str:$1" "${@:2}"
 
-	local str
-	while read str; do
-		echo ${#str}
-	done <<< "$1"
-	return 0
+	echo ${#1}
+	return $?
 }
 
-# func string.capitalize <[str]exp> => [str]
-#
-# Retorna uma cópia de 'exp' com o primeiro caractere maiúsculo.
+# .FUNCTION string.capitalize <expr[str]> -> [str]|[bool]
+# 
+# Retorna uma cópia em letras maiúsculas de 'expr', ou seja, torna o primeiro
+# caractere em maiúsculo e o restante em minúsculos.
 #
 function string.capitalize()
 {
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
-	
-	local str
-	while read str; do
-		echo "${str^}"
-	done <<< "$1"
-	return 0
+	getopt.parse 1 "expr:str:$1" "${@:2}"
+
+	local sub=${1:1}
+	local ini=${1:0:1}
+	echo "${ini^}${sub,,}"
+	return $?
 }
 
-# func string.center <[str]exp> <[char]fillchar> <[uint]width> => [str]
+# .FUNCTION string.center <expr[str]> <fillchar[char]> <[uint]width> -> [str]|[bool]
 #
-# Retorna 'exp' centralizado em largura e comprimento. O preenchimento é
-# feito usando o caractere 'fillchar'.
+# Retorna uma cópia de 'expr' centralizando o texto.
 #
 function string.center()
 {
-	getopt.parse 3 "exp:str:-:$1" "fillchar:char:-:$2" "width:uint:+:$3" "${@:4}"
+	getopt.parse 3 "expr:str:$1" "fillchar:char:$2" "width:uint:$3" "${@:4}"
 
-	local str ml ch cr l
+	local ch cr
+	local lc=$(($3-${#1}))
 
-	while read str; do ((ml < ${#str})) && ml=${#str}; done <<< "$1"
+	((lc > 0)) && printf -v ch '%*s' $((lc/2))
+	(((lc % 2) == 1)) && cr=$2
+	ch=${ch// /$2}
+	echo "${ch}${1}${ch}${cr}"
 
-	ml=$(($ml+$3))
-
-	while read str; do
-		l=$((ml-${#str}))
-		(((l % 2) == 1)) && cr=$2
-		((l >= 0)) && printf -v ch "%*s" $((l/2))
-		echo "${ch// /$2}${str}${ch// /$2}$cr"
-		cr=''
-	done <<< "$1"
-	
-	return 0
+	return $?	
 }
 
-# func string.count <[str]exp> <[str]sub> => [uint]
+# .FUNCTION string.count <expr[str]> <sub[str]> -> [uint]|[bool]
 #
-# Retorna 'N' ocorrências de 'sub' em 'exp'.
+# Retorna 'N' ocorrências de 'sub' em 'expr'.
 #
 function string.count()
 {
-	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" "${@:3}"
+	getopt.parse 2 "expr:str:$1" "sub:str:$2" "${@:3}"
 
-	local str i c
-	while read str; do
-		c=0
-		for ((i=0; i < ${#str}; i++)); do
-			[[ ${str:$i:${#2}} == $2 ]] && ((++c))		
-		done
-		echo "$c"
-	done <<< "$1"
-
-	return 0
-}
-
-# func string.hassuffix <[str]exp> <[str]suffix> => [bool]
-#
-# Retorna 'true' se 'exp' termina com o 'suffix' especificado,
-# caso contrário 'false'.
-#
-function string.hassuffix()
-{
-	getopt.parse 2 "exp:str:-:$1" "suffix:str:-:$2" "${@:3}"
-
-	local str
-	while read str; do
-		[[ ${str: -${#2}} != $2 ]] && return 1
-	done <<< "$1"
-	return 0
-}
-
-# func string.hasprefix <[str]exp> <[str]prefix> => [bool]
-#
-# Retorna 'true' se 'exp' inicia com o 'prefix' especificado,
-# caso contrário 'false'.
-#
-function string.hasprefix()
-{
-	getopt.parse 2 "exp:str:-:$1" "suffix:str:-:$2" "${@:3}"
-
-	local str
-	while read str; do
-		[[ ${str:0:${#2}} != $2 ]] && return 1
-	done <<< "$1"
-	return 0
-}
-
-# func string.expandspace <[str]exp> <[uint]size> => [str]
-#
-# Retorna uma seqüência de caracteres em que os caracteres de espaço são expandidos
-# para o comprimento especificado em 'size'.
-#
-function string.expandspace()
-{
-	getopt.parse 2 "exp:str:-:$1" "tabsize:uint:+:$2" "${@:3}"
+	local expr=$1
+	local c
 	
-	local str spc
+	while [[ $2 && $expr =~ $2 ]]; do
+		((c++)); expr=${expr/$BASH_REMATCH/}
+	done
 
-	printf -v spc "%*s" $2
-	while read str; do
-		echo "${str// /$spc}"
-	done <<< "$1"
-	
-	return 0
+	echo ${c:-0}
+
+	return $?
 }
 
-# func string.find <[str]exp> <[str]sub> => [int]
+# .FUNCTION string.endswith <expr[str]> <suffix[str]> -> [bool]
 #
-# Retorna o índice mais baixo em 'exp' onde 'sub' é encontrado. Caso contrário
-# índice será igual a '-1'.
+# Retorna 'true' se 'expr' termina com 'suffix, caso contrário 'false'.
+#
+function string.endswith()
+{
+	getopt.parse 2 "expr:str:$1" "suffix:str:$2" "${@:3}"
+
+	[[ $1 =~ $2$ ]]
+	return $?
+}
+
+# .FUNCTION string.startswith <expr[str]> <prefix[str]> -> [bool]
+#
+# Retorna 'true' se 'expr' inicia com 'prefix', caso contrário 'false'.
+#
+function string.startswith()
+{
+	getopt.parse 2 "expr:str:$1" "prefix:str:$2" "${@:3}"
+
+	[[ $1 =~ ^$2 ]]
+	return $?
+}
+
+# .FUNCTION string.expandspace <expr[str]> <size[uint]> -> [bool]
+#
+# Retorna uma sequência caracteres em que os espaços são expandidos 
+# ao comprimento especificado em 'size'.
+#
+function string.expandspaces()
+{
+	getopt.parse 2 "expr:str:$1" "size:str:$2" "${@:3}"
+
+	local spc
+	printf -v spc '%*s' $2
+	echo "${1// /$spc}"
+	return $?
+}
+
+# .FUNCTION string.find <expr[str]> <sub[str]> -> [int]|[bool]
+#
+# Retorna o índice mais baixo da ocorrência de 'sub' em 'expr'.
+# Se não houver correspondência é retornado '-1'.
 #
 function string.find()
 {
-	getopt.parse 2 "exp:str:-:$1" "sub:str:+:$2" ${@:3}
+	getopt.parse 2 "expr:str:$1" "sub:str:$2" "${@:3}"
 	
-	local str ind i
-	
-	while read str; do
-		ind=-1
-		for ((i=0; i < ${#str}; i++)); do
-			[[ "${str:$i:${#2}}" == "$2" ]] && { ind=$i; break; }
-		done
-		echo "$ind"
-	done <<< "$1"
+	local pos sub
 
-	return 0
+	sub=${1#*$2}
+	pos=$((${#1}-${#sub}-${#2}))
+	((pos < 0)) && pos=-1
+	echo $pos
+	return $?
 }
 
-# func string.rfind <[str]exp> <[str]sub> => [int]
+# .FUNCTION string.rfind <expr[str]> <sub[str]> -> [int]|[bool]
 #
-# Retorna o índice mais alto em 'exp' onde 'sub' é encontrado. Caso contrário
-# índice será igual a '-1'.
+# Retorna o índice mais alto da ocorrência de 'sub' em 'expr'.
+# Se não houver correspondência é retornado '-1'.
 #
 function string.rfind()
 {
-	getopt.parse 2 "exp:str:-:$1" "sub:str:+:$2" "${@:3}"
-	
-	local str ind i
-	
-	while read str; do
-		ind=-1
-		for ((i=0; i < ${#str}; i++)); do
-			[[ "${str:$i:${#2}}" == "$2" ]] && ind=$i
-		done
-		echo "$ind"
-	done <<< "$1"
+	getopt.parse 2 "expr:str:$1" "sub:str:$2" "${@:3}"
 
-	return 0
+	local pos sub
+
+	sub=${1##*$2}
+	pos=$((${#1}-${#sub}-${#2}))
+	((pos < 0)) && pos=-1
+	echo $pos
+	return $?
 }
 
-# func string.isalnum <[str]exp> => [bool]
+# .FUNCTION string.isalnum <expr[str]> -> [bool]
 #
-# Retorna 'true' se todos os caracteres em 'exp' são alfanuméricos. 
-# Caso contrário 'false'.
+# Retorna 'true' se 'expr' contém letras e dígitos.
 #
-function string.isalnum(){
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
+function string.isalnum()
+{
+	getopt.parse 1 "expr:str:$1" "${@:2}"
 
-	local str
-	while read str; do
-		[[ $str != +([[:alnum:]]) ]] && return 1
-	done <<< "$1"
-	return 0
+	[[ $1 == +([[:alnum:]]) ]]
+	return $?
 }
 
-# func string.isalpha <[str]exp> => [bool]
+# .FUNCTION string.isalpha <expr[str]> -> [bool]
 #
-# Retorna 'true' se todos os caracteres em 'exp' forem alfabéticos. 
-# Caso contrário 'false'.
+# retorna 'true' se 'expr' contém somente letras.
 #
 function string.isalpha()
 {
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
+	getopt.parse 1 "expr:str:$1" "${@:2}"
 
-	local str
-	while read str; do
-		[[ $str != +([[:alpha:]]) ]] && return 1
-	done <<< "$1"
-	return 0
+	[[ $1 == +([[:alpha:]]) ]]
+	return $?
 }
 
-# func string.isdecimal <[str]exp> => [bool]
+# .FUNCTION string.isdigit <expr[str]> -> [bool]
 #
-# Retorna 'true' se todos os caracteres em 'exp' forem dígitos. 
-# Caso contrário 'false'.
-#
-function string.isdecimal()
-{
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
-
-	local str
-	while read str; do
-		[[ $str != +([[:digit:]]) ]] && return 1
-	done <<< "$1"
-	return 0
-}
-
-# func string.isdigit <[str]exp> => [bool]
-#
-# O mesmo que 'string.decimal'
+# Retorna 'true' se 'expr' contém somente dígitos.
 #
 function string.isdigit()
 {
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
-	
-	local str
-	while read str; do
-		[[ $str != +([[:digit:]]) ]] && return 1
-	done <<< "$1"
-	return 0
+	getopt.parse 1 "expr:str:$1" "${@:2}"
+
+	[[ $1 == +([[:digit:]]) ]]
+	return $?
 }
 
-# func string.isspace <[str]exp> => [bool]
-# 
-# Retorna 'true' se todos os caracteres em 'exp' forem espaço. 
-# Caso contrário 'false'
+# .FUNCTION string.isspace <expr[str]> -> [bool]
+#
+# Retorna 'true' se 'expr' contém somente espaços.
 #
 function string.isspace()
 {
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
+	getopt.parse 1 "expr:str:$1" "${@:2}"
 
-	local str
-	while read str; do
-		[[ $str != +([[:space:]]) ]] && return 1
-	done <<< "$1"
-	return 0
+	[[ $1 == +([[:space:]]) ]]
+	return $?
 }
 
-# func string.isprintable <[str]exp> => [bool]
-# 
-# Retorna 'true' se todos os caracteres em 'exp' são imprimíveis.
-# Caso contrário 'false'
+# .FUNCTION string.isprint <expr[str]> -> [bool]
 #
-function string.isprintable()
+# Retorna 'true' se 'expr' contém somente caracteres imprimíveis.
+#
+function string.isprint()
 {
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
-	
-	local str
-	while read str; do
-		[[ $str != +([[:print:]]) ]] && return 1
-	done <<< "$1"
-	return 0
+	getopt.parse 1 "expr:str:$1" "${@:2}"
+
+	[[ $1 == +([[:print:]]) ]]
+	return $?
 }
 
-# func string.islower <[str]exp> => [bool]
+
+# .FUNCTION string.islower <expr[str]> -> [bool]
 #
-# Retorna 'true' se todos os caracteres em 'exp' forem minúsculos.
-# Caso contrário 'false'.
+# Retorna 'true' se 'expr' contém somente caracteres minúsculos.
 #
 function string.islower()
 {
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
-	
-	local str
-	while read str; do
-		[[ $str != *([^[:upper:]])+([[:lower:]])*([^[:upper:]]) ]] && return 1
-	done <<< "$1"
-	return 0 
+	getopt.parse 1 "expr:str:$1" "${@:2}"
+
+	[[ $1 == +([^[:upper:]]) ]]
+	return $?
 }
 
-# func string.isupper <[str]exp> => [bool]
+# .FUNCTION string.isupper <expr[str]> -> [bool]
 #
-# Retorna 'true' se todos os caracteres em 'exp' forem maiúsculos.
-# Caso contrário 'false'.
+# Retorna 'true' se 'expr' contém somente caracteres maiúsculos.
 #
 function string.isupper()
 {
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
+	getopt.parse 1 "expr:str:$1" "${@:2}"
 
-	local str
-	while read str; do
-		[[ $str != *([^[:lower:]])+([[:upper:]])*([^[:lower:]]) ]] && return 1
-	done <<< "$1"
-	return 0
+	[[ $1 == +([^[:lower:]]) ]]
+	return $?
 }
 
-# func string.istitle <[str]exp> => [bool]
+# .FUNCTION string.istitle <expr[str]> -> [bool]
 #
-# Retorna 'true' se o primeiro caractere de todas as palavras forem maiúsculos.
-# Caso contrário 'false'.
+# Retorna 'true' se 'expr' é uma string de titulo e há pelo menos um
+# caractere em maiúsculo, ou seja, caracteres maiúsculos só podem seguir sem
+# caracteres e caracteres minúsculos apenas os maiúsculos. Retorna 'false'
+# de outra forma.
 #
 function string.istitle()
 {
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
+	getopt.parse 1 "expr:str:$1" "${@:2}"
 
-	local str
-	while read str; do
-		[[ $str != +(*([^[:alpha:]])@([[:upper:]])+([[:lower:]])) ]] && return 1
-	done <<< "$1"
-	return 0
+	[[ $1 == +(*([^[:alpha:]])@([[:upper:]])+([[:lower:]])) ]]
+	return $?
 }
 
-# func string.join <[str]iterable> <[str]elem> => [str]
+# .FUNCTION string.join <expr[str]> <sep[str]> [str]|[bool]
 #
-# Retorna uma string contendo a cópia dos elementos de 'iterable' 
-# que seja a concatenação de 'elem' entre elementos.
+# Retorna uma string que é concatenação dos elementos iteráveis delimitados por 'sep'.
 #
 function string.join()
 {
-	getopt.parse 2 "iterable:str:-:$1" "elem:str:-:$2" "${@:3}"
+	getopt.parse 2 "expr:str:$1" "sep:str:$2" "${@:3}"
 
-	local str tmp
-	while read str; do tmp+=${str}${2}; done <<< "$1"
-	echo "${tmp%$2}"
-	return 0
+	local iter
+
+	mapfile -t iter <<< "$1"
+	printf -v expr "%s${2//%/%%}" "${iter[@]}"
+	echo "${expr%$2}"
+	return $?
 }
 
-# func string.ljust <[str]exp> <[char]fillchar> <[uint]width> => [str]
+# .FUNCTION string.ljust <expr[str]> <fillchar[char]> <width[uint]> -> [str]|[bool]
 #
-# Retorna 'exp' justificado à esquerda com 'width' de comprimento.
-# O preenchimento é feito usando o caractere 'fillchar' especificado 
+# Retorna uma string justificada à esquerda em uma cadeia de largura de comprimento. 
+# O preenchimento é feito usando o caractere de preenchimento especificado em 'fillchar'.
 #
 function string.ljust()
 {
-	getopt.parse 3 "exp:str:-:$1" "fillchar:char:-:$2" "width:uint:+:$3" "${@:4}"
+	getopt.parse 3 "expr:str:$1" "fillchar:char:$2" "width:uint:$3" "${@:4}"
 
-	local str ml ch
-
-	while read str; do ((ml < ${#str})) && ml=${#str}; done <<< "$1"
-
-	ml=$(($ml+$3))
-
-	while read str; do
-		printf -v ch '%*s' $((ml-${#str}))
-		echo "${ch// /$2}$str"
-	done <<< "$1"
-
-	return 0
+	local ch wd 
+	wd=$(($3-${#1}))
+	printf -v ch '%*s' $(($wd > 0 ? $wd : 0))
+	echo "${ch// /$2}${1}"
+	return $?
 }
 
-# func string.rjust <[str]exp> <[uint]width> <[char]fillchar> => [str]
+# .FUNCTION string.rjust <expr[str]> <fillchar[char]> <width[uint]> -> [str]|[bool]
 #
-# Retorna 'exp' justificado à direita com 'width' de comprimento.
-# O preenchimento é feito usando o caractere 'fillchar' especificado 
-# (o padrão é um espaço)
+# Retorna uma string justificada à diretia em uma cadeia de largura de comprimento. 
+# O preenchimento é feito usando o caractere de preenchimento especificado em 'fillchar'.
 #
 function string.rjust()
 {
-	getopt.parse 3 "exp:str:-:$1" "fillchar:char:-:$2" "width:uint:+:$3" "${@:4}"
+	getopt.parse 3 "expr:str:$1" "fillchar:char:$2" "width:uint:$3" "${@:4}"
+
+	local ch wd 
+	wd=$(($3-${#1}))
+	printf -v ch '%*s' $(($wd > 0 ? $wd : 0))
+	echo "${1}${ch// /$2}"
+	return $?
+}
+
+# .FUNCTION string.lower <expr[str]> -> [str]|[bool]
+#
+# Converte a cadeia de caracteres para minúsculo.
+#
+function string.lower()
+{
+	getopt.parse 1 "expr:str:$1" "${@:2}"
+
+	echo "${1,,}"
+	return $?
+}
+
+# .FUNCTION string.upper <expr[str]> -> [str]|[bool]
+#
+# Converte a cadeia de caracteres para maiúsculo.
+#
+function string.upper()
+{
+	getopt.parse 1 "expr:str:$1" "${@:2}"
+
+	echo "${1^^}"
+	return $?
+}
+
+# .FUNCTION string.strip <expr[str]> <sub[str]> -> [str]|[bool]
+#
+# Retorna uma cópia da string removendo a substring do inicio e final
+# da cadeia de caracteres.
+#
+function string.strip()
+{
+	getopt.parse 2 "expr:str:$1" "sub:str:$2" "${@:3}"
+
+	local on expr
 	
-	local str ml ch
-
-	while read str; do ((ml < ${#str})) && ml=${#str}; done <<< "$1"
-
-	ml=$(($ml+$3))
-
-	while read str; do
-		printf -v ch '%*s' $((ml-${#str}))
-		echo "$str${ch// /$2}"
-	done <<< "$1"
-
-	return 0
-}
-
-# func string.tolower <[str]exp> => [str]
-#
-# Retorna uma cópia de 'exp' convertendo todos os caracteres para minúsculo.
-#
-function string.tolower()
-{
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
-	
-	local str
-	while read str; do
-		echo "${str,,}"
-	done <<< "$1"
-	return 0
-}
-
-# func string.toupper <[str]exp> => [str]
-#
-# Retorna uma cópia de 'exp' convertendo todos os caracteres para maiúsculo.
-#
-function string.toupper()
-{
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
-
-	local str
-	while read str; do
-		echo "${str^^}"
-	done <<< "$1"
-	return 0
-}
-
-# func string.trim <[str]exp> <[str]sub> => [str]
-#
-# Retorna uma cópia de 'exp' removendo todas as ocorrências de 'sub'
-# à direita e esquerda.
-#
-function string.trim()
-{
-	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" "${@:3}"
-	local flag str
-
-	shopt -q extglob && flag='-s' || flag='-u'
+	shopt -q extglob && on='s'
 	shopt -s extglob
+	expr=${1##+($2)}
+	echo "${expr%%+($2)}"
+	shopt -${on:-u} extglob
+	return $?
+}
 
-	while read str; do
-		str="${str##+($2)}"
-		echo "${str%%+($2)}"
-	done <<< "$1"
-
-	shopt $flag extglob
-
-	return 0
-}	
-
-# func string.ltrim <[str]exp> <[str]sub> => [str]
+# .FUNCTION string.lstrip <expr[str]> <sub[str]> -> [str]|[bool]
 #
-# Retorna uma cópia de 'exp' removendo todas as ocorrências de 'sub' à esquerda.
+# Retorna uma cópia da string removendo a substring do inicio da
+# cadeia de caracteres.
 #
-function string.ltrim()
+function string.lstrip()
 {
-	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" "${@:3}"
-	
-	local flag str
+	getopt.parse 2 "expr:str:$1" "sub:str:$2" "${@:3}"
 
-	shopt -q extglob && flag='-s' || flag='-u'
+	local on
+	
+	shopt -q extglob && on='s'
 	shopt -s extglob
-
-	while read str; do
-		echo "${str##+($2)}"
-	done <<< "$1"
-	
-	shopt $flag extglob
-
-	return 0
+	echo "${1##+($2)}"
+	shopt -${on:-u} extglob
+	return $?
 }
 
-# func string.rtrim <[str]exp> <[str]sub> => [str]
+# .FUNCTION string.rstrip <expr[str]> <sub[str]> -> [str]|[bool]
 #
-# Retorna uma cópia de 'exp' removendo todas as ocorrências de 'sub' à direita.
+# Retorna uma cópia da string removendo a substring do final da
+# cadeia de caracteres.
 #
-function string.rtrim()
+function string.rstrip()
 {
-	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" "${@:3}"
-	
-	local flag str
+	getopt.parse 2 "expr:str:$1" "sub:str:$2" "${@:3}"
 
-	shopt -q extglob && flag='-s' || flag='-u'
+	local on
+	
+	shopt -q extglob && on='s'
 	shopt -s extglob
+	echo "${1%%+($2)}"
+	shopt -${on:-u} extglob
+	return $?
+}
 
-	while read str; do
-		echo "${str%%+($2)}"
-	done <<< "$1"
+# .FUNCTION string.replace <expr[str]> <old[str]> <new[str]> <count[int]> -> [str]|[bool]
+#
+# Retorna uma cópia da string substituindo 'N' ocorrências de 'old' por 'new'.
+#
+function string.replace
+{
+	getopt.parse 4 "expr:str:$1" "old:str:$2" "new:str:$3" "count:int:$4" "${@:5}"
 
-	shopt $flag extglob
+	local expr c i
 	
-	return 0
-}
+	expr=$1
 
-# func string.remove <[str]exp> <[str]sub> => [str]
-#
-# Retorna uma cópia de 'exp' removendo todas as ocorrências de 'sub'.
-#
-function string.remove()
-{
-	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" "${@:3}"
-
-	local str
-	while read str; do
-		echo "${str//$2/}"
-	done <<< "$1"
-	return 0
-}
-
-# func string.rmprefix <[str]exp> <[str]prefix> => [str]
-#
-# Retorna uma cópia de 'exp' removendo o inicio da expressão
-# caso comece com 'prefix'.
-#
-function string.rmprefix()
-{
-	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" "${@:3}"
-
-	local str
-	while read str; do
-		echo "${str#$2}"
-	done <<< "$1"
-	return 0	
-}
-
-# func string.rmsuffix <[str]exp> <[str]suffix> => [str]
-#
-# Retorna uma cópia de 'exp' removendo o final da expressão
-# caso termine com 'suffix'.
-#
-function string.rmsuffix()
-{
-	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" "${@:3}"
-	
-	local str
-	while read str; do
-		echo "${str%$2}"
-	done <<< "$1"
-	return 0	
-}
-
-# func string.mreplace <[str]exp> <[str]old> <[str]new> ... => [str]
-#
-# Substitui todas as ocorrências de 'old' por 'new'.
-# Pode ser especificado mais de conjunto de substituição.
-#
-function string.mreplace()
-{
-	getopt.parse -1 "exp:str:-:$1" "old:str:-:$2" "new:str:-:$3" ... "${@:4}"
-
-	local exp sub line
-
-	exp=$1
-	sub=("${@:2}")
-
-	while read line; do
-		set -- "${sub[@]}"
-		while [[ $# -gt 0 ]]; do
-			line=${line//$1/$2}
-			shift 2		
-		done
-		echo "$line"
-	done <<< "$exp"
-
-	return 0
-}
-
-# func string.replace <[str]exp> <[str]old> <[str]new> <[int]count> => [str]
-#
-# Retorna uma cópia de 'exp' substituindo 'old' por 'new' em 'count' ocorrências.
-# Se 'count' for igual à '-1' realiza a substituição em todas as ocorrências.
-#
-function string.replace()
-{
-	getopt.parse 4 "exp:str:-:$1" "old:str:-:$2" "new:str:-:$3" "count:int:+:$4" "${@:5}"
-	
-	local str i c
-
-	while read str; do
-		for ((i=0; i < ${#str}; i++)); do
-			if [[ ${str:$i:${#2}} == $2 ]]; then
-				str=${str:0:$i}${3}${str:$(($i+${#2}))}
-				i=$(($i+${#3}))
-				[[ $((++c)) -eq $4 ]] && break
-			fi
-		done
-		echo "$str"
-	done <<< "$1"
-
-	return 0
-}
-
-# func string.fnreplace <[str]exp> <[str]old> <[int]count> <[func]funcname> <[str]args> ... => [str]
-#
-# Retorna uma cópia de 'exp' substituindo 'old' pelo retorno de 'funcname' em 'count' ocorrências. 
-# A função é chamada e a expressão 'old' é passada como argumento posicional '$1' automaticamente
-# com N'args' (opcional). Se 'count' for igual '-1' chama a função em todas as ocorrências. 
-# 
-# Exemplo 1:
-#
-# $ source string.sh
-#
-# # Função que converte para maiúsculo.
-# $ upper()
-# {
-#    # retorno da função
-#    string.toupper "$1"
-# }
-#
-# $ source string.sh
-# $ frase='Viva o linux, linux é vida, linux é o futuro !!!'
-#
-# $ string.fnreplace "$frase" "linux" -1 upper
-# Viva o LINUX, LINUX é vida, LINUX é o futuro !!!
-#
-# Exemplo 2:
-#
-# $ source string.sh
-# 
-# $ texto='laranja, azul e vermelho'
-#
-# # Passando argumento na função 'string.repeat' para triplicar todas
-# # as ocorrências de 'a' no texto.
-# $ string.fnreplace "$texto" 'a' -1 string.repeat 3
-# laaaraaanjaaa, aaazul e vermelho
-#
-function string.fnreplace()
-{
-	getopt.parse -1 "exp:str:-:$1" "old:str:-:$2" "count:int:+:$3" "funcname:func:+:$4" "args:str:-:$5" ... "${@:6}"
-	
-	local str fn i c
-
-	while read str; do
-		for ((i=0; i < ${#str}; i++)); do
-			if [[ ${str:$i:${#2}} == $2 ]]; then
-				fn=$($4 "$2" "${@:5}")			
-				str=${str:0:$i}${fn}${str:$(($i+${#2}))}
-				i=$(($i+${#fn}))
-				[[ $((++c)) -eq $3 ]] && break
-			fi
-		done
-		echo "$str"
-	done <<< "$1"
-
-	return 0
-}
-
-
-# func string.nreplace <[str]exp> <[str]old> <[str]new> <[int]match> => [str]
-#
-# Retorna uma cópia de 'exp' substituindo uma única vez 'old' por 'new' em
-# 'N match' da esquerda para direita.
-#
-function string.nreplace()
-{
-	getopt.parse 4 "exp:str:-:$1" "old:str:-:$2" "new:str:-:$3" "match:uint:+:$4" "${@:5}"
-	
-	local str i m
-
-	while read str; do
-		for ((i=0; i < ${#str}; i++)); do
-			if [[ ${str:$i:${#2}} == $2 ]]; then
-				if [[ $((++m)) -eq $4 ]]; then
-					str=${str:0:$i}${3}${str:$(($i+${#2}))}
-					i=$(($i+${#3}))
-				fi
-			fi
-		done
-		echo "$str"
-	done <<< "$1"
-
-	return 0
-}
-
-# func string.fnnreplace <[str]exp> <[str]old> <[int]match> <[func]funcname> <[str]args> ...  => [str]
-#
-# Retorna uma cópia de 'exp' substituindo uma única vez 'old' pelo retorno de 'funcname'. A função
-# é chamada em N'match' passando a ocorrência como argumento posicional '$1' com N'args' (opcional).
-#
-# Exemplo 1:
-# 
-# # Utilizando a função 'string.toupper' para converter para maiúsculo a primeira
-# # ocorrência de 'linux' encontrada.
-#
-# $ source string.sh
-# $ frase='Viva o linux, linux é vida !!!'
-# $ tr.fnnreplace "$frase" "linux" 1 string.toupper
-# Viva o LINUX, linux é vida !!!
-#
-function string.fnnreplace()
-{
-	getopt.parse -1 "exp:str:-:$1" "old:str:-:$2" "match:uint:+:$3" "funcname:func:+:$4" "args:str:-:$5" ... "${@:6}"
-	
-	local str fn i m
-
-	while read str; do
-		for ((i=0; i < ${#str}; i++)); do
-			if [[ ${str:$i:${#2}} == $2 ]]; then
-				if [[ $((++m)) -eq $3 ]]; then
-					fn=$($4 "$2" "${@:5}")			
-					str=${str:0:$i}${fn}${str:$(($i+${#2}))}
-					i=$(($i+${#fn}))
-				fi
-			fi
-		done
-		echo "$str"
-	done <<< "$1"
-
-	return 0
-}
-
-# func string.split <[str]exp> <[str]sep> => [str]
-#
-# Retorna uma lista iterável de elementos em 'exp' utilizando 'sep'
-# como delimitador.
-#
-function string.split()
-{
-	getopt.parse 2 "exp:str:-:$1" "sep:str:-:$2" "${@:3}"
-
-	local str
-	while read str; do
-		echo -e "${str//$2/\\n}"
-	done <<< "$1"
-	return 0
-}
-
-# func string.swapcase <[str]exp> => [str]
-#
-# Retorna uma cópia de 'exp' convertendo os caracteres de minúsculo para maiúsculo e vice-versa.
-#
-function string.swapcase()
-{
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
-
-	local str
-	while read str; do
-		echo "${str~~}"
-	done <<< "$1"
-	return 0
-}
-
-# func string.totitle <[str]exp> = [str]
-#
-# Retorna uma versão titulada de 'exp', ou seja, as palavras começam com
-# caractere título. Os caracteres restantes são convertidos para minúsculo.
-#
-function string.totitle()
-{
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
-
-	local str i ch
-	
-	while read str; do
-		str=${str^}
-		for ((i=0; i < ${#str}; i++)); do
-			ch=${str:$((i+1)):1}
-			[[ ${str:$i:1}${ch} == @([^[:alpha:]])@([[:alpha:]]) ]] &&
-			str=${str:0:$((i+1))}${ch^}${str:$((i+2))}
-		done
-		echo "$str"
-	done <<< "$1"
-
-	return 0
-}
-
-# func string.reverse <[str]exp> => [str]
-#
-# Retorna a string 'exp' revertendo a sequência dos caracteres.
-#
-function string.reverse()
-{
-	getopt.parse 1 "exp:str:-:$1" ${@:2}
-
-	local line str i
-	while read line; do
-		for ((i=${#line}-1; i >= 0; i--)); do
-			str+=${line:$i:1}
-		done
-		echo "$str"
-		str=''
-	done <<< "$1"
-	return 0
-
-}
-
-# func string.repeat <[str]exp> <[uint]count> => [str]
-#
-# Retorna 'count' copias de 'exp'.
-#
-function string.repeat()
-{
-	getopt.parse 2 "exp:str:-:$1" "count:uint:+:$2" "${@:3}"
-	local str
-	printf -v str '%*s' $2;
-	printf '%s\n' "${str// /$1}"
-	return 0
-}
-
-# func string.zfill <[uint]num> <[uint]width> => [uint]
-#
-# Retorna um inteiro sem sinal com zeros à esquerda para preencher um campo com 'width' comprimento.
-#
-function string.zfill()
-{
-	getopt.parse 2 "num:uint:-:$1" "width:uint:+:$2" "${@:3}"
-
-	local str
-	while read str; do
-		printf -v str "%$2s" "$str"
-		echo "${str// /0}"
-	done <<< "$1"
-	return 0
-}
-
-# func string.compare <[str]exp1> <[str]exp2> => [bool]
-#
-# Retorna 'true' se 'exp1' for igual a 'exp2'. Caso contrário 'false'.
-#
-function string.compare()
-{
-	getopt.parse 2 "exp1:str:-:$1" "exp2:str:-:$2" "${@:3}"
-
-	local str
-	while read str; do
-		[[ $str != $2 ]] && return 1
-	done <<< "$1"
-	return 0
-}
-
-# func string.nocasecompare <[str]exp1> <[str]exp2> => [bool]
-#
-# Retorna 'true' se 'exp1' for igual a 'exp2', ignorando a diferenciação de caracteres maiúsculos e minúsculos. Caso contrário 'false'.
-#
-function string.nocasecompare()
-{
-	getopt.parse 2 "exp1:str:-:$1" "exp2:str:-:$2" "${@:3}"
-
-	local str
-	while read str; do
-		[[ ${str,,} != ${2,,} ]] && return 1
+	for ((i=0; i < ${#expr}; i++)); do
+		if [[ ${expr:$i:${#2}} == $2 ]]; then
+			expr=${expr:0:$i}${3}${expr:$(($i+${#2}))}
+			i=$(($i+${#3}))
+			[[ $((++c)) -eq $4 ]] && break
+		fi
 	done
-	return 0
-}
-
-# func string.contains <[str]exp> <[str]sub> => [bool]
-#
-# Retorna 'true' se 'exp' contém 'sub'. Caso contrário 'false'.
-# O parâmetro 'sub' pode ser uma expressão regular.
-#
-function string.contains()
-{
-	getopt.parse 2 "exp:str:-:$1" "sub:str:-:$2" "${@:3}"
-
-	local str
-	while read str; do
-		[[ $str != *@($2)* ]] && return 1
-	done <<< "$1"
-	return 0
-}
-
-# func string.fnmap <[str]exp> <[func]funcname> <[str]args> ... => [str]
-#
-# Retorna uma cópia de 'exp' com todos os caracteres modificados de acordo com
-# a função de mapeamento, onde 'funcname' é chamada a cada caractere lido passando
-# o mesmo como argumento posicional '$1' com N'args' (opcional).
-#
-# Exemplo 1:
-#
-# $ source string.sh
-#
-# # Duplicando todos os caractere. 
-# $ string.fnmap 'Linux' string.repeat 2
-# LLiinnuuxx
-#
-# Exemplo 2:
-#
-# $ source string.sh
-#
-# # Adicionado um zero a cada digito.
-# $ string.fnmap '11111' string.zfill 2
-# 0101010101
-#
-function string.fnmap()
-{
-	getopt.parse -1 "exp:str:-:$1" "funcname:func:+:$2" "args:str:-:$3" ... "${@:4}"
 	
-	local line i
-	while read line; do	
-		for ((i=0; i<${#line}; i++)); do
-			echo -n "$($2 "${line:$i:1}" "${@:3}")"; done
-		echo
-	done <<< "$1"
-	return 0
-}
-
-# func string.slice <[str]exp> <[slice]slice> ... => [str]
-#
-# Retorna uma substring de 'exp' a partir do intervalo '[ini:len]' especificado.
-# Onde 'ini' indica a posição inicial e 'len' o comprimento. 
-# Se 'len' for omitido, lê o comprimento total de 'exp'.
-# Se 'ini' for omitido, lê a partir da posição '0'.
-# O slice é um argumento variável podendo conter um ou mais intervalos determinando
-# o conjunto de captura do slice que o antecede.
-#
-# Exemplo:
-#
-# $ texto='Programar em Shell Script é vida'
-#
-# # Capturando a expressão 'Shell Script'
-#
-# $ string.slice "$texto" [13:12]
-# Shell Script
-#
-# # O mesmo efeito combinando dois slices
-#
-# $ string.slice "$texto" [13:][:-6]
-# Shell Script
-#
-# # Lendo os primeiros 25 caracteres
-#
-# $ string.slice "$texto" [:25]
-# Programar em Shell Script
-#
-function string.slice()
-{
-	getopt.parse 2 "exp:str:-:$1" "slice:slice:+:$2" "${@:3}"
-	
-	local slice str ini len
-	
-	while read str; do
-		slice=$2
-		while [[ $slice =~ \[([^]]+)\] ]]; do
-		IFS=':' read ini len <<< ${BASH_REMATCH[1]}
-			[[ ${len#-} -gt ${#str} ]] && str='' && break
-			[[ ${BASH_REMATCH[1]} != *@(:)* ]] && len=1
-			ini=${ini:-0}
-			len=${len:-$((${#str}-$ini))}
-			str=${str:$ini:$len}
-			slice=${slice/\[${BASH_REMATCH[1]}\]/}
-		done
-		echo "$str"
-	done <<< "$1"
+	echo "$expr"
 	
 	return $?
 }
 
-# func string.filter <[str]exp> <[flag]name> ... => [str]
+# .FUNCTION string.fnreplace <expr[str]> <old[str]> <count[int]> <func[function]> <args[str]> ... -> [str]|[bool]
 #
-# Retorna uma cópia de 'exp' filtrando somente a sequência de caracteres
-# em 'name'.
+# Retorna uma cópia da string substituindo 'N' ocorrências de 'old' pelo retorno da função.
+# A função é chamada a cada ocorrência, passando como argumento posicional '$1' a expressão 
+# casada com 'N' args (opcional).
 #
-# 'name' deve ser o nome da flag que especifica o tipo da cadeia a ser 
-# capturada. Mais de uma 'flag' pode ser informada.
+# == EXEMPLO ==
 #
-# Flags:
+# source string.sh
 #
-# alnum   - todas as letras e dígitos
-# alpha   - todas as letras
-# cntrl   - todos os caracteres de controle
-# digit   - todos os dígitos
-# graph   - todos os caracteres exibíveis, exceto espaços
-# lower   - todas as letras minúsculas
-# print   - todos os caracteres exibíveis, inclusive espaços
-# punct   - todos os caracteres de pontuação
-# upper   - todas as letras maiúsculas
-# xdigit  - todos os dígitos hexadecimais
-# space   - todos os espaços e tabulações
-#  
-# Exemplo:
+# texto='Linux é vida, Linux é liberdade, Linux é tudo!!'
 #
-# $ source string.sh
-# $ texto='Linux nasceu em 1991 e o pai da criança é Linus Torvalds.'
-# 
-# # Somente os digitos e letras maiúsculas.
-# $ string.filter "$texto" digit upper
-# L1991LT
+# # Função que remove os dois primeiros caracteres da expressão.
+# rm_chars(){
+#	echo "${1#??}"
+# }
+#
+# # Manipulando a palavra 'Linux' utilizando funções já existentes.
+# string.fnreplace "$texto" 'Linux' -1 string.reverse 
+# string.fnreplace "$texto" 'Linux ' -1 string.repeat 3
+# string.fnreplace "$texto" 'Linux' 2 string.upper
+#
+# # Função personalizada.
+# string.fnreplace "$texto" 'Linux' -1 rm_chars
+#
+# == SAÍDA ==
+#
+# xuniL é vida, xuniL é liberdade, xuniL é tudo!!
+# Linux Linux Linux é vida, Linux Linux Linux é liberdade, Linux Linux Linux é tudo!!
+# LINUX é vida, LINUX é liberdade, Linux é tudo!!
+# nux é vida, nux é liberdade, nux é tudo!!
+#
+function string.fnreplace
+{
+	getopt.parse -1 "expr:str:$1" "old:str:$2" "count:int:$3" "func:function:$4" "args:str:$5" ... "${@:6}"
+
+	local expr fn i c
+
+	expr=$1
+
+	for ((i=0; i < ${#expr}; i++)); do
+		if [[ ${expr:$i:${#2}} == $2 ]]; then
+			fn=$($4 "$2" "${@:5}")
+			expr=${expr:0:$i}${fn}${expr:$(($i+${#2}))}
+			i=$(($i+${#fn}))
+			[[ $((++c)) -eq $3 ]] && break
+		fi
+	done
+
+	echo "$expr"
+
+	return $?
+}
+
+# .FUNCTION string.replacers <expr[str]> <old[str]> <new[str]> ... -> [str]|[bool]
+#
+# Retorna uma cópia da string substituindo todas as ocorrências de 'old' por 'new',
+# podendo ser especificado mais de um conjunto de substituição.
+#
+# == EXEMPLO ==
+#
+# source string.sh
+#
+# texto='A Microsoft além do Windows agora tem sua própria distro Linux'.
+#
+# # Substituições.
+# string.replacers "$texto" 'Windows' 'Ruindows' 'Microsoft' 'Micro$oft' 'Linux' 'Rindux'
+#
+# == SAÍDA ==
+#
+# A Micro$oft além do Ruindows agora tem sua própria distro Rindux.
+#
+function string.replacers()
+{
+	getopt.parse -1 "expr:str:$1" "old:str:$2" "new:str:$3" ... "${@:4}"
+	
+	local expr=$1
+
+	set "${@:2}"
+
+	while [[ $1 && $expr == *$1* ]]; do
+		expr=${expr//$1/$2}
+		shift 2
+	done
+
+	echo "$expr"
+
+	return $?
+}
+
+# .FUNCTION string.split <expr[str]> <sep[str]> <count[int]> -> [str]|[bool]
+#
+# Retorna uma lista de palavras delimitadas por 'sep' em 'count' vezes.
+# Se 'count' for menor que zero aplica a ação em todas as ocorrências.
+#
+# == EXEMPLO ==
+#
+# source string.sh
+#
+# distros='Slackware,Debian,Centos,Ubuntu,Manjaro'
+#
+# string.split "$distro" ',' -1
+# echo ---
+# string.split "$distro" ',' 2
+#
+# == SAÍDA ==
+#
+# Slackware
+# Debian
+# Centos
+# Ubuntu
+# Manjaro
+# ---
+# Slackware
+# Debian
+# Centos,Ubuntu,Manjaro
+#
+function string.split()
+{
+	getopt.parse 3 "expr:str:$1" "sep:str:$2" "count:int:$3" "${@:4}"
+
+	local c expr=$1
+	
+	while [[ $expr == *$2* ]]; do
+		[[ $((c++)) -eq $3 ]] && break
+		expr=${expr/$2/$'\n'}
+	done
+
+	mapfile -t expr <<< "$expr"
+	printf '%s\n' "${expr[@]}"
+
+	return $?
+}
+
+# .FUNCTION string.swapcase <expr[str]> -> [str]|[bool]
+#
+# Retorna uma cópia de 'expr' convertendo os caracteres minúsculos para
+# maiúsculos e vice-versa.
+#
+function string.swapcase()
+{
+	getopt.parse 1 "expr:str:$1" "${@:2}"
+
+	echo "${1~~}"
+	return $?
+}
+
+# .FUNCTION string.title <expr[str]> -> [str]|[bool]
+#
+# Retorna uma cópia titulada de 'expr', ou seja, as palavras começam com
+# a primeira letra maiúscula e as demais minúsculas.
+#
+function string.title()
+{
+	getopt.parse 1 "expr:str:$1" "${@:2}"
+	
+	local expr=${1,,}
+	
+	while [[ $expr =~ [^a-zA-Z][a-z] ]]; do
+		expr=${expr/$BASH_REMATCH/${BASH_REMATCH^^}}
+	done
+
+	echo "${expr^}"
+
+	return $?
+}
+
+# .FUNCTION string.reverse <expr[str]> -> [str]|[bool]
+#
+# Retorna uma cópia invertida da sequẽncia de caracteres de 'expr'.
+#
+function string.reverse()
+{
+	getopt.parse 1 "expr:str:$1" "${@:2}"
+
+	rev <<< "$1"
+	return $?
+}
+
+# .FUNCTION string.repeat <expr[str]> <count[uint]> -> [str]|[bool]
+#
+# Retorna uma copia de 'expr' repetida 'N' vezes.
+#
+function string.repeat()
+{
+	getopt.parse 2 "expr:str:$1" "count:uint:$2" "${@:3}"
+
+	local i
+	for ((i=0; i < $2; i++)); do
+		echo -n "$1"
+	done; echo
+	return $?
+}
+
+# .FUNCTION string.zfill <expr[str]> <width[uint]> -> [str]|[bool]
+#
+# Preenche a expressão com 'N' zeros a esquerda.
+#
+function string.zfill()
+{
+	getopt.parse 2 "expr:str:$1" "witdh:uint:$2" "${@:3}"
+
+	local i
+	for ((i=0; i < $2; i++)); do
+		echo -n '0'
+	done; echo "$1"
+	return $?
+}
+
+# .FUNCTION string.compare <expr1[str]> <expr2[str]> <case[bool]> -> [bool]
+#
+# Compara as expressões e retorna 'true' se forem iguais, caso contrário 'false'.
+# Se 'case' for igual a 'true' ativa a análise tipográfica de diferenciação entre
+# caracteres maiúsculos e minúsculos.
+#
+# == EXEMPLO ==
+#
+# source string.sh
+#
+# string.compare 'Linux' 'LINUX' true && echo true || echo false
+# string.compare 'Linux' 'LINUX' false && echo true || echo false
+#
+# == SAÍDA ==
+#
+# false
+# true
+#
+function string.compare()
+{
+	getopt.parse 3 "expr1:str:$1" "expr2:str:$2" "case:bool:$3" "${@:4}"
+
+	if $3; then	[ "$1" == "$2" ]; else [ "${1,,}" == "${2,,}" ]; fi
+	return $?
+}
+
+# .FUNCTION string.contains <expr[str]> <sub[str]> -> [bool]
+#
+# Retorna 'true' se a expressão contém a substring.
+#
+function string.contains()
+{
+	getopt.parse 2 "expr:str:$1" "sub:str:$2" "${@:3}"
+
+	[[ $1 == *$2* ]]
+	return $?
+}
+
+# .FUNCTION string.map <expr[str]> -> [char]|[uint]
+#
+# Retorna uma lista iterável da cadeia de caracteres.
+#
+function string.map()
+{
+	getopt.parse 1 "expr:str:$1" "${@:2}"
+
+	local i
+
+	for ((i=0; i < ${#1}; i++)); do
+		echo "${1:$i:1}"
+	done	
+
+	return $?
+}
+
+# .FUNCTION string.fnsmap <expr[str]> <func[function]> <args[str]> ... -> [str]|[bool]
+#
+# Aplica a função em cada substring delimitada pelo caractere ' ' espaço contido na expressão
+# substituindo-a pelo retorno da função.
+#
+# == EXEMPLO ==
+#
+# source string.sh
+#
+# texto='Linux é sinônimo de liberdade e ser livre é uma questão de escolha.'
+#
+# flag(){
+#    echo "[$1]"
+# }
+#
+# char(){
+#    echo "[${1:0:1}]"
+# }
+#
+# string.fnsmap "$texto" flag
+# string.fnsmap "$texto" char
+# string.fnsmap "$texto" string.repeat 2
+#
+# == SAÍDA ==
+#
+# [Linux] [é] [sinônimo] [de] [liberdade] [e] [ser] [livre] [é] [uma] [questão] [de] [escolha.] 
+# [L] [é] [s] [d] [l] [e] [s] [l] [é] [u] [q] [d] [e] 
+# LinuxLinux éé sinônimosinônimo dede liberdadeliberdade ee serser livrelivre éé umauma questãoquestão dede escolha.escolha. 
+#
+function string.fnsmap()
+{
+	getopt.parse -1 "expr:str:$1" "func:function:$2" "args:str:$3" ... "${@:4}"
+
+	local expr str
+	
+	while IFS=$'\n' read -r str; do
+		expr+=$($2 "$str" "${@:3}")' '
+	done < <(printf '%s\n' $1)
+
+	echo "$expr"
+
+	return $?
+}
+
+# .FUNCTION string.fncmap <expr[str]> <func[function]> <args[str]> ... -> [str]|[bool]
+#
+# Aplica a função em cada caractere da expressão substituindo-o pelo retorno da função.
+#
+# == EXEMPLO ==
+#
+# source string.sh
+#
+# texto='Viva o Linux'
+#
+# func(){
+#    echo "($1)"
+# }
+#
+# string.fncmap "$texto" func
+#
+# == SAÍDA ==
+#
+# (V)(i)(v)(a)( )(o)( )(L)(i)(n)(u)(x)
+#
+function string.fncmap()
+{
+	getopt.parse -1 "expr:str:$1" "func:function:$2" "args:str:$3" ... "${@:4}"
+
+	local expr i
+	
+	for ((i=0; i < ${#1}; i++)); do
+		expr+=$($2 "${1:$i:1}" "${@:3}")
+	done
+    
+	echo "$expr"
+
+	return $?
+}
+
+# .FUNCTION string.filter <expr[str]> <class[str]> ... -> [str]|[bool]
+#
+# Filtra a expressão retornando apenas a cadeia de caracteres representada
+# pela classe. Pode ser especificada mais de uma classe.
+#
+# Classes suportadas:
+#
+# [:alnum:]  - todas as letras e dígitos
+# [:alpha:]  - todas as letras
+# [:blank:]  - todos os espaços brancos na horizontal
+# [:cntrl:]  - todos os caracteres de controle
+# [:digit:]  - todos os dígitos
+# [:graph:]  - todos os caracteres exibíveis, exceto espaços
+# [:lower:]  - todas as letras minúsculas
+# [:print:]  - todos os caracteres exibíveis, inclusive espaços
+# [:punct:]  - todos os caracteres de pontuação
+# [:space:]  - todos os espaços brancos na horizontal ou vertical
+# [:upper:]  - todas as letras maiúsculas
+# [:xdigit:] - todos os dígitos hexadecimais
+#
+# == EXEMPLO ==
+#
+# source string.sh
+#
+# distro='Ubuntu 16.04, Debian 9, Slackware 14'
+#
+# string.filter "$distro" [:alpha:] [:space:]
+# string.filter "$distro" [:digit:]
+# string.filter "$distro" [:punct:]
+#
+# == SAÍDA ==
+#
+# Ubuntu  Debian  Slackware 
+# 1604914
+# .,,
 #
 function string.filter()
 {
-	getopt.parse -1 "exp:str:-:$1" "flag:str:+:$2" ... "${@:3}"
+	getopt.parse -1 "expr:str:$1" "class:str:$2" ... "${@:3}"
 
-	local flag flags line
-
-	for flag in ${@:2}; do	
-		case $flag in
-			alnum|alpha|cntrl|digit|graph|lower|print|punct|upper|xdigit|space) flags+="[:$flag:]";;
-			*) error.trace def "flag" "str" "$flag" "$__ERR_STR_FLAG_CHAR_INVALID"; return $?;;
-		esac
-	done
-	
-	while read line; do
-		echo "${line//[^$flags]/}"
-	done <<< "$1"
-
-	return 0
+	echo "${1//[^${@:2}]/}"
+	return $?
 }
 
-# func string.field <[str]exp> <[char]sep> <[int]num> ... => [str]
+# .FUNCTION string.field <expr[str]> <sep[str]> <field[int]> ... [str]|[bool]
 #
-# Retorna 'N' campo(s) delimitado(s) por 'sep' em 'exp', onde 
-# campo inicia a partir da posição '1' podendo especificar um ou mais campos. 
-# Utilize notação negativa para leitura reversa, onde '-1' refere-se ao
-# último campo, '-2' penúltimo e assim por diante.
+# Retorna 'N' campos delimitados pela substring. Utilize notação negativa para
+# captura reversa dos campos, ou seja, se o índice for igual à '-1' é retornado
+# o útlimo elemento, '-2' o penúltimo e assim por diante.
 #
-# Exemplo:
+# == EXEMPLO ==
 #
-# source builtin.sh
+# source string.sh
 #
-# texto='Debian,Slackware,CentOS,ArchLinux,Ubuntu,Fedora'
+# lista='item1,item2,item3,item4,item5'
 #
-# # Somente o primeiro campo
-# $ string.field "$texto" ',' 1
-# Debian
+# string.field "$lista" ',' {1..3}
+# string.field "$lista" ',' 1 4
+# string.field "$lista" ',' {2..5}
+# string.field "$lista" ',' -1
+# string.field "$lista" 'item3' 1
 #
-# # Os três primeiros
-# $ string.field "$texto" ',' {1..3}
-# Debian Slackware CentOS
+# == SAÍDA ==
 #
-# Todos os campos exceto 'CentOS'
-# $ string.field "$texto" ',' {1..2} {4..6}
-# Debian Slackware ArchLinux Ubuntu Fedora
+# item1 item2 item3 
+# item1 item4 
+# item2 item3 item4 item5 
+# item5 
+# item1,item2,
 #
 function string.field()
 {
-    getopt.parse -1 "exp:str:-:$1" "sep:char:-:$2" "field:int:+:$3" ... "${@:4}"
+	getopt.parse -1 "expr:str:$1" "sep:str:$2" "field:int:$3" ... "${@:4}"
 
-	local index field
+	local field fields expr
 
-	while IFS="$2" read -a item; do
-		for field in ${@:3}; do
-			echo -n "${item[$((field > 0 ? field - 1 : field))]} "
-		done
-		echo
-	done <<< "$1" 2>/dev/null
+	mapfile -t fields <<< "${1//$2/$'\n'}"
 
-	return 0
+	for field in ${@:3}; do
+		expr+=${fields[$((field > 0 ? field - 1 : field))]}' '
+	done
+
+	echo "$expr"
+
+	return $?
 }
 
-# func string.trimspace <[str]exp> => [str]
+# .FUNCTION string.slice <expr[str]> <slice[str]> -> [str]|[bool]
 #
-# Retorna uma cópia de 'exp' removendo os espaços excessivos.
+# Retorna uma substring resultante do intervalo dentro de uma cadeia
+# de caracteres. O slice é a represetação do intervalo a ser capturado
+# e precisa respeitar o seguinte formato:
 #
-function string.trimspace()
+# [start:len]...
+#
+# start - Posição inicial dentro da cadeia.
+# len   - Comprimento a ser capturado a partir de 'start'.
+#
+# > Não pode conter espaços entre slices.
+# > Utilize notação negativa para captura reversa.
+#
+# Pode ser especificado mais de um slice dentro da mesma expressão,
+# onde o slice subsequente trata a cadeia resultante do slice anterior
+# e assim respecitivamente.
+#
+# == EXEMPLO ==
+#
+# source string.sh
+#
+# texto='Programação com shell script'
+#
+# string.slice "$texto" '[16:]'
+# string.slice "$texto" '[:11]'
+# string.slice "$texto" '[:-6]'
+# string.slice "$texto" '[-1]'
+# string.slice "$texto" '[4:10][2:9][:-2]'
+#
+# == SAÍDA ==
+#
+# shell script
+# Programação
+# Programação com shell 
+# t
+# mação
+#
+function string.slice()
 {
-	getopt.parse 1 "exp:str:-:$1" "${@:2}"
+    getopt.parse 2 "expr:str:$1" "slice:str:$2" "${@:3}"
 
-	local exp
-	while read exp; do
-		echo $exp
-	done <<< "$1"
-	return 0
+    [[ $2 =~ ${__BUILTIN__[slice]} ]] || error.fatal "'$2' erro de sintaxe na expressão slice"
+
+    local str=$1
+    local slice=$2
+    local ini len
+
+    while [[ $slice =~ \[([^]]+)\] ]]; do
+        IFS=':' read ini len <<< "${BASH_REMATCH[1]}"
+        [[ ${len#-} -gt ${#str} ]] && str='' && break
+        [[ ${BASH_REMATCH[1]} != *@(:)* ]] && len=1
+        ini=${ini:-0}
+        len=${len:-$((${#str}-$ini))}
+        str=${str:$ini:$len}
+        slice=${slice/\[${BASH_REMATCH[1]}\]/}
+    done
+
+	echo "$str"
+
+    return $?
 }
 
-source.__INIT__
-# /* __STR_SH */
+# .TYPE string_t
+#
+# Implementa o objeto 'S' com os métodos:
+#
+# S.len			
+# S.capitalize	
+# S.center		
+# S.count		
+# S.endswith		
+# S.startswith	
+# S.expandspaces	
+# S.find			
+# S.rfind		
+# S.isalnum		
+# S.isalpha		
+# S.isspace		
+# S.isprint		
+# S.islower		
+# S.isupper		
+# S.istitle		
+# S.join			
+# S.ljust		
+# S.rjust		
+# S.lower		
+# S.upper		
+# S.strip		
+# S.lstrip		
+# S.rstrip		
+# S.replace		
+# S.fnreplace	
+# S.replacers	
+# S.split		
+# S.swapcase		
+# S.title		
+# S.reverse		
+# S.repeat		
+# S.zfill		
+# S.compare		
+# S.contains		
+# S.fnsmap		
+# S.fncmap		
+# S.filter		
+# S.field		
+# S.slice
+#
+typedef string_t			\
+		string.len			\
+		string.capitalize	\
+		string.center		\
+		string.count		\
+		string.endswith		\
+		string.startswith	\
+		string.expandspaces	\
+		string.find			\
+		string.rfind		\
+		string.isalnum		\
+		string.isalpha		\
+		string.isspace		\
+		string.isprint		\
+		string.islower		\
+		string.isupper		\
+		string.istitle		\
+		string.join			\
+		string.ljust		\
+		string.rjust		\
+		string.lower		\
+		string.upper		\
+		string.strip		\
+		string.lstrip		\
+		string.rstrip		\
+		string.replace		\
+		string.fnreplace	\
+		string.replacers	\
+		string.split		\
+		string.swapcase		\
+		string.title		\
+		string.reverse		\
+		string.repeat		\
+		string.zfill		\
+		string.compare		\
+		string.contains		\
+		string.map			\
+		string.fnsmap		\
+		string.fncmap		\
+		string.filter		\
+		string.field		\
+		string.slice
 
+# Funções
+readonly -f string.len			\
+			string.capitalize	\
+			string.center		\
+			string.count		\
+			string.endswith		\
+			string.startswith	\
+			string.expandspaces	\
+			string.find			\
+			string.rfind		\
+			string.isalnum		\
+			string.isalpha		\
+			string.isspace		\
+			string.isprint		\
+			string.islower		\
+			string.isupper		\
+			string.istitle		\
+			string.join			\
+			string.ljust		\
+			string.rjust		\
+			string.lower		\
+			string.upper		\
+			string.strip		\
+			string.lstrip		\
+			string.rstrip		\
+			string.replace		\
+			string.fnreplace	\
+			string.replacers	\
+			string.split		\
+			string.swapcase		\
+			string.title		\
+			string.reverse		\
+			string.repeat		\
+			string.zfill		\
+			string.compare		\
+			string.contains		\
+			string.map			\
+			string.fnsmap		\
+			string.fncmap		\
+			string.filter		\
+			string.field		\
+			string.slice
+
+# /* __STRING_SH__ */

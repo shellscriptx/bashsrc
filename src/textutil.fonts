@@ -38,9 +38,9 @@
 #
 [[ $__TEXTUTIL_FONTS ]] && return 0
 
-readonly __TEXTUTIL_FONTS=1
+readonly __TEXTUTIL_FONTS__=1
 
-readonly -A __FONT_SIZE=(
+readonly -A __FONT_SIZE__=(
 [mini]=4
 [banner]=8
 [big]=8
@@ -58,7 +58,7 @@ readonly -A __FONT_SIZE=(
 [script]=7
 )
 
-readonly -A __FONT=(
+readonly -A __FONT__=(
 [banner:32:0]='   '
 [banner:32:1]='   '
 [banner:32:2]='   '

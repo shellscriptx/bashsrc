@@ -17,415 +17,536 @@
 #    You should have received a copy of the GNU General Public License
 #    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
-[[ $__ARRAY_SH ]] && return 0
+[ -v __ARRAY_SH__ ] && return 0
 
-readonly __ARRAY_SH=1
+readonly __ARRAY_SH__=1
 
 source builtin.sh
 
-__TYPE__[array_t]='
-array.append 
-array.clear 
-array.copy 
-array.clone 
-array.count 
-array.items 
-array.index 
-array.insert 
-array.pop 
-array.remove 
-array.removeall 
-array.reverse 
-array.len 
-array.sort 
-array.join 
-array.item 
-array.contains 
-array.reindex 
-array.slice
-array.listindex
-array.list
-'
-
-# func array.append <[array]name> <[str]object>
+# .FUNCTION array.len <obj[array]> -> [uint]|[bool]
 #
-# Anexa 'object' no final de 'name'.
-#
-function array.append()
-{
-	getopt.parse 2 "name:array:+:$1" "object:str:-:$2" ${@:3}
-
-	local -n __arr=$1 
-	__arr+=("$2")
-	return 0
-}
-
-# func array.clear <[array]name>
-#
-# Limpa todos os elementos de 'name'
-#
-function array.clear()
-{
-	getopt.parse 1 "name:array:+:$1" ${@:2}
-	unset $1
-	return 0
-}
-
-# func array.clone <[array]src> <[array]dest>
-#
-# Clona todos os elementos de 'src' para 'dest', sobrescrevendo os elementos
-# de 'dest' caso já exista.
-#
-function array.clone()
-{
-	getopt.parse 2 "src:array:+:$1" "dest:array:+:$2" ${@:3}
-	
-	unset $2
-
-	declare -n __arr_src=$1 __arr_dest=$2
-	__arr_dest=("${__arr_src[@]}")
-
-	return 0
-}
-
-# func array.copy <[array]src> <[array]dest>
-#
-# Copia os elementos de 'src' para 'dest' anexando ao final do array. Os elementos
-# de 'dest' são mantidos.
-#
-function array.copy()
-{
-	getopt.parse 2 "src:array:+:$1" "dest:array:+:$2" ${@:3}
-	
-	declare -n __arr_src=$1 __arr_dest=$2
-	__arr_dest+=("${__arr_src[@]}") 
-
-	return 0
-}
-
-# func array.count <[array]name> <[str]object> => [uint]
-#
-# Retorna 'N' ocorrências de 'object' em 'name'.
-#
-function array.count()
-{
-	getopt.parse 2 "src:array:+:$1" "object:str:-:$2" ${@:3}
-	
-	declare -n __arr=$1
-	local __elem __c=0
-	
-	for __elem in "${__arr[@]}"; do
-		[[ $__elem == $2 ]] && ((__c++))
-	done
-	
-	echo $__c
-
-	return 0
-}
-
-# func array.items <[array]name> => [str]
-#
-# Retorna uma lista iterável dos elementos de 'name'.
-#
-function array.items()
-{
-	getopt.parse 1 "name:array:+:$1" ${@:2}
-	
-	declare -n __arr=$1
-	printf "%s\n" "${__arr[@]}"
-
-	return 0
-}
-
-# func array.index <[array]name> <[str]object> => [int]
-#
-# Retorna o índice da primeira ocorrência de 'object' em 'name'.
-# Se 'object' não for encontrado, retorna '-1'.
-#
-function array.index()
-{
-	getopt.parse 1 "name:array:+:$1" ${@:2}
-	
-	declare -n __arr=$1
-	local __i __pos=-1
-	
-	for __i in ${!__arr[@]}; do
-		if [[ $2 == ${__arr[$__i]} ]]; then
-			__pos=$__i
-			break
-		fi
-	done
-	
-	echo $__pos
-
-	return 0
-}
-
-# func array.insert <[array]name> <[uint]index> <[str]object>
-#
-# Insere 'object' na posição 'index' de 'name'.
-# A cada inserção o índice dos elementos é reindexado para uma
-# ordem sequêncial crescente a partir do 'index' inserido.
-function array.insert()
-{
-	getopt.parse 3 "name:array:+:$1" "index:uint:+:$2" "object:str:-:$3" ${@:4}
-	
-	declare -n __arr=$1
-	__arr=([$2]="$3" "${__arr[@]}")
-	
-	return 0
-}
-
-# func array.pop <[array]name> <[int]index> => [object]
-#
-# Remove e retorna o item armazenado em 'index'. Se 'index' for igual a '-1'
-# será retornado o último elemento.
-#
-function array.pop()
-{
-	getopt.parse 2 "name:array:+:$1" "index:int:+:$2" ${@:3}
-	
-	declare -n __arr=$1
-		
-	if [[ $2 -gt -2 ]]; then	
-		echo "${__arr[$2]}"
-		unset __arr[$2]
-	fi
-
-	return 0	
-}
-
-# func array.remove <[array]name> <[str]object>
-#
-# Remove a primeira ocorrência de 'object' em 'name'.
-#
-function array.remove()
-{
-	getopt.parse 2 "name:array:+:$1" "object:str:-:$2" ${@:3}
-	
-	declare -n __arr=$1
-	local __i
-
-	for __i in ${!__arr[@]}; do
-		if [[ $2 == ${__arr[$__i]} ]]; then
-			unset __arr[$__i]
-			break
-		fi
-	done
-
-	return 0
-}
-
-# func array.removeall <[array]name> <[str]object>
-#
-# Remove todas as ocorrências de 'object' em 'name'.
-#
-function array.removeall()
-{
-	getopt.parse 2 "name:array:+:$1" "object:str:-:$2" ${@:3}
-	
-	declare -n __arr=$1
-	local __i
-
-	for __i in ${!__arr[@]}; do
-		if [[ $2 == ${__arr[$__i]} ]]; then
-			unset __arr[$__i]
-		fi
-	done
-
-	return 0
-}
-
-# func array.reverse <[array]name>
-#
-# Inverte a ordem dos elementos em 'name'.
-#
-function array.reverse()
-{
-	getopt.parse 1 "name:array:+:$1" ${@:2}
-	
-	declare -n __arr=$1
-	mapfile -t __arr < <(printf '%s\n' "${__arr[@]}" | sort -dr)
-	return 0
-}
-
-# func array.len <[array]name> => [uint]
-#
-# Retorna o total de elementos em 'name'.
+# Retorna o total de elementos contidos no array.
 #
 function array.len()
 {
-	getopt.parse 1 "name:array:+:$1" ${@:2}
+	getopt.parse 1 "obj:array:$1" "${@:2}"
 	
-	declare -n __arr=$1
-	echo ${#__arr[@]}
-	return 0
+	local -n __ref__=$1
+	echo ${#__ref__[@]}
+	return $?
 }
 
-# func array.sort <[array]name>
+# .FUNCTION array.append <obj[array]> <expr[str]> -> [bool]
 #
-# Organiza os elementos de 'name' em ordem alfabética.
+# Anexa o elemento ao final do array.
+#
+function array.append()
+{
+	getopt.parse 2 "obj:array:$1" "expr:str:$2" "${@:3}"
+
+	local -n __ref__=$1
+	__ref__+=("$2")
+	return $?
+}
+
+# .FUNCTION array.clear <obj[array]> -> [bool]
+#
+# Apaga todos os elementos do container.
+#
+function array.clear()
+{
+	getopt.parse 2 "obj:array:$1" "${@:2}"
+	
+	unset $1
+	return $?
+}
+
+# .FUNCTION array.clone <src[array]> <dest[array]> -> [bool]
+#
+# Copia os elementos de origem para o container de destino
+# sobrescrevendo os elementos já existentes.
+#
+# == EXEMPLO ==
+#
+# source array.sh
+#
+# arr1=(item1 item2 item3)
+# arr2=(item4 item5 item6)
+#
+# echo 'arr1 ->' ${arr1[@]}
+# echo 'arr2 ->' ${arr2[@]}
+# echo ---
+#
+# array.clone arr1 arr2
+# echo 'arr2 ->' ${arr2[@]}
+#
+# == SAÍDA ==
+#
+# arr1 -> item1 item2 item3
+# arr2 -> item4 item5 item6
+# ---
+# arr2 -> item1 item2 item3
+#
+function array.clone()
+{
+	getopt.parse 2 "src:array:$1" "dest:array:$2" "${@:3}"
+	
+	local -n __ref1__=$1 __ref2__=$2
+	__ref2__=("${__ref1__[@]}")
+	return $?
+}
+
+# .FUNCTION array.copy <src[array]> <dest[array]> -> [bool]
+#
+# Anexa os elementos de origem no container de destino.
+#
+function array.copy()
+{
+	getopt.parse 2 "src:array:$1" "dest:array:$2" "${@:3}"
+
+	local -n __ref1__=$1 __ref2__=$2
+	__ref2__+=("${__ref1__[@]}")
+	return $?
+}
+
+# .FUNCTION array.count <obj[array]> <expr[str]> -> [uint]|[bool]
+#
+# Retorna a quantidade de ocorrências do elemento no container.
+#
+# == EXEMPLO ==
+#
+# source array.sh
+#
+# arr=(item1 item2 item1 item1 item6 item7 item8)
+# array.count arr 'item1'
+#
+# == SAÍDA ==
+#
+# 3
+#
+function array.count()
+{
+	getopt.parse 2 "obj:array:$1" "expr:str:$2" "${@:3}"
+
+	local -n __ref__=$1
+	local __c__ __elem__
+
+	for __elem__ in "${__ref__[@]}"; do
+		[[ $__elem__ == $2 ]] && ((++__c__))
+	done
+
+	echo ${__c__:-0}
+	
+	return $?
+}
+
+# .FUNCTION array.items <obj[array]> -> [str]|[bool]
+#
+# Retorna uma lista iterável dos elementos contidos no container.
+#
+function array.items()
+{
+	getopt.parse 1 "obj:array:$1" "${@:2}"
+
+	local -n __ref__=$1
+	printf '%s\n' "${__ref__[@]}"
+
+	return $?
+}
+
+# .FUNCTION array.index <obj[array]> <expr[str]> -> [int]|[bool]
+#
+# Retorna o índice do elemento no container.
+#
+function array.index()
+{
+	getopt.parse 2 "obj:array:$1" "expr:str:$2" "${@:3}"
+
+	local -n __ref__=$1
+	local __ind__ __pos__
+
+	for __ind__ in ${!__ref__[@]}; do
+		[[ ${__ref__[$__ind__]} == $2 ]]	&&
+		__pos__=$__ind__					&& 
+		break
+	done
+
+	echo ${__pos__:--1}
+
+	return $?
+}
+
+# .FUNCTION array.insert <obj[array]> <index[uint]> <expr[str]> -> [bool]
+#
+# Insere o elemento no índice do container, reidexando os elementos subsequentes
+# a partir do índice especificado.
+# 
+# == EXEMPLO ==
+#
+# source array.sh
+#
+# arr=(item1 item2 item4 item5)
+# echo ${arr[@]}
+#
+# array.insert arr 3 'item3'
+# echo ${arr[@]}
+#
+# == SAÍDA ==
+#
+# item1 item2 item4 item5
+# item1 item2 item3 item4 item5
+#
+function array.insert()
+{
+	getopt.parse 3 "obj:array:$1" "index:uint:$2" "expr:str:$3" "${@:4}"
+
+	local -n __ref__=$1
+	__ref__=("${__ref__[@]:0:$2}" [$2]="$3" "${__ref__[@]:$2}")
+	
+	return $?
+}
+
+# .FUNCTION array.pop <obj[array]> <index[int]> -> [str]|[bool]
+#
+# Retorna e remove o elemento do indice especificado. Utilize notação negativa
+# para deslocamento reverso.
+#
+# == EXEMPLO ==
+#
+# source array.sh
+#
+# arr=(item1 item2 item3 item4 item5)
+#
+# echo "arr ->" ${arr[@]}
+# echo ---
+# array.pop arr 0     # Primeiro
+# array.pop arr -1    # ùltimo
+# echo ---
+# echo "arr ->" ${arr[@]}
+#
+# == SAÍDA ==
+#
+# arr -> item1 item2 item3 item4 item5
+# ---
+# item1
+# item5
+# ---
+# arr -> item2 item3 item4
+#
+function array.pop()
+{
+	getopt.parse 2 "obj:array:$1" "index:int:$2" "${@:3}"
+
+	local -n __ref__=$1
+
+	echo "${__ref__[$2]}"
+	unset __ref__[$2]
+	return $?
+}
+
+# .FUNCTION array.remove <obj[array]> <expr[str]> -> [bool]
+#
+# Remove a primeira ocorrência do elemento.
+#
+function array.remove()
+{
+	getopt.parse 2 "obj:array:$1" "expr:str:$2" "${@:3}"
+
+	local -n __ref__=$1
+	local __i__
+
+	for __i__ in ${!__ref__[@]}; do
+		[[ ${__ref__[$__i__]} == $2 ]] &&
+		unset __ref__[$__i__] && break
+	done
+
+	return $?
+}
+
+# .FUNCTION array.reverse <obj[array]> -> [bool]
+#
+# Inverte a ordem dos elementos.
+#
+# == EXEMPLO ==
+#
+# source array.sh
+#
+# arr=(item1 item2 item3 item4 item5)
+#
+# echo ${arr[@]}
+# array.reverse arr
+# echo ${arr[@]}
+#
+# == SAÍDA ==
+#
+# item1 item2 item3 item4 item5
+# item5 item4 item3 item2 item1
+#
+function array.reverse()
+{
+	getopt.parse 1 "obj:array:$1" "${@:2}"
+
+	local -n __ref__=$1
+
+	mapfile -t $1 < <(printf '%s\n' "${__ref__[@]}" | tac)
+	return $?
+}
+
+# .FUNCTION array.sort <obj[array]> -> [str]|[bool]
+#
+# Define os elementos em uma ordem ascendente.
 #
 function array.sort()
 {
-	getopt.parse 1 "name:array:+:$1" ${@:2}
-	
-	declare -n __arr=$1
-	mapfile -t __arr < <(printf '%s\n' "${__arr[@]}" | sort -d)
-	return 0
+	getopt.parse 1 "obj:array:$1" "${@:2}"
+
+	local -n __ref__=$1
+
+	mapfile -t $1 < <(printf '%s\n' "${__ref__[@]}" | sort -d)
+	return $?
 }
 
-# func array.join <[array]name> <[str]exp> => [str]
+# .FUNCTION array.join <obj[array]> <sep[str]> -> [str]|[bool]
 #
-# Retorna uma string contendo uma cópia de 'name' inserindo 'exp'
-# entre os elementos.
+# Retorna uma string que é a concatenação das strings no iterável
+# com o separador especificado.
 #
 function array.join()
 {
-	getopt.parse 2 "name:array:+:$1" "exp:str:-:$2" ${@:3}
-	
-	declare -n __arr=$1
-	local tmp
-	printf -v tmp "%s$2" "${__arr[@]}"; echo
-	echo "${tmp%$2}"
-	return 0
+	getopt.parse 2 "obj:array:$1" "expr:str:$2" "${@:3}"
+
+	local -n __ref__=$1
+	local __tmp__
+
+	printf -v __tmp__ "%s${2//%/%%}" "${__ref__[@]}"
+	echo "${__tmp__%$2}"
+
+	return $?
 }
 
-# func array.item <[array]name> <[int]index> => [object]
+# .FUNCTION array.item <obj[array]> <index[int]> -> [str]|[bool]
 #
-# Retorna 'object' armazenado em 'index'. Se 'index' for igual a '-1'
-# será retornado o último objeto.
+# Retorna o elemento armazenado no índice especificado.
+# > Utilize notação negativa para deslocamento reverso.
 #
 function array.item()
 {
-	getopt.parse 2 "name:array:+:$1" "index:int:+:$2" ${@:3}
-	
-	declare -n __arr=$1
-	[[ $2 -gt -2 ]] && echo "${__arr[$2]}"
-	return 0
+	getopt.parse 2 "obj:array:$1" "index:int:$2" "${@:3}"
+
+	local -n __ref__=$1
+	echo "${__ref__[$2]}"
+
+	return $?
 }
 
-# func array.contains <[array]name> <[str]object> => [bool]
+# .FUNCTION array.contains <obj[array]> <expr[str]> -> [bool]
 #
-# Retorna 'true' se 'name' contém 'object'. Caso contrário 'false'.
+# Retorna 'true' se contém o elemento, caso contrário 'false'.
 #
 function array.contains()
 {
-	getopt.parse 2 "name:array:+:$1" "object:str:-:$2" ${@:3}
+	getopt.parse 2 "obj:array:$1" "expr:str:$2" "${@:3}"
 
-	declare -n __arr=$1
-	local __item
-	
-	for __item in "${__arr[@]}"; do
-		[[ $2 == $__item ]] && return 0
+	local -n __ref__=$1
+	local __item__
+
+	for __item__ in "${__ref__[@]}"; do
+		[[ $__item__ == $2 ]] && break
 	done
 
-	return 1
+	return $?
 }
 
-# func array.reindex <[array]name>
+# .FUNCTION array.reindex <obj[array]> -> [bool]
 #
-# Realiza a reindexação dos elementos contidos em 'name', iniciando
-# a partir da posição '0'.
+# Realiza a reindexação dos elementos.
+#
 function array.reindex()
 {
-	getopt.parse 1 "name:array:+:$1" ${@:2}
-	declare -n __arr=$1
-	__arr=("${__arr[@]}")
-	return 0
+	getopt.parse 1 "obj:array:$1" "${@:2}"
+
+	local -n __ref__=$1
+
+	__ref__=("${__ref__[@]}")
+	return $?
 }
 
-# func array.slice <[array]name> <[slice]slice> => [str]
+# .FUNCTION array.slice <obj[array]> <slice[str]> -> [str]|[bool]
 #
-# Retorna um subconjunto de objetos em 'name' a partir do slice '[ini:len]'; Onde
-# o primeiro slice refere-se a posição e o total de objetos a serem lidos, enquanto
-# os slices subsequentes indicam o intervalo de caracteres a serem capturados.
+# Retorna uma substring resultante do elemento dentro de um container.
+# O Slice é a representação do índice e intervalo que deve respeitar 
+# o seguinte formato:
 #
-# Se 'len' for omitido, lê o comprimento total de 'exp'.
-# Se 'ini' for omitido, lê a partir da posição '0'.
+# [start:len]...
 #
-# O slice é um argumento variável podendo conter um ou mais intervalos determinando
-# o conjunto de captura do slice que o antecede.
+# start - Índice ou posição do elemento dentro do container.
+# len   - comprimento a ser capturado a partir de 'start'.
 #
-# Exemplo:
-# 
+# > Não pode conter espaços entre slices.
+# > Utilize notação negativa para deslocamento reverso.
+#
+# Pode ser especificado mais de um slice na expressão, onde o primeiro slice
+# representa a posição do elemento dentro do container e os slices subsequentes
+# o intervalo da cadeia de caracteres a ser capturada.
+#
+# == EXEMPLO ==
+#
 # source array.sh
-# 
-# # Adicionado objetos ao array 'sys'.
-# $ array.append sys "Mac"
-# $ array.append sys "Linux"
-# $ array.append sys "Windows"
 #
-# # Capturando os dois primeiros caracteres do objeto na posição 1.
-# $ array.slice sys [1][:2]
-# Li
-# 
+# arr=('Debian' 'Ubuntu' 'Manjaro' 'Fedora')
+#
+# array.slice arr '[0][:3]'    # Os três primeiros caracteres do 1º elemento'
+# array.slice arr '[1][3:]'    # Os três últimos caracteres do 2º elemento.
+# array.slice arr '[2][3:2]'   # Os dois caracteres a partir da posição '3' do 3º elemento.
+# array.slice arr '[-1][:-2]'  # O último elemento exceto os dois últimos caracteres.
+# array.slice arr '[:2]'       # Os dois primeiros elementos.
+#
+# == SAÍDA ==
+#
+# Deb
+# ntu
+# ja
+# Fedo
+# Debian
+# Ubuntu
 #
 function array.slice()
 {
-	getopt.parse 2 "exp:array:+:$1" "slice:slice:+:$2" "${@:3}"
-	
-	local -n __ptr=$1
-	local __slice __arr __ini __len
+	getopt.parse 2 "obj:array:$1" "slice:str:$2" "${@:3}"
 
-	__slice=$2
+	[[ $2 =~ ${__BUILTIN__[slice]} ]] || error.fatal "'$2' erro de sintaxe na expressão slice"
 
-	__arr=("${__ptr[@]}")
+	local -n __ref__=$1
+	local __slice__=$2
+	local __arr__=("${__ref__[@]}")
+	local __ini__ __len__
 
-	while [[ $__slice =~ \[([^]]+)\] ]]; do
-		IFS=':' read __ini __len <<< ${BASH_REMATCH[1]}
-		
-		__ini=${__ini:-0}
-		[[ ${BASH_REMATCH[1]} != *@(:)* ]] && __len=1
+	while [[ $__slice__ =~ \[([^]]+)\] ]]; do
+		IFS=':' read __ini__ __len__ <<< ${BASH_REMATCH[1]}
 
-		if [[ ${#__arr[@]} -gt 1 ]]; then
-        	[[ $__len -lt 0 ]] && __arr=() && break
-			__len=${__len:-$((${#__arr[@]}-$__ini))}
-			__arr=("${__arr[@]:$__ini:$__len}")
+		__ini__=${__ini__:-0}
+
+		[[ ${BASH_REMATCH[1]} != *@(:)* ]] && __len__=1
+
+		# array
+		if [[ ${#__arr__[@]} -gt 1 ]]; then
+			[[ $__len__ -lt 0 ]] 	&& __arr__=() && break
+			__len__=${__len__:-$((${#__arr__[@]}-$__ini__))}
+			__arr__=("${__arr__[@]:$__ini__:$__len__}")
 		else
-			[[ ${__len#-} -gt ${#__arr} ]] && __arr='' && break
-			__len=${__len:-$((${#__arr}-$__ini))}
-			__arr=${__arr:$__ini:$__len}
+		# string
+			[[ ${__len__#-} -gt ${#__arr__} ]] && __arr__='' && break
+			__len__=${__len__:-$((${#__arr__}-$__ini__))}
+			__arr__=${__arr__:$__ini__:$__len__}
 		fi
-		__slice=${__slice/\[${BASH_REMATCH[1]}\]/}
+		__slice__=${__slice__/\[${BASH_REMATCH[1]}\]/}
 	done
 
-	printf '%s\n' "${__arr[@]}"
+	printf '%s\n' "${__arr__[@]}"
 
-    return $?
+	return $?
 }
 
-# func array.listindex <[array]name> => [uint]
+# .FUNCTION array.listindex <obj[array]> -> [uint]
 #
-# Retorna os índices dos objetos em 'name'.
+# Retorna o índice dos elementos.
 #
 function array.listindex()
 {
-	getopt.parse 1 "name:array:+:$1" ${@:2}
-	
-	declare -n __arr=$1
-	echo "${!__arr[@]}"
-	return 0
+	getopt.parse 1 "obj:array:$1" "${@:2}"
+
+	local -n __ref__=$1
+	echo ${!__ref__[@]}
+	return $?
 }
 
-# func array.list <[array]name> => [uint|object]
+# .FUNCTION array.list <obj[array]> -> [uint|str]|[bool]
 #
-# Retorna uma lista iterável de todos os objetos de 'name' 
-# precedidos por seus respectivos índices.
+# Retorna uma lista iterável dos elementos e seus respectivos
+# indices no seguinte formato:
+#
+# index|item
+#
 function array.list()
 {
-	getopt.parse 1 "name:array:+:$1" ${@:2}
-	
-	declare -n __arr=$1
-	local __i
+	getopt.parse 1 "obj:array:$1" "${@:2}"
 
-	for __i in ${!__arr[@]}; do
-		printf "%d|%s\n" "$__i" "${__arr[$__i]}"
+	local -n __ref__=$1
+	local __i__
+
+	for __i__ in ${!__ref__[@]}; do
+		echo "$__i__|${__ref__[$__i__]}"
 	done
 
-	return 0
+	return $?
 }
 
-source.__INIT__
-# /* __ARRAY_SH */
+# .TYPE array_t
+#
+# Implementa o objeto 'S' com os métodos:
+#
+# S.len
+# S.append
+# S.clear
+# S.clone
+# S.copy
+# S.count
+# S.items
+# S.index
+# S.insert
+# S.pop
+# S.remove
+# S.reverse
+# S.sort
+# S.join
+# S.item
+# S.contains
+# S.reindex
+# S.slice
+# S.listindex
+# S.list
+#
+typedef array_t	\
+		array.len		\
+		array.append	\
+		array.clear		\
+		array.clone		\
+		array.copy		\
+		array.count		\
+		array.items		\
+		array.index		\
+		array.insert	\
+		array.pop		\
+		array.remove	\
+		array.reverse	\
+		array.sort		\
+		array.join		\
+		array.item		\
+		array.contains	\
+		array.reindex	\
+		array.slice		\
+		array.listindex	\
+		array.list
 
+readonly -f	array.len 		\
+			array.append	\
+			array.clear		\
+			array.clone		\
+			array.copy		\
+			array.count		\
+			array.items		\
+			array.index		\
+			array.insert	\
+			array.pop		\
+			array.remove	\
+			array.reverse	\
+			array.sort		\
+			array.join		\
+			array.item		\
+			array.contains	\
+			array.reindex	\
+			array.slice		\
+			array.listindex	\
+			array.list
+
+# /* __ARRAY_SH__ */

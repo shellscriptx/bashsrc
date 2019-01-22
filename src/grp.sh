@@ -17,75 +17,116 @@
 #    You should have received a copy of the GNU General Public License
 #    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
-[[ $__GRP_SH ]] && return 0
+[ -v __GRP_SH__ ] && return 0
 
-readonly __GRP_SH=1
+readonly __GRP_SH__=1
 
 source builtin.sh
-source struct.sh
 
-var group_t struct_t
-
-group_t.__add__ \
-	gr_name		str \
-	gr_passwd 	str \
-	gr_gid		uint \
-	gr_mem		str
-
-
-# func grp.getgrall => [str]
+# .FUNCTION grp.getgroups -> [uint]|[bool]
 #
-# Retorna uma lista iterável de todos os grupos do sistema.
+# Retorna os IDs de grupo suplementares da chamada do processo.
 #
-function grp.getgrall(){
-	getopt.parse 0 $@
-	grp.__get_grinfo grall
-	return $?
-}
-
-# func grp.getgrgid <[group_t]struct> <[uint]gid>
-#
-# Salva em 'struct' as informações do 'gid' especificado.
-#
-function grp.getgrgid(){
-	getopt.parse 2 "struct:group_t:+:$1" "gid:uint:+:$2" "${@:3}"
-	grp.__get_grinfo grgid $1 $2
-	return $?
-}
-
-# func grp.getgrnam <[group_t]struct> <[str]name>
-#
-# Salva em 'struct' as informações do grupo 'name'.
-#
-function grp.getgrnam(){
-	getopt.parse 2 "struct:group_t:+:$1" "name:str:+:$2" "${@:3}"
-	grp.__get_grinfo grnam $1 $2
-	return $?
-}
-
-function grp.__get_grinfo()
+function grp.getgroups()
 {
-	local name pass gid mem flag
+	getopt.parse 0 "$@"
 
-	while IFS=':' read name pass gid mem; do
-		case $1 in
-			grall) echo "$name";;
-			grgid|grnam)	[[ $1 == grgid ]] && flag=$gid
-							[[ $3 == ${flag:-$name} ]] && {
-								$2.gr_name = "$name"
-								$2.gr_passwd = "$pass"
-								$2.gr_gid = "$gid"
-								$2.gr_mem = "$mem"
-								break
-							};;
-		esac
-	done < /etc/group 2>/dev/null || {
-		error.trace def
-		return $?
-	}
-
-	return 0
+	printf '%s\n' ${GROUPS[@]}
+	return $?
 }
 
-source.__INIT__
-# /* __GRP_SH */
+# .FUNCTION grp.getgrall -> [str]|[bool]
+#
+# Retorna uma lista com todos os grupos do sistema.
+#
+function grp.getgrall()
+{
+	getopt.parse 0 "$@"
+	
+	local grp
+	
+	while IFS=':' read grp _; do
+		echo $grp
+	done < /etc/group
+
+	return $?
+}
+
+# .FUNCTION grp.getgrnam <name[str]> <grp[map]> -> [bool]
+#
+# Obtém no banco de dados as informações do grupo especificado.
+#
+function grp.getgrnam()
+{
+	getopt.parse 2 "name:str:$1" "grp:map:$2" "${@:3}"
+	
+	local __name__ __pass__ __gid__ __mem__
+	local -n __ref__=$2
+
+	__ref__=() || return 1
+
+	while IFS=':' read	__name__	\
+						__pass__	\
+						__gid__		\
+						__mem__; do
+		[[ $1 == $__name__ ]] && break
+	done < /etc/group
+
+	(($?)) && { error.error "'$1' grupo não encontrado"; return $?; }
+	
+	__ref__[gr_name]=$__name__
+	__ref__[gr_passwd]=$__pass__
+	__ref__[gr_gid]=$__gid__
+	__ref__[gr_mem]=$__mem__
+		
+	return $?
+}
+
+# .FUNCTION grp.getgrgid <gid[uint]> <grp[map]> -> [bool]
+#
+# Obtém no banco de dados as informações do id do grupo especificado.
+#
+function grp.getgrgid()
+{
+	getopt.parse 2 "gid:uint:$1" "grp:map:$2" "${@:3}"
+	
+	local __name__ __pass__ __gid__ __mem__
+	local -n __ref__=$2
+
+	__ref__=() || return 1
+
+	while IFS=':' read	__name__	\
+						__pass__	\
+						__gid__		\
+						__mem__; do
+		[[ $1 == $__gid__ ]] && break
+	done < /etc/group
+
+	(($?)) && { error.error "'$1' gid não encontrado"; return $?; }
+	
+	__ref__[gr_name]=$__name__
+	__ref__[gr_passwd]=$__pass__
+	__ref__[gr_gid]=$__gid__
+	__ref__[gr_mem]=$__mem__
+		
+	return $?
+}
+
+# .MAP grp
+#
+# Chaves:
+#
+# gr_name      /* Nome do grupo */
+# gr_passwd    /* Senha criptgrafada do grupo ou vazio. */
+# gr_gid       /* Identificador númerico do grupo */
+# gr_mem       /* Lista de usuários ou membros do grupos separados por vírgula (,). */
+#
+
+# Funções (somente leitura)
+readonly -f	grp.getgroups	\
+			grp.getgrall	\
+			grp.getgrnam	\
+			grp.getgrgid
+
+# /* __GRP_SH__ */
+

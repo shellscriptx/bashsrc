@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+
 #    Copyright 2018 Juliano Santos [SHAMAN]
 #
 #    This file is part of bashsrc.
@@ -17,133 +17,142 @@
 #    You should have received a copy of the GNU General Public License
 #    along with bashsrc.  If not, see <http://www.gnu.org/licenses/>.
 
-[[ $__JSON_SH ]] && return 0
+[ -v __JSON_SH__ ] && return 0
 
-readonly __JSON_SH=1
+readonly __JSON_SH__=1
 
 source builtin.sh
+source setup.sh
 
-# DEPENDÊNCIA
-__DEP__[jq]='>= 1.5'	# Processador de linha de comando JSON
+# Dependência.
+setup.package 'jq (>= 1.5)'
 
-__TYPE__[json_t]='
-json.value
-json.keys
-json.values
-json.filter
-json.parse
-json.type
-'
-
-# func json.values <[str]json> => [str]
+# .FUNCTION json.load <file[str]> <obj[map]> -> [bool]
 #
-# Retorna o valor de todas as chaves contidas em 'json'.
+# Converte o arquivo contendo um documento JSON em uma estrutura 
+# de dados mapeada e salva no objeto apontado por 'obj'.
 #
-function json.values()
+function json.load()
 {
-	getopt.parse 1 "json:str:+:$1" ${@:2}
-	
-	local val
+	getopt.parse 2 "file:str:$1" "obj:map:$2" "${@:3}"
 
-	jq -M '[..|select(type == "number" or type == "string" or type == "boolean")|tostring]|.[]' <<< $1 2>/dev/null | while read -r val; do
-		val=${val#\"}
-		echo "${val%\"}"
-	done
-
-	return $?
-}
-
-# func json.keys <[str]json> => [str]
-#
-# Retorna todas as chaves contidas em 'json'.
-#
-function json.keys()
-{
-	getopt.parse 1 "json:str:+:$1" ${@:2}
-	jq -Mr 'path(..)|map(if type == "number" then .|tostring|"["+.+"]" else . end)|join(".")|gsub(".\\[";"[")|if . != "" then . else empty end' <<< $1 2>/dev/null
-	return $?
-}
-
-# func json.value <[str]json> <[str]key> ... => [str]
-#
-# Extrai o valor de 'key'.
-# Obs: pode ser especificado uma ou mais chaves.
-#
-function json.value()
-{
-	getopt.parse -1 "json:str:+:$1" ... "key:str:+:$2" "${@:3}"
-	
-	local val parse
-
-	parse=${@:2}
-	parse=${parse// /,.}
-
-	jq -Mc ".$parse" <<< $1 2>/dev/null | while read -r val; do
-		val=${val#\"}
-		echo "${val%\"}"
-	done
-
-	return $?
-}
-
-# func json.filter <[str]json> <[flag]type> ... => [str]
-#
-# Retorna uma lista iterável com os valores das chaves do(s) tipo(s) especificado(s).
-# Obs: pode ser especificado um ou mais tipos.
-#
-# Tipos: array, object, string, number ou boolean
-#
-function json.filter()
-{
-	getopt.parse -1 "json:str:+:$1" ... "type:flag:+:$2" "${@:3}"
-	
-	if [[ $2 != @(array|object|string|number|boolean) ]]; then
-		error.trace def "type" "flag" "$2" "flag type inválida"
+	if [ ! -f "$1" ]; then
+		error.error "'$1' não é um arquivo regular"
+		return $?
+	elif [ ! -r "$1" ]; then
+		error.error "'$1' não foi possível ler o arquivo"
 		return $?
 	fi
 
-	local val type parse
-	
-	for type in "${@:2}"; do
-		parse+=" type == \"$type\" or"
-	done
-	
-	jq -Mc "..|select(${parse%or})" <<< $1 2>/dev/null | while read -r val; do
-		val=${val#\"}
-		echo "${val%\"}"
-	done
+	json.__setmap__ file "$1" $2
 
 	return $?
 }
 
-# func json.parse <[str]json> <[str]commands> => [str]
+# .FUNCTION json.loads <expr[str]> <obj[map]> -> [bool]
 #
-# Executa os comandos JavaScript Object Notation no objeto 'json'.
+# Converte a expressão JSON em uma estrutura de dados mapeada
+# e salva no objeto apontado por 'obj'.
 #
-function json.parse()
+# == EXEMPLO ==
+#
+# #!/bin/bash
+#
+# source json.sh
+# source map.sh
+#
+# # Inicializa o map.
+# declare -A dados=()
+#
+# # Implementa o tipo map.
+# var dados map_t
+#
+# # Processando/convertendo JSON
+# json.loads '{"autor":{"nome":"Juliano","sobrenome":"santos","idade":35,"pseudonimo":"SHAMAN"}}' dados
+#
+# Listando as chaves do mapa.
+# dados.keys
+#
+# echo ---
+#
+# # Acessando valores.
+# dados.get autor.nome
+# dados.get autor.pseudonimo
+# dados.get autor.idade
+#
+# == SAÍDA ==
+#
+# autor.nome
+# autor.pseudonimo
+# autor.sobrenome
+# autor.idade
+# ---
+# Juliano
+# SHAMAN
+# 35
+#
+function json.loads()
 {
-	getopt.parse 2 "json:str:+:$1" "parse:str:+:$2" ${@:3}
-
-	local val
-
-	jq -Mc "$2" <<< $1 | while read -r val; do
-		val=${val#\"}
-		echo "${val%\"}"
-	done
-	
+	getopt.parse 2 "expr:str:$1" "obj:map:$2" "${@:3}"
+	json.__setmap__ expr "$1" $2
 	return $?
 }
 
-# func json.type <[str]json> <[str]key> => [str]
+# json.__setmap____ <tipo> <json> <map>
 #
-# Retorna o tipo da chave especificada contida em 'json'.
+# A função interna processa e converte os dados de um arquivo ou
+# expressão JSON para um array associativo especificado (map).
 #
-function json.type()
+function json.__setmap__()
 {
-	getopt.parse 2 "json:str:+:$1" "key:str:+:$2" "${@:3}"
-	jq -r "$2|type" <<< $1 2>/dev/null
+	local __cjson__ __key__ __val__
+	local -n __ref__=$3
+
+	# Converte os objetos json em uma lista mapeada de dados.
+	__cjson__='path(..|
+			   select(type == "string" or type == "number" or type == "boolean"))|
+		       map(if type == "number" then .|tostring|"["+.+"]" else . end)|
+		      join(".")'
+
+	# Lê a chave atual.
+	while IFS=$'\n' read __key__; do
+		__key__=${__key__//.\[/\[}
+		# Lê os dados.
+		case $1 in
+			expr) __val__=$(jq ".$__key__" <<< "$2");;
+			file) __val__=$(jq ".$__key__" "$2");;
+		esac 2>/dev/null
+		__val__=${__val__#\"}
+		__val__=${__val__%\"}
+		# Salva no objeto os dados da respectiva chave.
+		__ref__[$__key__]=$__val__
+	done < <(
+		# Processa a linha de comando para o tipo especificado.
+		case $1 in
+			expr) jq -r "$__cjson__" <<< "$2";;
+			file) jq -r "$__cjson__" "$2";;
+		esac 2>/dev/null
+	)
+	
+	# Se o objeto não contém elementos processados.
+	[ ${#__ref__[@]} -eq 0 ] && error.error 'erro ao processar os dados json'
+
 	return $?
 }
 
-source.__INIT__
-# /* __JSON_SH */
+# Tipos/Implementações
+typedef json_t json.loads
+
+# .TYPE json_t
+#
+# Implementa o objeto 'S' com os métodos:
+#
+# S.loads
+#
+
+# Funções (somente-leitura)
+readonly -f	json.load		\
+			json.loads		\
+			json.__setmap__
+
+# /* __JSON_SH__ */
