@@ -25,21 +25,6 @@ A  documentação  padrão  está disponível no arquivo fonte de cada bibliotec
 
 * E-mail: shellscriptx@gmail.com
 
-### Créditos
-
-* Juliano Santos [(SHAMAN)](https://t.me/x_SHAMAN_x)
-
-**Comunidade**
-
-* [Telegram (grupo)](https://t.me/shellscript_x)
-
-* [Facebook (fanpage)](https://fb.com/shellscriptx)
-
-* [Facebook (grupo)](https://fb.com/groups/1849108781988115)
-### Reportando falhas
-
-* E-mail: shellscriptx@gmail.com
-
 ### Desenvolvedor
 
 * Juliano Santos [(SHAMAN)](https://t.me/x_SHAMAN_x)
