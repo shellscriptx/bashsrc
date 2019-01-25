@@ -36,3 +36,24 @@ A  documentação  padrão  está disponível no arquivo fonte de cada bibliotec
 * [Facebook (fanpage)](https://fb.com/shellscriptx)
 
 * [Facebook (grupo)](https://fb.com/groups/1849108781988115)
+### Reportando falhas
+
+* E-mail: shellscriptx@gmail.com
+
+### Desenvolvedor
+
+* Juliano Santos [(SHAMAN)](https://t.me/x_SHAMAN_x)
+
+### Comunidades
+
+* [Telegram (grupo)](https://t.me/shellscript_x)
+
+* [Facebook (fanpage)](https://fb.com/shellscriptx)
+
+* [Facebook (grupo)](https://fb.com/groups/shellscriptx)
+
+* [Blog](https://www.shellscriptx.blogspot.com.br)
+
+### Gostaria de contribuir com o projeto? [clique aqui](https://www.padrim.com.br/apoiar?projeto_id=4707)
+
+![padrim](https://s3-sa-east-1.amazonaws.com/padrimbucketteste/padrim/Logotipo_colorido_horizontal.png)
